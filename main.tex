@@ -11,6 +11,26 @@
 \usepackage{microtype}
 \usepackage[breaklinks=true,pdfborder={0 0 0}]{hyperref}
 \usepackage{graphicx}
+
+
+%% These are the packages required for the todo notes
+\usepackage{ifthen}
+\usepackage{xkeyval}
+\usepackage{tikz}
+\usepackage{calc}
+\usepackage{xcolor}
+
+
+\usepackage[textwidth=3.7cm]{todonotes}
+\setlength{\marginparwidth}{4cm}
+
+\newcounter{todocounter}
+\newcommand{\todonum}[2][]
+{\stepcounter{todocounter}\todo[#1]{\thetodocounter: #2}}
+%$ end todo notes requirements
+
+
+
 \AtBeginDocument{%
 	\settowidth\cvlabelwidth{\cvlabelfont 0000--0000}%
 }
@@ -27,23 +47,25 @@
 % ---
 
 % Required information
-\title{This is the Title of My Dissertation}
-\author{My Full Legal Name}
-\degree{My Degree Title}{Doctor of Philosophy/Doctor of Musical
-Arts/\par Doctor of Education}
+\title{Liquid Haskell: Haskell as a Theorem Prover}
+\author{Niki Vazou}
+\degree{Computer Science}{Doctor of Philosophy}
 % Each member of the committee should be listed as Professor Foo Bar.
 % If Professor is not the correct title for one, then titles should be
 % omitted entirely.
-\chair{Professor Eta Theta}
-\cochair{Professor Gamma Delta} % Optional
+\chair{Professor Ranjit Jhala}
 % Your committee members (other than the chairs) must be in alphabetical order
-\committee{Professor Lambda Kappa}
-\committee{Professor Iota Mu}
-\committee{Professor Epsilon Zeta}
-\degreeyear{2014}
+\committee{Professor Samuel R. Buss}
+\committee{Professor Cormac Flanagan}
+\committee{Professor Sorin Lerner}
+\committee{Professor Daniele Micciancio}
+\degreeyear{2016}
 
 % Start the document
 \begin{document}
+%% Note: Do not forget to remove this list
+\listoftodos
+
 % Begin with frontmatter and so forth
 \frontmatter
 \maketitle
@@ -54,48 +76,16 @@ Arts/\par Doctor of Education}
 \setsinglespacing
 \raggedright % It would be better to use \RaggedRight from ragged2e
 \parindent0pt\parskip\baselineskip
-In recognition of reading this manual before beginning to format the
-doctoral dissertation or master's thesis; for following the
-instructions written herein; for consulting with OGS Academic Affairs
-Advisers; and for not relying on other completed manuscripts, this
-manual is dedicated to all graduate students about to complete the
-doctoral dissertation or master's thesis.
-
-In recognition that this is my one chance to use whichever
-justification, spacing, writing style, text size, and/or textfont that
-I want to while still keeping my headings and margins consistent.
+\center{ For my mother, father and sister.}
 \end{dedication}
 % Optional
 \begin{epigraph}
 \vskip0pt plus.5fil
 \setsinglespacing
 {\flushright
-True ease in writing comes from art, not chance,\\
-As those move easiest who have learn'd to dance.\\
-'T is not enough to no harshness gives offence,---\\
-The sound must seem an echo to the sense.
-
+Simplicity is the ultimate sophistication.
 \vskip\baselineskip
-\textit{Alexander Pope}\par}
-\vfil
-\begin{center}
-You write with ease to show your breeding,\\
-But easy writing's curst hard reading.
-
-\vskip\baselineskip
-\textit{Richard Brinsley Sheridan}
-\end{center}
-\vfil
-\noindent Writing, at its best, is a lonely life. Organizations for
-writers palliate the writer's loneliness, but I doubt if they improve
-his writing. He grows in public stature as he sheds his loneliness and
-often his work deteriorates. For he does his work alone and if he is a
-good enough writer he must face eternity, or the lack of it, each day.
-
-\vskip\baselineskip
-\hskip0pt plus1fil\textit{Ernest Hemingway}\hskip0pt plus4fil\null
-
-\vfil
+\textit{Leonardo Da Vinci}\par}
 \end{epigraph}
 
 % Next comes the table of contents, list of figures, list of tables,
@@ -107,25 +97,72 @@ good enough writer he must face eternity, or the lack of it, each day.
 \listoftables
 
 % Preface
-\begin{preface}
-Almost nothing is said in the manual about the preface. There is no
-indication about how it is to be typeset. Given that, one is forced to
-simply typeset it and hope it is accepted. It is, however, optional
-and may be omitted.
-\end{preface}
+%%\begin{preface}
+%%optional and may be omitted
+%%\end{preface}
 
 % Your fancy acks here. Keep in mind you need to ack each paper you
 % use. See the examples here. In addition, each chapter ack needs to
 % be repeated at the end of the relevant chapter.
 \begin{acknowledgements}
-I would like to acknowledge Professor Eta Theta for his support as the
-chair of my committee. Through multiple drafts and many long nights,
-his guidance has proved to be invaluable.
+\todonum{acks}
+I want to thank my supervisor Ranjit Jhala for all the inspiration. 
 
-I would also like to acknowledge the ``Smith Clan'' of lab~28, without
-whom my research would have no doubt taken fives times as long. It is
-their support that helped me in an immeasureable way.
+I want to thank my committee members 
+Samuel R. Buss, 
+Cormac Flanagan for inspiring my work,
+Sorin Lerner for direction on the PL group, 
+and Daniele Micciancio for his strong Haskell enthousiasm 
+for being in my committee. 
 
+Next thank the group and specifically my coauthors
+Patric Rondon,
+Alexander Bakst, 
+Eric Seidel for being there. 
+and the rest of the group for the supporting and friendly working environment.
+
+I want to thank all these people who hosted me in my internships. 
+%
+The Opa group in Paris who foresaw that types can help industrial development.
+%
+Then, Dimitrios Vytiniotis and Simon Peyton-Jones
+at Microsoft Research Cambridge
+who were the first ghc people who believed in Liquid Haskell
+and have been still supporting both the project and me personally.
+%
+I want to thank Jeff Polakow and all the people at Awake Networks 
+for giving me the opportunity to spend an awesome summer in Mountain View 
+and use Liquid Haskell in real world development code. 
+%
+Last but not least, 
+I want to thank Dann Leijen 
+for hosting me at Microsoft Research Redmond 
+and mentoring me since then, giving me all his insightful
+knowledge and  about research and life in general.
+
+Finally, I want to thanks all the family and friends, around the world,
+who supported me throughout this journey.
+%
+All the people from San Diego, 
+who made me feel San Diego as home, with all the goods and bads. 
+%
+All the friends I met in the infinite travelling in these five years, 
+that made me realize how knowledge unites people from different parts of the globe.
+%
+All my friends and family in Greece that never let me forget that
+whenever I want I have a paradise waiting for me.  
+%
+Specifically, my parents Paraskeui and Nikos and my sister Marianna
+who staid up all these Sunday nights to talk to my and keep me sane. 
+
+
+It is great that the destination is reached, 
+but after all, it is the journey that matters. 
+
+
+
+
+\todonum{paper acks}
 Chapter 2, in full, is a reprint of the material as it appears in
 Numerical Grid Generational in Computational Fluid Mechanics~2009.
 Smith, Laura; Smith, Jane~D., Pineridge Press,~2009. The dissertation
@@ -140,6 +177,8 @@ Chapter 5, in part is currently being prepared for submission for
 publication of the material. Smith, Laura; Smith, Jane~D\@. The
 dissertation author was the primary investigator and author of this
 material.
+
+
 \end{acknowledgements}
 
 % Stupid vita goes next
