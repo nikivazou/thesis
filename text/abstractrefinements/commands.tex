@@ -1,0 +1,543 @@
+
+\newcommand{\LLOC}{XXX}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\figbegin}{}
+\newcommand{\figend}{}
+%\newcommand{\defeq}[0]{\ensuremath{\stackrel{\triangle}{=}}\ }
+\newcommand{\defeq}{\ \doteq\ }
+\newcommand{\st}{\; | \;}
+\newcommand{\fa}{\forall \,}
+\newcommand{\ex}{\exists \ }
+
+%\newcommand{\bot}{\perp}
+\newcommand{\bottom}{\perp}
+\newcommand{\absref}{p}
+
+\def\emphbf#1{\textbf{\emph{#1}}}
+\def\myexsh{\smallskip\noindent{\emphbf{Example.}\xspace}}
+\def\myex#1{\smallskip\noindent{\emphbf{Example: {#1}.}}}
+\def\mypara#1{\smallskip\noindent\textbf{#1.}\ }
+
+\def\mynote#1{{\sf $\clubsuit$ #1$\clubsuit$}}
+
+\def\jhala#1{{\sf RJ:$\clubsuit$ #1$\clubsuit$}}
+\def\rupak#1{{\sf RM:$\clubsuit$ #1$\clubsuit$}}
+\def\andrey#1{{\sf AR:$\clubsuit$ #1$\clubsuit$}}
+\def\pmr#1{{\sf pmr:$\clubsuit$ #1$\clubsuit$}}
+\def\set#1{{\{ #1\}}}
+
+\def\ttcode#1{\texttt{#1}}
+\def\jtuple#1{{\mathtt{\langle}#1 \mathtt{\rangle}}}
+\def\tuple#1{{\langle #1 \rangle}}
+\def\explain#1{\text{\set{#1 \xspace}}}
+
+\newcommand{\blankrow}[1]{\multicolumn{#1}{c}{}}
+\newcommand{\zp}{{0 (0\%)}}
+\newcommand{\ie}{\textit{i.e.,}\xspace}
+\newcommand{\eg}{\textit{e.g.,}\xspace}
+\def\etc{{\it etc.}}
+
+\def\T{{\mathcal{T}}} %check
+\def\G{{\mathcal{G}}} %check
+
+\providecommand{\dbrkts}[1]{[\![#1]\!]}
+\newcommand{\verif}{\mathsf{V}}
+
+\newcommand{\translate}[1]{\dbrkts{#1}}
+
+\newcommand{\proj}[2]{{{#1}\! \downarrow \!{#2}}}
+\newcommand{\consgen}[1]{\mathsf{Generate}(#1)}
+\newcommand{\Convert}{\alpha}
+
+
+\newcommand{\Soln}{\Sigma}
+\newcommand{\state}{\sigma}
+\newcommand{\CSoln}[1]{\Soln_{\translate{C}}}
+
+
+
+\newcommand\safe{\ensuremath{\mathsf{Safe}}\xspace}
+\newcommand\unsafe{\ensuremath{\mathsf{Unsafe}}\xspace}
+
+\newcommand\scML{\textsc{ML}\xspace}
+\newcommand\scC{\textsc{C}\xspace}
+\newcommand\Java{\textsc{Java}\xspace}
+\newcommand\ML{\textsc{ML}\xspace}
+\newcommand\yices{\textsc{Yices}\xspace}
+\newcommand\DML{\textsc{DML}\xspace}
+\newcommand\ocaml{\textsc{Ocaml}\xspace}
+\newcommand\bitv{\textsc{Bitv}\xspace}
+\newcommand\BLAST{\textsc{Blast}\xspace}
+\newcommand\dsolve{\textsc{Dsolve}\xspace}
+\newcommand\SLAM{\textsc{Slam}\xspace}
+\newcommand\ARMC{\textsc{ARMC}\xspace}
+\newcommand\ASTREE{\textsc{Astree}\xspace}
+\newcommand\SATURN{\textsc{Saturn}\xspace}
+
+\def\pred{\varphi}
+\def\true{\textit{true}}
+\def\false{\textit{false}}
+
+\newcommand{\ExpSet}{\mathsf{Exp}}
+\newcommand{\PredSet}{\mathsf{Pred}}
+\newcommand{\CMDS}{\mathit{Cmd}}
+\newcommand{\TYPES}{\mathsf{Types}} 
+\newcommand{\EXPRS}{\ExpSet} 
+\newcommand{\BEXPRS}{\PredSet}
+
+
+\newcommand{\ttneg}{\mathtt{neg}}
+\newcommand{\ttzero}{\mathtt{0}}
+\newcommand{\ttone}{\mathtt{1}}
+\newcommand{\ttloop}{\mathtt{loop}}
+\newcommand{\ttfun}{\mathtt{fun}}
+\newcommand{\ttlength}{\mathtt{length}}
+\newcommand{\ttf}{\mathtt{f}}
+\newcommand{\ttv}{\mathtt{v}}
+\newcommand{\ttg}{\mathtt{g}}
+\newcommand{\tts}{\mathtt{s}}
+\newcommand{\ttxs}{\mathtt{xs}}
+\newcommand{\ttxsp}{\mathtt{xs'}}
+\newcommand{\ttc}{\mathtt{c}}
+
+\newcommand{\ttt}{\mathtt{t}}
+\newcommand{\ttitr}{\mathtt{itr}}
+\newcommand{\ttvs}{\mathtt{vs}}
+\newcommand{\ttgetValidSamples}{\mathtt{getValidSamples}}
+\newcommand{\ttsumValidSamples}{\mathtt{sumValidSamples}}
+
+\newcommand{\ttz}{\mathtt{z}}
+\newcommand{\ttw}{\mathtt{w}}
+\newcommand{\ttx}{\mathtt{x}}
+\newcommand{\tty}{\mathtt{y}}
+\newcommand{\ttY}{\mathtt{Y}}
+\newcommand{\ttn}{\mathtt{n}}
+\newcommand{\ttm}{\mathtt{m}}
+\newcommand{\ttb}{\mathtt{b}}
+\newcommand{\tta}{\mathtt{a}}
+\newcommand{\tti}{\mathtt{i}}
+\newcommand{\ttj}{\mathtt{j}}
+\newcommand{\ttk}{\mathtt{k}}
+\newcommand{\ttmax}{\mathtt{max}}
+
+\newcommand{\ttfoldn}{\mathtt{foldn}}
+\newcommand{\ttArray}{\mathtt{Array}}
+\newcommand{\ttList}{\mathtt{List}}
+\newcommand{\ttget}{\mathtt{get}}
+\newcommand{\ttset}{\mathtt{set}}
+
+\newcommand{\ttamax}{\mathtt{arraymax}}
+\newcommand{\ttam}{\mathtt{am}}
+\newcommand{\ttsum}{\mathtt{sum}}
+\newcommand{\ttassert}{\mathtt{assert}}
+\newcommand{\ttharmonic}{\mathtt{harmonic}}
+\newcommand{\ttsequence}{\mathtt{range}}
+\newcommand{\ttoff}{\mathtt{off}}
+\newcommand{\ttadder}{\mathtt{adder}}
+\newcommand{\ttinsert}{\mathtt{insert}}
+\newcommand{\ttinsertsort}{\mathtt{insertsort}}
+\newcommand{\ttsortcheck}{\mathtt{sortcheck}}
+\newcommand{\ttappend}{\mathtt{append}}
+
+\newcommand{\ttjlist}{\mathtt{List}}
+\newcommand{\ttjiter}{\mathtt{Iterator}}
+\newcommand{\ttiteri}{\mathtt{iteri}}
+\newcommand{\ttmask}{\mathtt{mask}}
+
+%measure related
+\def\tte{\mathtt{e}}
+\def\ttp{\mathtt{p}}
+\def\ttl{\mathtt{l}}
+
+\def\ttr{\mathtt{ret}}
+\def\ttis{\mathtt{is}}
+\def\ttxs{\mathtt{xs}}
+\def\ttys{\mathtt{ys}}
+\def\ttarr{\rightarrow}
+\def\ttasg{\mathtt{:=}}
+
+\newcommand{\ttfoldl}{\mathtt{List.fold\_left}}
+%\newcommand{\ttlenl}{\mathtt{List.length}}
+%\newcommand{\ttlena}{\ttArray.\ttlength}
+
+\newcommand{\ttlen}{\mathtt{len}}
+\newcommand{\ttlenl}{{\ttlen}\xspace}
+\newcommand{\ttlena}{{\ttlen}\xspace}
+
+% begin comment.sty ?
+\makeatletter
+\begingroup \catcode `|=0 \catcode `[= 1
+\catcode`]=2 \catcode `\{=12 \catcode `\}=12
+\catcode`\\=12 |gdef|@xcomment#1\end{comment}[|end[comment]]
+|endgroup
+\def\@comment{\let\do\@makeother \dospecials\catcode`\^^M=10\def\par{}}
+\def\begincomment{\@comment\@xcomment}
+\makeatother
+\newenvironment{comment}{\begincomment}{}
+% end comment.sty
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%    MACROS for PROOFS etc.  %%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\renewcommand{\implies}{\Rightarrow}
+% Proof rules
+\def\pf{\mathtt{pf}}
+\def\falsee{\mathtt{falsee}}
+\def\andi{\mathtt{andi}}
+\def\ande{\mathtt{ande}}
+\def\alli{\mathtt{alli}}
+\def\impdist{{\text{\tt imp-dist}}}
+\def\ori{\mathtt{ori}}
+\def\oril{\mathtt{oril}}
+\def\orir{\mathtt{orir}}
+\def\ore{\mathtt{ore}}
+\def\impi{\mathtt{impi}}
+\def\impe{\mathtt{impe}}
+
+
+% pseudocode language constructs
+\newcommand{\tpar}{t}
+\newcommand{\cpar}{c}
+\newcommand{\leteq}[2]{\textbf{let }#1 = #2\textbf{ in}}
+%%% \newcommand{\foreachl}[1]{\textbf{ foreach }{#1}}  %% AR: clash
+%%% with Tikz
+%%% \newcommand{\foreach}[2]{\textbf{foreach }#1\textbf{ in }#2\textbf{ do}}
+\newcommand{\While}[1]{\textbf{while }#1 \textbf{\ do}}
+\newcommand{\IfP}{\textbf{if }}
+\newcommand{\Then}{\textbf{then }}
+\newcommand{\Else}{\textbf{else }}
+\newcommand{\ttmatch}{\mathtt{match}}
+\newcommand{\ttwith}{\mathtt{with}}
+\newcommand{\match}[1]{\textbf{match}\ #1\ \textbf{with}}
+\newcommand{\imposs}{\textbf{Failure}}
+\newcommand{\when}{\textbf{ when }}
+\newcommand{\AS}{\textbf{ as }}
+\newcommand{\idx}[2]{{#1[#2]}}
+\newcommand{\htab}{\hspace{0.4cm}}
+
+% misc formatting of variables / text
+\newcommand{\xdiff}[1]{#1_f}
+\newcommand{\setv}[1]{\mathbb{#1}}
+\newcommand{\incode}[1]{\verb|#1|}  %inline code
+
+\setlength{\doublerulesep}{\arrayrulewidth}
+\newcommand\TT{\rule{0pt}{2.6ex}}
+\newcommand\BB{\rule[-1.2ex]{0pt}{0pt}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%% Functional Stuff %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\def\colon{\smash{\stackrel{\circ}{\circ}}}
+
+
+\def\valu{\nu} 
+\def\placev{\star}
+\def\tvalu{v}
+
+\newcommand{\qexp}[2]{[{#1}]{#2}}
+\newcommand{\qtyp}[2]{\forall {#1}.{#2}}
+\newcommand{\ftyp}[2]{{{#1}\!:\!{#2}}}
+\newcommand{\SUBST}[3]{{#1}[{#3}/{#2}]}
+
+
+\newcommand{\dom}[1]{{\mathsf{Dom}}(#1)}
+\newcommand{\rng}[1]{{\mathsf{Rng}}(#1)}
+\newcommand{\FV}[1]{{\mathsf{FreeVar}}(#1)}
+\newcommand{\AV}[1]{{\mathsf{Var}(#1)}}
+\newcommand{\KV}[1]{{\mathsf{LiquidVars}}(#1)}
+
+\newcommand{\EXT}[2]{{#1;\!#2}}
+\newcommand{\EXTT}[3]{\EXT{\EXT{#1}{#2}}{#3}}
+\newcommand{\UPD}[3]{{#1}[{#2} \mapsto {#3}]}
+\newcommand{\GUPD}[2]{\EXT{{#1}}{\langle{#2}\rangle}}
+\newcommand{\SOLUPD}[3]{{\mathsf{SolUpd}}({#1},{#2},{#3})}
+\newcommand{\ty}{\mathit{ty}}
+\newcommand{\recty}{\mathit{rty}}
+
+\newcommand{\typecast}[3]{\zug{{#1} \triangleright {#2}}\ {#3}}
+\newcommand{\ITE}[3]{{\ttif\ {#1 }\ \ttthen\  {#2}\ \ttelse\ {#3}}}
+
+\newcommand{\ttval}{\mathtt{val}}
+\newcommand{\ttif}{\mathtt{if}}
+\newcommand{\ttthen}{\mathtt{then}}
+\newcommand{\ttelse}{\mathtt{else}}
+\newcommand{\ttoption}{\mathtt{option}}
+\newcommand{\ttlet}{\mathtt{let}}
+\newcommand{\ttletrec}{\mathtt{let\ rec}}
+\newcommand{\ttin}{\mathtt{in}}
+\newcommand{\LET}[3]{{\ttlet\ {#1} = {#2}\ \ttin\ {#3}}}
+\newcommand{\LETREC}[4]{{\ttletrec\ {#1}\ {#2}\ =\ {#3}\ \ttin\ {#4}}}
+\newcommand{\qualdec}[2]{\mathtt{qualifier}\ {#1}\ =\ {#2}}
+
+\newcommand{\error}{\ensuremath{\mathsf{Err}}\xspace}
+
+\newcommand{\tttrue}{{\mathtt{true}}}
+\newcommand{\ttfalse}{{\mathtt{false}}}
+\newcommand{\ttnot}{{\mathtt{not}}}
+\newcommand{\ttfix}{{\mathtt{fix}}}
+\newcommand{\emb}[1]{\dbrkts{#1}}
+\newcommand{\ttarray}{\xspace \mathtt{array}}
+\newcommand{\ttfarray}{\xspace \mathtt{float[]}}
+\newcommand{\ttlist}{\ \mathtt{list}}
+\newcommand{\ttsome}[1]{{\mathtt{Some}\ {#1}}}
+\newcommand{\ttnone}{{\mathtt{None}}}
+\newcommand{\myfun}[3]{{\ftyp{#1}{#2} \rightarrow {#3}}}
+\newcommand\UNFOLD[2]{\SUBST{#1}{t}{#2}}
+
+
+\newcommand{\tcons}[2]{\mathtt{C}_{#1}{#2}}
+
+\newcommand{\falset}[1]{\overline{#1}}
+\newcommand{\mybar}[1]{\zug{#1}}
+\newcommand{\SEQ}[2]{{{#1};{#2}}}
+
+\newcommand{\ftypbar}[2]{\mybar{\ftyp{#1}{#2}}}
+\newcommand{\poten}[1]{\mathcal{P}({#1})}
+\newcommand{\ERROR}{\mathit{Error}}
+\newcommand{\impl}[4]{({#1}\wedge{#2}\wedge{#3}) \Rightarrow {#4}}
+\newcommand{\sol}{\mathcal{S}}
+\newcommand{\solstar}{\sol^{*}}
+
+\newcommand{\atomt}{\beta}
+\newcommand{\datat}{\delta}
+
+\newcommand{\hasty}{::}
+\newcommand{\tyvar}{\alpha\xspace}
+\newcommand{\tyvarb}{\beta}
+\newcommand{\rvar}{\pi}
+
+\newcommand{\kvar}{\kappa}
+\newcommand{\RPARAM}[2]{{#1}(#2)}
+\newcommand{\tyB}{B}
+\newcommand{\tyQ}{Q}
+\newcommand{\tyE}{E}
+\newcommand{\qs}{{qs}}
+\newcommand{\quals}{\mathbb{Q}}
+\newcommand{\qualstar}{\quals^\star}
+\newcommand{\consts}{\mathbb{C}}
+\newcommand{\kvars}{\mathbb{K}}
+
+\newcommand{\Fgamma}{\Gamma}
+%\newcommand{\tenv}{\Gamma}
+\newcommand{\renv}{G}
+\newcommand{\univ}[1]{\mathcal{U}({#1})}
+
+\def\ttreal{\mathtt{real}}
+\def\ttunint{\mathtt{ui}}
+\def\ttint{\mathtt{int}}
+\def\ttbool{\mathtt{bool}}
+
+\def\spmid{\ \mid \ }
+
+\newcommand{\smeta}{\mathbb{S}}
+\newcommand{\tmeta}{\mathbb{T}}
+\newcommand{\bmeta}{\mathbb{B}}
+\newcommand{\typ}{\beta}
+\newcommand{\mtyp}{\tau}
+
+\newcommand{\tliqs}{T}
+\newcommand{\stliqs}{S}
+\newcommand{\styp}{\sigma}
+\newcommand{\rtyp}{\rho}
+
+\newcommand{\mkenv}[1]{\mathsf{Env}(#1)}
+\newcommand{\fresh}[2]{\mathsf{New}({#1},{#2})}
+\newcommand{\subty}[3]{\mathsf{Sub}({#1},\ {#2},\ {#3})}
+\newcommand{\cons}{\mathsf{Gen}}
+\newcommand{\embed}[1]{\mathsf{Emb}({#1})}
+\newcommand{\VALID}[2]{{#1} \models {#2}}
+
+%\newcommand{\shape}[1]{\mathsf{Shape}({#1})}
+%\newcommand{\valid}[1]{\mathsf{Valid}({#1})}
+
+\newcommand{\propn}[1]{{\sf{P$_{#1}$}}\xspace}
+\newcommand{\solve}{{\mathsf{Solve}}}
+
+\newcommand{\mlinfer}{{\mathsf{HM}}}
+\newcommand{\tinfer}{{\mathsf{Infer}}}
+\newcommand{\refine}{\mathsf{Weaken}}
+\newcommand{\sat}[2]{\mathsf{Sat}({#1},{#2})}
+
+\newcommand{\qualinst}{\mathsf{Inst}}
+
+\newcommand{\itpowtwo}{\mathit{pow2}}
+\newcommand{\itloop}{\mathit{loop}}
+\newcommand{\itfoldn}{\mathit{foldn}}
+\newcommand{\itexone}{x_1}
+\newcommand{\itextwo}{x_2}
+
+
+\newcommand{\itxs}{\mathit{xs}}
+\newcommand{\itprime}{\mathit{prime}}
+\newcommand{\itabs}{\mathit{abs}}
+\newcommand{\itmapfilter}{\mathit{mapfilter}}
+\newcommand{\itpos}{\mathit{pos}}
+\newcommand{\itneg}{\mathit{neg}}
+\newcommand{\ittrunc}{\mathit{trunc}}
+\newcommand{\itgenerate}{\mathit{generate}}
+\newcommand{\itdouble}{\mathit{double}}
+\newcommand{\itbsearch}{\mathit{bsearch}}
+\newcommand{\itlook}{\mathit{look}}
+\newcommand{\itmin}{\mathit{min}}
+\newcommand{\itdot}{\mathit{dotprod}}
+\newcommand{\itmult}{\mathit{loop}}
+\newcommand{\itappend}{\mathit{append}}
+\newcommand{\itfilter}{\mathit{filter}}
+
+\newcommand{\itnull}{\mathit{nil}}
+\newcommand{\itmag}{\mathit{magnitude}}
+\newcommand{\itsum}{\mathit{sum}}
+\newcommand{\ttunit}{\mathtt{unit}}
+\newcommand{\ttinput}{\mathtt{input}}
+
+\newcommand{\ttdatatype}{\mathtt{type}}
+%\newcommand{\ttsize}{\mathtt{size}}
+%\newcommand{\ttsub}{\mathtt{sub}}
+%\newcommand{\ttarray}{\mathtt{intarray}}
+
+\newcommand{\emptymap}{[\cdot]}
+\newcommand{\myabs}[1]{\mid\! {#1} \! \mid}
+\newcommand{\ssreftyp}[3]{\set{{#3}}}
+\newcommand{\reftyp}[3]{\set{\ftyp{{#1}}{{#2}} \mid {#3}}}
+\newcommand{\sreftyp}[1]{\set{{#1}}}
+
+\newcommand{\relDescription}[1]{\ensuremath{\textrm{\textbf{#1}}}}
+\newcommand{\judgementHead}[2]{\ensuremath{\relDescription{#1}\hfill\fbox{#2}}}
+\newcommand{\judgementHeadNameOnly}[1]{\ensuremath{\relDescription{#1}\hfill}}
+
+
+\newcommand{\cstr}[6]{{{#1} \deriv \reftyp{#3}{#2}{#4} \subt \reftyp{#5}{#2}{#6}}}
+
+%\newcommand{\transrel}{\hookrightarrow}
+%\newcommand{\trans}{{\delta}}
+
+
+\newcommand{\fgoesto}[2]{{#1}\ \leadsto\ {#2}}
+\newcommand{\fgoestostar}[2]{{#1}\ \smash{\stackrel{*}{\leadsto}}\ {#2}}
+
+\newcommand{\goesto}[1]{\smash{\stackrel{#1}{\hookrightarrow}}}
+\newcommand{\labarrow}[1]{\smash{\xrightarrow{#1}}}
+\newcommand{\zug}[1]{{\langle #1 \rangle}}
+\newcommand{\bigstep}[4]{{{#1},{#2} \deriv {#3}\ \goesto{}\ {#4}}}
+\newcommand{\deriv}{\vdash}
+
+\newcommand{\toolname}{\textsc{Hsolve}\xspace}
+\newcommand{\hmc}{\textsc{HMC}\xspace}
+\newcommand\HMC{\hmc}
+\newcommand{\slam}{\textsc{Slam}\xspace}
+\newcommand{\blast}{\textsc{Blast}\xspace}
+\newcommand{\saturn}{\textsc{Saturn}\xspace}
+\newcommand{\armc}{\textsc{Armc}\xspace}
+\newcommand{\impact}{\textsc{Impact}\xspace}
+\newcommand{\astree}{\textsc{Astree}\xspace}
+\newcommand{\interproc}{\textsc{Interproc}\xspace}
+\newcommand{\fsoft}{\textsc{Fsoft}\xspace}
+\newcommand{\magic}{\textsc{Magic}\xspace}
+\newcommand{\tvla}{\textsc{Tvla}\xspace}
+\newcommand{\wali}{\textsc{Wali}\xspace}
+\newcommand{\sting}{\textsc{Sting}\xspace}
+
+\newcommand{\vsthree}{\textsc{VS3}\xspace}
+\newcommand{\depcegar}{\textsc{DepCegar}\xspace}
+\newcommand{\invgen}{\textsc{InvGen}\xspace}
+
+\newcommand{\iproc}{\textsc{Iproc}\xspace}
+\newcommand{\KILLED}{{DNF}\xspace}
+
+%\newcommand{\TRIVIAL}{{Trivial}\xspace}
+\newcommand{\IMPREC}[1]{*{#1}}
+
+\newenvironment{sitemize}{\begin{list}
+   {$\bullet$}
+   {\setlength{\topsep}{0pt}
+    \setlength{\itemsep}{0pt}
+    \setlength{\leftmargin}{15pt}
+    }
+  }
+  {\end{list}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\zugseq}[1]{\zug{{#1}}}
+\newcommand{\rrlist}[1]{\zugseq{\EXT{\zugseq{}}{\zugseq{\EXT{#1}{\true}}}}}
+
+\newcommand{\rela}{\bowtie}
+\newcommand{\rrsort}[1]{\rrlist{{#1} \leq \valu}}
+\newcommand{\rrsortbow}[1]{\rrlist{{#1} \rela \valu}}
+\newcommand{\rrtop}{\rr_{\top}}
+
+\newcommand{\rrbal}{\rr_{\mathsf{bal}}}
+\newcommand{\rrcol}{\rr_{\mathsf{col}}}
+\newcommand{\rrleq}{\rr_{\leq}} 
+\newcommand{\rrbow}{\rr_{\rela}} 
+\newcommand{\rrebow}[1]{\rrbow^{#1}} 
+\newcommand{\rreleq}[1]{\rrleq^{#1}} 
+\newcommand{\tliqsleq}{\tliqs_{\leq}} 
+\newcommand{\polylist}{\qtyp{\tyvar}{\mu t.\ttnil\ +\ \ttcons \zug{\ftyp{x_1}{\tyvar},\ftyp{x_2}{t}}}}
+
+
+\newcommand{\sITE}[3]{{#1} ? {#2} : {#3}} 
+
+%Constructors
+\newcommand{\ttP}{\mathtt{P}}
+\newcommand{\ttPR}{\mathtt{PR}}
+\newcommand{\ttPL}{\mathtt{PL}}
+\newcommand{\ttemp}{\mathtt{E}}
+\newcommand{\ttnode}{\mathtt{N}}
+\newcommand{\ttR}{\mathtt{R}}
+\newcommand{\ttB}{\mathtt{B}}
+
+\newcommand{\salist}{\tyvar \ttlist}
+
+\def\NONDET{\mathtt{nondet}}
+
+\newcommand{\implang}{\ensuremath{\mathsf{\mu C}}\xspace}
+\newcommand{\funlang}{\ensuremath{\mathsf{\mu ML}}\xspace}
+
+%\newcommand{\istate}{s}
+%\newcommand{\istates}{\Sigma}
+%\newcommand{\rstate}{\istate^{\sharp}}
+%\newcommand{\rstates}{\istates^{\sharp}}
+
+\newcommand{\ASSIGN}[2]{{#1} \leftarrow {#2}}
+\newcommand{\TASSIGN}[2]{{#1} \leftarrow {#2}}
+\newcommand{\HAVOC}[1]{\ASSIGN{#1}{\NONDET()}}
+\newcommand{\RETURN}[1]{\mathtt{return}\ {#1}}
+\newcommand{\TCALL}[3]{{#1}({#2}_1,\ldots,{#2}_{#3})}
+\newcommand{\FUN}[4]{\TCALL{#1}{#2}{#3}\{ #4 \}} 
+\newcommand{\CALL}[4]{\ASSIGN{#1}{\TCALL{#2}{#3}{#4}}}
+\newcommand{\var}{\ttz}
+\newcommand{\vars}{X}
+
+\newcommand{\ASSUME}[1]{\mathtt{assume}\ {#1}}
+\newcommand{\ASSERT}[1]{\mathtt{assert}\ {#1}}
+\newcommand{\GET}[2]{\TASSIGN{#2}{#1}}
+\newcommand{\SET}[2]{\TASSIGN{#1}{#2}}
+
+\def\SKIP{{{\mathtt{skip}}}}
+\def\LOOP{{{\mathtt{loop}}}}
+
+%\def\vals{V}
+\def\val{v}
+
+
+\def\fdef{\mathtt{F}}
+\def\instr{\mathtt{I}}
+\def\prgm{\mathtt{P}}
+\def\rkvar{{\kvar}}
+
+\def\CANONICAL{Canonical\xspace}
+
+\def\CHOOSE{{[\!]}}
+%\def\CHOOSE{{\mathrm{[\!]}}}
+\newcommand{\CHOICE}[2]{{{#1} \CHOOSE {#2}}}
+%\def\EXPAND{{\sf Expand}}
+%\def\CLONE{{\sf Clone}}
+%\def\rpost{\mathsf{Post}^{\sharp}}
+%\def\rreach{\mathsf{Reach}^{\sharp}}
+%\def\ipost{\mathsf{Post}}
+%\def\ireach{\mathsf{Reach}}
+
+

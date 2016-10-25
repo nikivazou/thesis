@@ -1,0 +1,83 @@
+%\documentclass{llncs}
+\documentclass[runningheads,a4paper]{llncs}
+
+\pagestyle{plain}
+\usepackage{times}
+\usepackage{amsmath,amssymb, latexsym}
+\usepackage[latin1]{inputenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{liquidHaskell}
+\usepackage[inference]{semantic}
+\usepackage{enumerate}
+\def\url{}
+\usepackage{xspace}
+\usepackage{epsfig}
+\usepackage{mathpartir}
+\usepackage{booktabs}
+\usepackage{ifthen}
+
+\newcommand{\isTechReport}{false} % true or false
+\newcommand{\includeProof}[1]{
+  \ifthenelse{\equal{\isTechReport}{true}}{
+    #1
+  }{
+  }
+}
+
+%%%%%\newcommand{\ignore}[1]{}
+
+% command to end a proof or definition:
+%\def\qed{\rule{0.4em}{1.4ex}}
+\def\qed{\hfill$\Box$}
+
+% space at the beginning of an environment:
+\def\@envspa{\hspace{0.3em}}
+\def\@sa{\hspace{-0.2em}}
+\def\@sb{\hspace{0.5em}}
+\def\@sc{\hspace{-0.1em}}
+
+\def\sk{\smallskip}		% space before and after theorems
+
+\newtheorem{notation}{Notation}{\itshape}{}
+\newtheorem{invariant}{Invariant}
+
+\input{commands}
+\input{haskellListings}
+
+\sloppy
+
+\title{Abstract Refinement Types} 
+
+\author{
+  Niki Vazou\inst{1} \and
+  Patrick M. Rondon\inst{2} \and
+  Ranjit Jhala\inst{1}
+}
+\institute{$^1$UC San Diego \quad $^2$Google}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\input{abstract}
+\end{abstract}
+
+\input{intro}
+\input{overview}
+\input{typechecking}
+\input{experiments}
+\input{related}
+
+{
+\bibliographystyle{plain}
+\bibliography{sw}
+}
+
+\end{document}
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End: 

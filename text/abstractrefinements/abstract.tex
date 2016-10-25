@@ -1,0 +1,23 @@
+We present \emph{abstract refinement types} which enable 
+quantification over the refinements of data- and 
+function-types. Our key insight is that we 
+can avail of quantification while preserving SMT-based 
+decidability, simply by encoding refinement parameters
+as \emph{uninterpreted} propositions within the 
+refinement logic.
+%
+We illustrate how this mechanism yields a variety 
+of sophisticated means for reasoning about programs, including:
+\emph{parametric} refinements for reasoning with 
+type classes,
+\emph{index-dependent} refinements for reasoning about 
+key-value maps,
+\emph{recursive} refinements for reasoning about 
+recursive data types, and
+\emph{inductive} refinements for reasoning about 
+higher-order traversal routines.
+%
+We have implemented our approach in a refinement
+type checker for Haskell, and present experiments using our tool
+to verify correctness invariants of various programs.
+%including some \textsc{GHC} libraries.

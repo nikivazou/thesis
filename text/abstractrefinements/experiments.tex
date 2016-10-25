@@ -1,0 +1,300 @@
+\section{Evaluation}\label{sec:experiments}
+
+%%1. Toy                          = toy examples from overview
+%%2. Array                        = pat's array thing
+%%3. FibMemo                      = toy-fibMemo from overview
+%%4. NullTerm                     = pat claims to be working on this, TBD
+%%5. Folds                        = ex0.hs + ex1.hs and suchlink
+%%6. tests/pos/ListSort.hs
+%%7. tests/pos/GhcListSort.hs
+%%8. containers/Data/Map/Base.hs
+%%9. llrb/Data/Set/Splay.hs (?)
+
+\input{numbers}
+
+\begin{table}[t!]
+\centering
+\begin{tabular}{lrrrrr}
+\hline
+\textbf{Program}& \textbf{LOC} & \textbf{Specs} & \textbf{Annot} &  \textbf{Time (s)} \\ 
+\hline \hline
+\benchToy       & \locToy   & \specToy   & \annToy   &  \timeToy     \\
+\benchVec       & \locVec   & \specVec   & \annVec   &  \timeVec     \\
+\benchSort      & \locSort  & \specSort  & \annSort  &  \timeSort    \\
+\benchGsort     & \locGsort & \specGsort & \annGsort &  \timeGsort   \\
+\benchSplay     & \locSplay & \specSplay & \annSplay &  \timeSplay   \\
+\benchMap       & \locMap   & \specMap   & \annMap   &  \timeMap     \\
+\hline
+\textbf{Total}  & \locTot   & \specTot   & \annTot   &  \timeTot     \\
+\end{tabular}
+\caption{ 
+\textbf{(LOC)} is the number of non-comment Haskell source code lines as reported by \textit{sloccount},
+%
+\textbf{(Specs)} is the number of lines of type specifications,
+%
+\textbf{(Annot)} is the number of lines of other annotations, including refined
+datatype definitions, type aliases and measures, required for verification,
+%
+\textbf{(Time)} is the time in seconds taken for verification.
+}
+\label{tab:eval}
+\end{table}
+
+In this section, we empirically evaluate the expressiveness and
+usability of abstract refinement types by exploring the process of
+typechecking a set of challenging benchmark programs using a prototype
+type checker for Haskell. (We defer the task of extending the metatheory
+to a call-by-name calculus to future work.)
+
+\mypara{\toolname} We have implemented abstract refinement 
+in \toolname, a refinement type checker for Haskell.
+\toolname verifies Haskell source one module (.hs file) at a time. 
+It takes as input:
+\begin{itemize}
+\item A \emph{target} Haskell source file, with the desired refinement
+types specified as a special form of comment annotation, 
+\item An (optional) set of type specifications for imported definitions; these 
+can either be put directly in the source for the corresponding modules,
+if available, or in special \verb+.spec+ files otherwise. For imported 
+functions for which no signature is given, \toolname conservatively uses 
+the non-refined  Haskell type. %with the trivial refinement @True@ everywhere.
+\item An (optional) set of logical qualifiers, which are predicate 
+templates from which refinements are automatically synthesized
+\cite{LiquidPLDI08}.
+%
+Formally, a logical qualifier is a predicate whose variables range
+over the program variables, the special value variable $\valu$, and
+\emph{wildcards} $\placev$, which \toolname instantiates with the
+names of program variables.
+%
+Aside from the qualifiers given by the user, \toolname also uses
+qualifiers mined from the refinement type annotations present in the
+program.
+\end{itemize}
+After analyzing the program, \toolname returns as output:
+\begin{itemize}
+\item Either \textsc{Safe}, indicating that all the specifications indeed
+verify, or \textsc{Unsafe}, indicating there are refinement type errors,
+together with the positions in the source code where type checking fails
+(\eg functions that do not satisfy their signatures, or callsites where 
+the inputs don't conform to the specifications).
+%
+\item
+%
+  An HTML file containing the program source code annotated with
+  inferred refinement types for all sub-expressions in the program.
+%
+  The inferred refinement type for each program expression is the
+  strongest possible type over the given set of logical qualifiers.
+%
+  When a type error is reported, the programmer can use the inferred
+  types to determine why their program does not typecheck:
+  they can examine what properties \toolname \emph{can} deduce about 
+  various program expressions and add more qualifiers or alter 
+  the program as necessary so that it typechecks.
+%
+\end{itemize}
+
+\mypara{Implementation}
+%
+\toolname verifies the contents of a single file (module) at a time as follows. 
+%
+First, the Haskell source is fed into GHC, which desugars the program
+to GHC's ``core" intermediate representation~\cite{VytiniotisJM12}.
+%
+Second, the desugared program,
+the type signatures for the module functions (which are to be verified) and 
+the type signatures for externally imported functions (which are assumed to hold)
+are sent to the constraint generator, which traverses the core bindings in a
+syntax-directed manner to generate subtyping constraints.
+%
+The resulting constraints are simplified via our subtyping rules
+(\S~\ref{sec:check}) into simple logical implication
+constraints.
+%
+Finally, the implication constraints, together with the logical
+qualifiers provided by the user and harvested from the type
+signatures, are sent into an SMT- and abstract interpretation-based
+fixpoint computation procedure that determines if the constraints are
+satisfiable \cite{GrafSaidi97,Houdini}.
+%
+If so, the program is reported to be \emph{safe}.
+%
+Otherwise, each unsatisfiable constraint is mapped back to the
+corresponding program source location that generated it and a
+potential error is reported at that line in the program.
+
+\mypara{Benchmarks}
+We have evaluated \toolname over the following list of benchmarks
+which, in total, represent the different kinds of reasoning described in
+\S~\ref{sec:overview}.
+%
+While we can prove, and previously have proved~\cite{LiquidPLDI09},
+many so-called ``functional correctness" properties of these data
+structures using refinement types, in this work we focus on the key
+invariants which are captured by abstract refinements.
+
+\begin{itemize}
+\item \benchToy, which includes several functions demonstrating 
+parametric reasoning with base values, type classes, and higher-order 
+loop invariants for traversals and folds, as described in
+\S~\ref{sec:overview:parametric} and \S~\ref{sec:overview:induction};
+
+\item \benchVec, which includes the domain- and range-generic @Vec@
+  functions and several ``clients"
+  that use the generic @Vec@ to implement incremental initialization,
+  null-terminated strings, and memoization, as described in
+  \S~\ref{sec:overview:index};
+
+\item \benchSort, which includes various textbook sorting algorithms
+including insert-, merge- and quick-sort. We verify that the functions
+actually produce sorted lists, \ie are of type @IncrList a@, as described in
+\S~\ref{sec:overview:rec};
+
+\item \benchGsort, which includes three non-standard, optimized list 
+sorting algorithms, as found in the \verb+base+ package. 
+These employ lists that are increasing and decreasing, as well as 
+lists of (sorted) lists, but we can verify that they also finally 
+produce values of type @IncrList a@;
+
+\item \benchSplay, which is a purely functional, top-down splay set 
+library from the \verb+llrbtree+ package. We verify that all the 
+interface functions take and return binary search trees;
+
+\item \benchMap, which is the widely-used implementation of functional
+maps from the \verb+containers+ package. We verify that all the interface
+functions preserve the crucial binary search ordering property and various
+related invariants.
+\end{itemize}
+%
+Table~\ref{tab:eval} quantitatively summarizes the results of our
+evaluation.
+%
+We now give a qualitative account of our experience using \toolname
+by discussing what the specifications and other annotations look like.
+
+\mypara{Specifications are usually simple}
+In our experience, abstract refinements greatly simplify writing
+specifications for the \emph{majority} of interface or public functions.
+For example, for \benchMap, we defined the refined version of the
+@Tree@  ADT (actually called @Map@ in the source, we reuse the type from
+\S~\ref{sec:overview:rec} for brevity), and then instantiated
+it with the concrete refinements for binary-search ordering with the alias
+@BST k v@  as described in \S~\ref{sec:overview:rec}.
+%%$${\centering\begin{tabular}{c}\begin{code}
+%%type BST k v = Tree <{\x y -> x > y}, {\x y-> x < y}> k v
+%%\end{code}\end{tabular}}$$
+Most refined specifications were just the Haskell types
+with the @Tree@ type constructor replaced with the 
+alias @BST@. For example, the type of 
+@fromList@ is refined from @(Ord k) => [(k, a)] -> Tree k a@ to 
+@(Ord k) => [(k, a)] -> BST k a@.
+%%$${\centering\begin{tabular}{c}\begin{code}
+%%insert   :: (Ord k) => k -> v   -> Tree k v -> Tree k v
+%%union    :: (Ord k) => k -> v   -> Tree k v -> Tree k v
+%%fromList :: (Ord k) => [(k, a)] -> Tree k a 
+%%\end{code}\end{tabular}}$$
+%%simply get transformed to
+%%$${\centering\begin{tabular}{c}\begin{code}
+%%insert   :: (Ord k) => k -> v   -> BST k v -> BST k v  
+%%union    :: (Ord k) => k -> v   -> BST k v -> BST k v  
+%%fromList :: (Ord k) => [(k, a)] -> BST k a              
+%%\end{code}\end{tabular}}$$
+Furthermore, intra-module Liquid type inference permits 
+the automatic synthesis of necessary stronger types for
+private functions.
+%%$$
+%%{\centering
+%%\begin{tabular}{c}\begin{code}
+%%balanceL :: kcut:k -> a                -- root key, value
+%%            -> BST {v:k | v < kcut} a  -- left  tree
+%%            -> BST {v:k | v > kcut} a  -- right tree
+%%            -> BST k a                 -- output tree
+%%\end{code}
+%%\end{tabular}}
+%%$$
+%but of course, one may explicitly specify these types too.
+
+\mypara{Auxiliary Invariants are sometimes Difficult}
+However, there are often rather thorny \emph{internal} functions with tricky
+invariants, whose specification can take a bit of work. For example, the
+function @trim@ in {\benchMap} has the following behavior (copied verbatim
+from the documentation):
+``\verb-trim blo bhi t- trims away all subtrees that surely
+  contain no values between the range \verb-blo- to \verb-bhi-. 
+   The returned tree is either empty or the key of the 
+   root is between \verb-blo- and \verb-bhi-."
+Furthermore @blo@ (resp. @bhi@) are specified as option 
+(\ie @Maybe@) values with @Nothing@ denoting $-\infty$ (resp. $+\infty$). 
+%
+Fortunately, refinements suffice to encode such properties. 
+First, we define measures
+%
+$$\centering\begin{tabular}{c}\begin{code}
+measure isJust     :: Maybe a -> Bool 
+isJust (Just x)    = true
+isJust (Nothing)   = false
+
+measure fromJust   :: Maybe a -> a 
+fromJustS (Just x) = x 
+
+measure isBin       :: Tree k v -> Bool
+isBin (Bin _ _ _ _) = true
+isBin (Tip)         = false
+
+measure key :: Tree k v -> k 
+key (Bin k _ _ _)   = k 
+\end{code}\end{tabular}$$
+%
+which respectively embed the @Maybe@ and @Tree@ root value into the
+refinement logic, after which we can type the @trim@ function as
+$$\centering\begin{tabular}{c}\begin{code}
+trim :: (Ord k) => blo:Maybe k 
+                -> bhi:Maybe k 
+                -> BST k a 
+                -> {v:BST k a | bound(blo, v, bhi)}
+\end{code}\end{tabular}$$
+where @bound@ is simply a refinement alias
+$$\centering\begin{tabular}{c}\begin{code}
+refinement bound(lo, v, hi) 
+  =  isBin(v) => isJust(lo) => fromJust(lo) < key(v) 
+  && isBin(v) => isJust(hi) => fromJust(hi) > key(v)
+\end{code}\end{tabular}$$
+That is, the output refinement states that the root is appropriately 
+lower- and upper- bounded if the relevant terms are defined. 
+Thus, refinement types allow one to formalize the crucial behavior as
+machine-checkable documentation.
+
+\mypara{Code Modifications} On a few occasions we also have to change the
+code slightly, typically to make explicit values on which various
+invariants depend. Often, this is for a trivial reason; a simple
+re-ordering of binders so that refinements for \emph{later} binders 
+can depend on earlier ones. Sometimes we need to introduce
+``ghost" values so we can write the specifications (\eg the @foldr@ in
+\S~\ref{sec:overview:induction}). Another example is illustrated by the use
+of list @append@ in @quickSort@. Here, the @append@ only produces a sorted
+list if the two input lists are sorted and such that each element in
+the first is less than each element in the second. 
+We address this with a special @append@ parameterized on @pivot@ 
+%append :: k:a -> IncrList {v:a|v<k} -> IncrList {v:a|v>k} -> IncrList a
+%append :: k:a -> IncList {v:a|v < k} -> IncList {v:a|v > k} 
+%       -> IncList a
+$$\centering\begin{tabular}{c}\begin{code}
+append :: pivot:a                    
+       -> IncrList {v:a | v < pivot}  
+       -> IncrList {v:a | v > pivot}  
+       -> IncrList a              
+append pivot [] ys     = pivot : ys
+append pivot (x:xs) ys = x : append pivot xs ys
+\end{code}\end{tabular}$$
+%%after which \toolname infers that
+%%$$\centering\begin{tabular}{c}\begin{code}
+%%\end{code}\end{tabular}$$
+%thereby proving @quickSort@ returns a sorted list.
+
+%\mypara{Challenges for Future Work}
+%\subsection{Challenges}
+%\begin{verbatim}
+%- Error messages
+%- Incremental checking
+%\end{verbatim}

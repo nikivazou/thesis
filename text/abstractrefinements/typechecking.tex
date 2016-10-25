@@ -1,0 +1,447 @@
+\section{Syntax and Semantics}\label{sec:check}
+
+
+Next, we present a core calculus \corelan that formalizes the notion
+of abstract refinements. We start with the syntax (\S~\ref{sec:syntax}),
+present the typing rules (\S~\ref{sec:typing}), show soundness 
+via a reduction to contract calculi \cite{Knowles10,Greenberg11}
+(\S~\ref{sec:soundness}), and inference via Liquid types (\S~\ref{sec:infer}).
+
+\subsection{Syntax}\label{sec:syntax}
+
+Figure~\ref{fig:syntax} summarizes the syntax of our core 
+calculus \corelan which is a polymorphic $\lambda$-calculus 
+extended with abstract refinements. 
+%
+We write 
+$b$, 
+$\tref{b}{\reft}$ and 
+$\tpp{b}{\areft}$ 
+to abbreviate 
+$\tpref{b}{\true}{\true}$, 
+$\tpref{b}{\true}{\reft}$, and
+$\tpref{b}{\areft}{\true}$ respectively. 
+We say a type or schema is \emph{non-refined} if all the 
+refinements in it are $\true$. We write $\overline{z}$ 
+to abbreviate a sequence $z_1 \ldots z_n$.
+
+
+\mypara{Expressions}
+\corelan\ expressions include the standard variables $x$, 
+primitive constants $c$, $\lambda$-abstraction $\efunt{x}{\tau}{e}$,
+application $\eapp{e}{e}$, type abstraction $\etabs{\alpha}{e}$,
+and type application $\etapp{e}{\tau}$. The parameter $\tau$ in 
+the type application is a \emph{refinement type}, as described shortly.
+The two new additions to \corelan are the refinement abstraction
+$\epabs{\rvar}{\tau}{e}$, which introduces a refinement variable 
+$\rvar$ (together with its type $\tau$), which can appear in refinements
+inside $e$, and the corresponding refinement application $\epapp{e}{e}$.
+%
+%where the argument, is of the form $\efun{\bar{x}{e}}$ which is
+%an abbreviation for $\efun{x_1 \ldots x_n}{e}$.
+%which is of the form $\ptype{\bar{\tau}}$ which is an 
+%abbreviation for $\ptype{tau_1 \rightarrow \ldots \tau_n}$,
+%where each $\tau_i$ is a simple (non-function) type.
+
+\mypara{Refinements}
+A \emph{concrete refinement} \reft is a boolean valued expression \reft 
+drawn from a strict subset of the language of expressions which
+includes only terms that 
+(a)~neither diverge nor crash, and 
+(b)~can be embedded into an SMT decidable refinement logic including 
+the theory of linear arithmetic and uninterpreted functions.
+%
+An \emph{abstract refinement} \areft is a conjunction of refinement
+variable applications of the form $\rvapp{\pi}{e}$.
+
+\mypara{Types and Schemas}
+The basic types of \corelan include the base types $\tbint$ and $\tbbool$
+and type variables $\alpha$. An \emph{abstract refinement type} $\tau$ is 
+either a basic type refined with an abstract and concrete refinements,
+$\tpref{b}{\areft}{\reft}$, or 
+a dependent function type where the parameter $x$ can appear in the 
+refinements of the output type. 
+We include refinements for functions, as refined type variables can be 
+replaced by function types. However, typechecking ensures these refinements
+are trivially true.
+%
+%type application
+%Type application consists of a type constructor, its type arguments
+%and its refinement arguments 
+%that are used to describe properties between its elements.
+%
+Finally, types can be quantified over refinement variables and type 
+variables to yield abstract refinement schemas.
+
+
+\begin{figure}[t!]
+\centering
+$$
+\begin{array}{rrcl}
+\emphbf{Expressions} \quad 
+  & e 
+  & ::= 
+  &      x 
+  \spmid c 
+  \spmid \efunt{x}{\tau}{e} 
+  \spmid \eapp{e}{e} 
+  \spmid \etabs{\alpha}{e} 
+  \spmid \etapp{e}{\tau} 
+  \spmid \epabs{\rvar}{\tau}{e}
+  \spmid \epapp{e}{e} 
+  \\[0.05in] 
+
+\emphbf{Abstract Refinements} \quad 
+  & \areft 
+  & ::= 
+  &      \true 
+  \spmid \areft \land \rvapp{\rvar}{e}
+  \\[0.05in] 
+
+\emphbf{Basic Types} \quad 
+  & b 
+  & ::= 
+  &      \tbint
+  \spmid \tbbool
+  \spmid \alpha
+  \\[0.05in]
+
+\emphbf{Abstract Refinement Types} \quad 
+  & \tau 
+  & ::= 
+  &      \tpref{b}{\areft}{\reft} 
+  \spmid \trfun{x}{\tau}{\tau}{\reft}
+  \\[0.05in]
+
+\emphbf{Abstract Refinement Schemas} \quad 
+  & \sigma
+  & ::= 
+  &      \tau 
+  \spmid \ttabs{\alpha}{\sigma}
+  \spmid \tpabs{\rvar}{\tau}{\sigma}
+  \\[0.05in]
+\end{array}
+$$
+\caption{\textbf{Syntax of Expressions, Refinements, Types and Schemas}}
+\label{fig:syntax}
+\end{figure}
+
+\subsection{Static Semantics}\label{sec:typing}
+
+\input{rules}
+
+Next, we describe the static semantics of \corelan by describing the typing
+judgments and derivation rules. Most of the rules are 
+standard~\cite{Ou2004,LiquidPLDI08,Knowles10,GordonTOPLAS2011}; we 
+discuss only those pertaining to abstract refinements.
+
+\mypara{Judgments}
+A type environment $\Gamma$ is a sequence of type bindings $x:\sigma$.
+We use environments to define three kinds of typing judgments:
+
+\begin{itemize}
+\item{\emphbf{Wellformedness judgments} (\isWellFormed{\Gamma}{\sigma})} 
+state that a type schema $\sigma$ is well-formed under environment
+$\Gamma$, that is, the refinements in $\sigma$ are boolean 
+expressions in the environment $\Gamma$.
+
+\item{\emphbf{Subtyping judgments} (\isSubType{\Gamma}{\sigma_1}{\sigma_2})} 
+state that the type schema $\sigma_1$ is a subtype of the type schema
+$\sigma_2$ under environment $\Gamma$, that is, when the free variables
+of $\sigma_1$ and $\sigma_2$
+are bound to values described by $\Gamma$, the set of values described
+by $\sigma_1$ is contained in the set of values described by $\sigma_2$. 
+
+\item{\emphbf{Typing judgments} (\hastype{\Gamma}{e}{\sigma})} state that
+the expression $e$ has the type schema $\sigma$ under environment $\Gamma$,
+that is, when the free variables in $e$ are bound to values described by 
+$\Gamma$, the expression $e$ will evaluate to a value described by $\sigma$.
+\end{itemize}
+
+\mypara{Wellformedness Rules}
+The wellformedness rules check that the concrete and abstract
+refinements are indeed $\tbbool$-valued expressions in the 
+appropriate environment.
+The key rule is \wtBase, which checks, as usual, that the (concrete) 
+refinement $\reft$ is boolean, and additionally, that the abstract
+refinement $\areft$ applied to the value $\vref$ is also boolean.
+This latter fact is established by \wtRVApp which checks that 
+each refinement variable application $\rvapp{\rvar}{e}\ \vref$ 
+is also of type \tbbool in the given environment.
+
+\mypara{Subtyping Rules}
+The subtyping rules stipulate when the set of values described 
+by schema $\sigma_1$ is subsumed by the values described by $\sigma_2$.
+The rules are standard except for \tsubVar, which encodes the base types' 
+abstract refinements $\areft_1$ and $\areft_2$ with conjunctions of 
+\emph{uninterpreted predicates} 
+$\inter{\areft_1\ \vref}$ and $\inter{\areft_2\ \vref}$ in the 
+refinement logic as follows:
+\begin{align*}
+\inter{\true\ \vref} & \defeq \true\\
+\inter{(\areft \land \rvapp{\rvar}{e})\ \vref} & \defeq \inter{\areft\
+\vref} \land \rvar(\inter{e_1},\ldots,\inter{e_n},\vref)
+\end{align*}
+where $\rvar(\overline{e})$ is a term in the refinement logic corresponding
+to the application of the uninterpreted predicate symbol $\rvar$ to the 
+arguments $\overline{e}$.
+% $\text{Valid}(p)$ (\tsubBase) holds if an SMT determines the formula $p$ 
+% is \emph{valid}~\cite{Nelson81}.
+
+
+
+\mypara{Type Checking Rules}
+The type checking rules are standard except for \tpgen and \tpinst, which
+pertain to abstraction and instantiation of abstract refinements.
+%
+The rule \tpgen is the same as \tfunction: we simply check the body
+$e$ in the environment extended with a binding for the refinement 
+variable $\rvar$.
+%
+The rule \tpinst checks that the concrete refinement is of the appropriate
+(unrefined) type $\tau$, and then replaces all (abstract) applications of
+$\rvar$ inside $\sigma$ with the appropriate (concrete) refinement $\reft'$ 
+with the parameters $\overline{x}$ replaced with arguments at that application.
+Formally, this is represented as $\rpinst{\sigma}{\rvar}{\efunbar{x:\tau}{\reft'}}$
+which is $\sigma$ with each base type transformed as
+%%$$\rpinst{\tpref{b}{\areft}{\reft}}{\rvar}{z}
+%%  \defeq \tpref{b}{\areft''}{\reft \land \reft''} 
+%%  \quad \mbox{where} (\areft'', \reft'') =
+%%  \rpapply{\areft}{\rvar}{z}{\true}{\true}$$
+\begin{align*}
+\rpinst{\tpref{b}{\areft}{\reft}}{\rvar}{z}
+  & \defeq \tpref{b}{\areft''}{\reft \land \reft''} \\
+\mbox{where} \quad (\areft'', \reft'') 
+  & \defeq \rpapply{\areft}{\rvar}{z}{\true}{\true} 
+\intertext{$\mathsf{Apply}$ replaces each application of $\rvar$ in 
+$\areft$ with the corresponding conjunct in $\reft''$, as}
+\rpapply{\true}{\cdot}{\cdot}{\areft'}{\reft'} 
+  & \defeq (\areft', \reft') \\
+\rpapply{\areft \wedge \rvapp{\rvar'}{e}}{\rvar}{z}{\areft'}{\reft'} 
+  & \defeq \rpapply{\areft}{\rvar}{z}{\areft' \land \rvapp{\rvar'}{e}}{\reft'} \\
+\rpapply{\areft \wedge \rvapp{\rvar}{e}}{\rvar}{\efunbar{x:\tau}{\reft''}}{\areft'}{\reft'} 
+  & \defeq
+  \rpapply{\areft}{\rvar}{\efunbar{x:\tau}{\reft''}}{\areft'}{\reft' \wedge \SUBST{\reft''}{\overline{x}}{\overline{e},\vref}}
+\end{align*}
+In other words, the instantiation can be viewed as two symbolic 
+reduction steps: first replacing the refinement variable with the
+concrete refinement, and then ``beta-reducing" concrete refinement 
+with the refinement variable's arguments. For example, 
+$$\rpinst{\tpref{\tbint}{\rvar\ y}{\vref > 10}}
+       {\rvar}
+       {\efunt{x_1}{\tau_1}{\efunt{x_2}{\tau_2}{x_1 < x_2}}}
+\defeq \tref{\tbint}{\vref > 10 \land y < \vref}$$
+%%rp(x:tx->t , \rvar, z) = x:tx' -> t'
+%%  where tx'      = rp(tx, \rvar, z)
+%%        t'       = rp(t , \rvar, z)
+%%
+%%rp(\a.t, \rvar, z) = \a.t'
+%%  where t'       = rp(t, \rvar, z)
+%%
+%%rp(\p.t, \rvar, z) = \p.t'
+%%  where t'       = rp(t, \rvar, z)
+
+%%The other rule that handles abstract refinements is \tcase.
+%%This rule initially checks that the expression to be analyzed 
+%%has a type application type $T = \tcon{\chi}{e_\chi}{\listOf{T}}{\listOf{e}}$.
+%%Then for all cases, the case expression is typechecked in the initial environment, 
+%%extended with case binders \listOf{x_i} and the initial expression binder $x$.
+%%The types of these binders are gained after unfolding data constructor's type \tc{K_i}. 
+%%The unfolding is done by replacing its type variables with actual type arguments
+%%of $T$, ie. \listOf{T} 
+%%its abstract refinements with actual inferred refinements \listOf{e},
+%%and its binders with actual binders \listOf{x_i}.
+
+\subsection{Soundness}\label{sec:soundness}
+
+As hinted by the discussion about refinement variable instantiation,
+we can intuitively think of abstract refinement variables as 
+\emph{ghost} program variables whose values are boolean-valued 
+functions. Hence, abstract refinements are a special case of 
+higher-order contracts, that can be statically verified using 
+uninterpreted functions. (Since we focus on static checking, 
+we don't care about the issue of blame.)
+We formalize this notion by translating \corelan programs into
+the contract calculus \conlan of \cite{Greenberg11} and use this 
+translation to define the dynamic semantics and establish soundness.
+
+\mypara{Translation} 
+We translate \corelan schemes $\sigma$ to \conlan schemes $\tx{\sigma}$
+as by translating abstract refinements into contracts,
+and refinement abstraction into function types:
+$$\begin{array}{rclcrcl}
+\tx{\true\ \vref} & \defeq 
+  & \true  
+  & \quad \quad &
+
+\tx{\tpabs{\rvar}{\tau}{\sigma}} & \defeq 
+  & \tfun{\rvar}{\tx{\tau}}{\tx{\sigma}} \\
+
+\tx{(\areft \land \rvapp{\rvar}{e})\ \vref} & \defeq 
+  & \tx{\areft\ \vref} \land \eapp{\eapp{\rvar}{\overline{e}}}{\vref} 
+  & \quad \quad &
+
+\tx{\ttabs{\alpha}{\sigma}} & \defeq 
+  & \ttabs{\alpha}{\tx{\sigma}} \\
+
+\tx{\tpref{b}{\areft}{\reft}} & \defeq 
+  & \tref{b}{\reft \land \tx{\areft\ \vref}} 
+  & \quad \quad &
+
+\tx{\tfun{x}{\tau_1}{\tau_2}} & \defeq 
+  & \tfun{x}{\tx{\tau_1}}{\tx{\tau_2}} 
+%\tx{\trfun{x}{\tau_1}{\tau_2}{\reft}} \defeq 
+%  & \trfun{x}{\tx{\tau_1}}{\tx{\tau_2}}{\tx{\reft}} \\
+\end{array}$$
+Similarly, we translate \corelan terms $e$ to \conlan 
+terms $\tx{e}$ by converting refinement abstraction and application 
+to $\lambda$-abstraction and application
+$$\begin{array}{rclcrcl}
+\tx{x} & \defeq & x & \quad \quad \quad & \tx{c} & \defeq & c \\
+\tx{\efunt{x}{\tau}{e}} & \defeq & \efunt{x}{\tx{\tau}}{\tx{e}} & \quad & \tx{\eapp{e_1}{e_2}} & \defeq & \eapp{\tx{e_1}}{\tx{e_2}} \\
+\tx{\etabs{\alpha}{e}} & \defeq & \etabs{\alpha}{\tx{e}} & \quad & \tx{\etapp{e}{\tau}} & \defeq & \eapp{\tx{e}}{\tx{\tau}} \\
+\tx{\epabs{\rvar}{\tau}{e}} &\defeq & \efunt{\rvar}{\tx{\tau}}{\tx{e}} & \quad & \tx{\epapp{e_1}{e_2}} &\defeq & \eapp{\tx{e_1}}{\tx{e_2}}
+\end{array}$$
+
+%%\begin{align*}
+%%\tx{\true\ \vref} \defeq 
+%%  & \true\\
+%%\tx{(\areft \land \rvapp{\rvar}{e})\ \vref} \defeq 
+%%  & \tx{\areft\ \vref} \land \eapp{\eapp{\rvar}{\overline{e}}}{\vref}\\
+%%\tx{\tpref{b}{\areft}{\reft}} \defeq 
+%%  & \tref{b}{\reft \land \tx{\areft\ \vref}} \\
+%%\tx{\tfun{x}{\tau_1}{\tau_2}} \defeq 
+%%  & \tfun{x}{\tx{\tau_1}}{\tx{\tau_2}} \\
+%%%\tx{\trfun{x}{\tau_1}{\tau_2}{\reft}} \defeq 
+%%%  & \trfun{x}{\tx{\tau_1}}{\tx{\tau_2}}{\tx{\reft}} \\
+%%\tx{\ttabs{\alpha}{\sigma}} \defeq 
+%%  & \ttabs{\alpha}{\tx{\sigma}} \\
+%%\tx{\tpabs{\rvar}{\tau}{\sigma}} \defeq 
+%%  & \tfun{\rvar}{\tx{\tau}}{\tx{\sigma}}
+%%\end{align*}
+%%\tx{x} \defeq & x \\
+%%\tx{c} \defeq & c \\
+%%\tx{\efunt{x}{\tau}{e}} \defeq & \efunt{x}{\tx{\tau}}{\tx{e}} \\
+%%\tx{\eapp{e_1}{e_2}} \defeq & \eapp{\tx{e_1}}{\tx{e_2}} \\
+%%\tx{\etabs{\alpha}{e}} \defeq & \etabs{\alpha}{\tx{e}} \\
+%%\tx{\etapp{e}{\tau}} \defeq & \eapp{\tx{e}}{\tx{\tau}} \\
+%%\tx{\epabs{\rvar}{\tau}{e}} \defeq & \efunt{\rvar}{\tx{\tau}}{\tx{e}} \\
+%%\tx{\epapp{e_1}{e_2}} \defeq & \eapp{\tx{e_1}}{\tx{e_2}}
+
+
+
+
+
+\mypara{Translation Properties}
+We can show by induction on the derivations that the 
+type derivation rules of \corelan \emph{conservatively approximate}
+those of \conlan. Formally, 
+
+\begin{itemize}
+\item If $\isWellFormed{\Gamma}{\tau}$ then $\isWellFormedH{\Gamma}{\tau}$,
+\item If $\isSubType{\Gamma}{\tau_1}{\tau_2}$ then $\isSubTypeH{\Gamma}{\tau_1}{\tau_2}$,
+\item If $\hastype{\Gamma}{e}{\tau}$ then
+$\hastypeH{\tx{\Gamma}}{\tx{e}}{\tx{\tau}}$.
+\end{itemize}
+
+\mypara{Soundness} Thus rather than re-prove preservation and progress
+for \corelan, we simply use the fact that the type derivations are
+conservative to derive the following preservation and progress 
+corollaries from \cite{Greenberg11}:
+%
+\begin{itemize}
+\item{\textbf{Preservation: }} 
+  If $\hastype{\emptyset}{e}{\tau}$ 
+  and $\tx{e} \longrightarrow e'$ 
+  then $\hastypeH{\emptyset}{e'}{\tx{\tau}}$
+
+\item{\textbf{Progress: }}
+  If $\hastype{\emptyset}{e}{\tau}$, then either
+  $\tx{e} \longrightarrow e'$ or 
+  $\tx{e}$ is a value.
+\end{itemize}
+%
+Note that, in a contract calculus like \conlan, subsumption is encoded
+as a \emph{upcast}. However, if subtyping relation can be statically 
+guaranteed (as is done by our conservative SMT based subtyping) 
+then the upcast is equivalent to the identity function and can 
+be eliminated. Hence, \conlan terms $\tx{e}$ translated from well-typed 
+\corelan terms $e$ have no casts.
+
+\subsection{Refinement Inference}\label{sec:infer}
+
+Our design of abstract refinements makes it particularly easy to 
+perform type inference via Liquid typing, which is crucial for
+making the system usable by eliminating the tedium of instantiating 
+refinement parameters all over the code. (With value-dependent 
+refinements, one cannot simply use, say, unification to determine
+the appropriate instantations, as is done for classical type systems.)
+We briefly recall how Liquid types work, and sketch how they are 
+extended to infer refinement instantiations.
+
+\mypara{Liquid Types} 
+The Liquid Types method infers refinements in three steps. 
+%
+First, we create refinement \emph{templates} for the unknown, 
+to-be-inferred refinement types. The \emph{shape} of the template 
+is determined by the underlying (non-refined) type it corresponds to, 
+which can be determined from the language's underlying (non-refined) 
+type system. 
+The template is just the shape refined with fresh refinement variables
+$\kappa$ denoting the unknown refinements at each type position. 
+For example, from a type ${\tfun{x}{\tbint}{\tbint}}$ we create 
+the template ${\tfun{x}{\tref{\tbint}{\kappa_x}}{\tref{\tbint}{\kappa}}}$.
+%
+Second, we perform type checking using the templates (in place of the
+unknown types.) Each wellformedness check becomes a wellformedness
+constraint over the templates, and hence over the individual $\kvar$,
+constraining which variables can appear in $\kvar$.
+Each subsumption check becomes a subtyping constraint
+between the templates, which can be further simplified, via syntactic
+subtyping rules, to a logical implication query between the variables
+$\kappa$.
+%
+Third, we solve the resulting system of logical implication constraints
+(which can be cyclic) via abstract interpretation --- in particular,
+monomial predicate abstraction over a set of logical qualifiers
+\cite{Houdini,LiquidPLDI08}. The solution is a map from $\kvar$ to
+conjunctions of qualifiers, which, when plugged back into the templates,
+yields the inferred refinement types.
+
+\mypara{Inferring Refinement Instantiations}
+The key to making abstract refinements practical is a means of 
+synthesizing the appropriate arguments $\reft'$ for each refinement 
+application $\epapp{e}{\reft'}$. 
+Note that for such applications, we can, from $e$, determine the 
+non-refined type of $\reft'$, which is of the form 
+${\tau_1 \rightarrow \ldots \rightarrow \tau_n \rightarrow \tbbool}$.
+Thus, $\reft'$ has the template 
+${\efunt{x_1}{\tau_1}{\ldots \efunt{x_n}{\tau_n}{\kvar}}}$
+where $\kvar$ is a fresh, unknown refinement variable that 
+must be solved to a boolean valued expression over $x_1,\ldots,x_n$.
+Thus, we generate a \emph{wellformedness} constraint 
+${\isWellFormed{x_1:\tau_1, \ldots, x_n:\tau_n}{\kvar}}$
+and carry out typechecking with template, which, as before, yields
+implication constraints over $\kvar$, which can, as before, be 
+solved via predicate abstraction.
+Finally, in each refinement template, we replace each $\kvar$ with its
+solution $e_\kvar$ to get the inferred refinement instantiations.
+
+%%To infer appropabstract refinements we used the liquid type variables
+%%$\kappa$ with explicit arguments to avoid inferring function 
+%%expressions:
+%%To infer an expression to replace a predicate of type 
+%%$\listOf{x_i:\tau_i; \tau}$ in an environment $\Gamma$, 
+%%we create a fresh liquid variable $\kappa$ on $\tau$ which is
+%%wellformed in the environment $\Gamma$ extended with the bindings
+%%\listOf{x_i:\tau_i}.
+%%When $\kvar$ is solved via predicate abstraction to an expression 
+%%$e_\kvar$, we simply replace $\kvar$ with 
+%%the set as the inferred expression 
+%%$e =\efun{x_1}{\dots\efun{x_n}{\efun{v}{e_\kappa}}}$.
+%add a refinement variable in place of expressions. 
+%\mypara{Constants}\jhala{constant-refinements and soundness guarantees?}
+%%TODO: 
+%%[SKIP] add paragraph on constants to opsem
+%%[SKIP] redefine \reft to r? (to emphasize not arbitrary expression?)
+

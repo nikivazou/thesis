@@ -1,0 +1,202 @@
+\usepackage{color}
+\usepackage{textcomp}
+\newcommand\highlight[2]{{\setlength\fboxsep{1pt}\colorbox{#1}{#2}}}
+
+
+%\def\NV{\highlight{colorNV}}
+\definecolor{colorNV}{rgb}{1,0.8,1}
+
+\providecommand{\dbrkts}[1]{[\![#1]\!]}
+
+\newenvironment{grammar}{\csname align*\endcsname}{\csname endalign*\endcsname}
+\newcommand\grammardef[2]{\ensuremath{#1\ \text{::}&\text{=} && \text{\textit{#2}}}\\}
+\newcommand\grammardefnoalt[3]{\ensuremath{#1\ \text{::}&\text{=} #2 && \text{\textit{#3}}}\\}
+\newcommand\grammardefbare[2]{\ensuremath{#1\ \ & && \text{\textit{#2}}}\\}
+\newcommand\grammaralt[2]{\ensuremath{&\mid #1 && \text{#2}}\\}
+
+
+\newcommand\phide[1]{}
+\newcommand\lhide[1]{}
+\newcommand\hide[1]{}
+
+\newcommand\rulename[1]{\textsc{#1}\xspace}
+
+\newcommand\hastype[3]{\ensuremath{#1 \vdash #2 : #3}}
+\newcommand\eval[2]{\ensuremath{#1 \hookrightarrow #2 }}
+
+
+%predicate type
+\newcommand\predty{\ensuremath{t}}
+
+
+%basic
+\newcommand\vref{\ensuremath{v}}
+\newcommand\tyDef[1]{\ensuremath{\mathbb{#1}}}
+\newcommand\tyDefArg[2]{\ensuremath{\tyDef{#1}\left(\tyDef{#2}\right)}}
+\newcommand\nhaskell[1]{\mathsf{#1}}
+
+
+%rule names
+\newcommand\tfunction{\rulename{T-Fun}}
+\newcommand\tapp{\rulename{T-App}}
+\newcommand\tsub{\rulename{T-Sub}}
+\newcommand\tconst{\rulename{T-Const}}
+\newcommand\tinst{\rulename{T-Inst}}
+\newcommand\tgen{\rulename{T-Gen}}
+\newcommand\tpinst{\rulename{T-PInst}}
+\newcommand\tpgen{\rulename{T-PGen}}
+\newcommand\tcase{\rulename{T-Case}}
+\newcommand\tbase{\rulename{T-Var-Base}}
+\newcommand\tvariable{\rulename{T-Var}}
+
+
+\newcommand\wsEmp{\rulename{WS-Empty}}
+\newcommand\wsExt{\rulename{WS-Ext}}
+\newcommand\wsGxt{\rulename{WS-Gxt}}
+
+\newcommand\wstEmp{\rulename{WTS-Empty}}
+\newcommand\wstExt{\rulename{WTS-Ext}}
+\newcommand\wstGxt{\rulename{WTS-Gxt}}
+
+\newcommand\wtTrue{\rulename{WF-True}}
+\newcommand\wtRVApp{\rulename{WF-RApp}}
+\newcommand\wtVar{\rulename{WF-Var}}
+\newcommand\wtBase{\rulename{WF-Base}}
+\newcommand\wtFun{\rulename{WF-Fun}}
+\newcommand\wtApp{\rulename{WF-App}}
+\newcommand\wtPred{\rulename{WF-Abs-$\rvar$}}
+\newcommand\wtPoly{\rulename{WF-Abs-$\alpha$}}
+
+\newcommand\tdsubBase{$\subt$\rulename{-Dec-Base}}
+\newcommand\tsubBase {$\subt$\rulename{-Base}}
+\newcommand\tsubFun  {$\subt$\rulename{-Fun}}
+\newcommand\tsubVar  {$\subt$\rulename{-Var}}
+\newcommand\tsubApp  {$\subt$\rulename{-App}}
+\newcommand\tsubClass{$\subt$\rulename{-Class}}
+\newcommand\tsubPred {$\subt$\rulename{-RVar}}
+\newcommand\tsubPoly {$\subt$\rulename{-Poly}}
+
+
+\def\subt{\preceq}
+
+
+\newcommand\hasType[4]{\ensuremath{#1 \vdash_{#2} #3 : #4 }}
+\newcommand\hasTypeP[4]{\ensuremath{#1 \vdash #2 : #3 \mid #4 }}
+\newcommand\penv{\ensuremath{\Gamma}}
+\newcommand\isSubType[3]{\ensuremath{#1 \vdash \subtype{#2}{#3}}}
+\newcommand\subtype[2]{\ensuremath{#1 \subt #2}}
+\newcommand\isWellFormed[2]{\ensuremath{#1 \vdash #2 }}
+\newcommand\isWellFormedP[3]{\ensuremath{#1, #2 \vdash #3 }}
+\newcommand\meet[2]{\ensuremath{\text{meet} \left( {#1}, {#2} \right)}}
+\newcommand\strengthen[2]{\ensuremath{\text{strengthen} \left( {#1}, {#2} \right)}}
+\newcommand\shape[1]{\ensuremath{\text{shape} \left( {#1} \right)}}
+\newcommand\shapep[1]{\ensuremath{\text{shapep} \left( {#1} \right)}}
+
+\newcommand\isSub[3]{\ensuremath{{#1}\vdash {#2}<:{#3}}}
+%\newcommand\eval[2]{\ensuremath{{#1}\looparrowright {#2}}}
+%\newcommand\eval[2]{\ensuremath{{#1}\hookrightarrow {#2}}}
+
+\newcommand\hastypeEmp[2]{\hastype{\emptyset}{#1}{#2}}
+\newcommand\isSubEmp[2]{\isSub{\emptyset}{#1}{#2}}
+
+
+\newcommand\sch[1]{\ensuremath{\texttt{Schema}\left(#1\right)}}
+\newcommand\fv[1]{\ensuremath{\texttt{FreeVars}\left(#1\right)}}
+
+
+
+%expressions
+\newcommand\etabs[2]{\ensuremath{\Lambda #1 . #2}}
+\newcommand\epabs[3]{\ensuremath{\Lambda {#1:#2} . #3}}
+
+\newcommand\efunt[3]{\ensuremath{\lambda {#1:#2}. #3}}
+\newcommand\efunbar[2]{\ensuremath{\lambda \overline{#1} . #2}}
+%\newcommand\efun[2]{\ensuremath{\lambda #1 . #2}}
+\newcommand\eapp[2]{\ensuremath{{#1} \ {#2}}}
+\newcommand\etapp[2]{\ensuremath{{#1} \left[ {#2}\right]}}
+\newcommand\epapp[2]{\ensuremath{{#1} \left[ #2\right]}}
+
+
+\newcommand\elam[2]{\efun{#1}{#2}}
+\newcommand\eplam[2]{\ensuremath{\epabs{#1}{#2}}}
+\newcommand\etlam[2]{\ensuremath{\etabs{#1}{#2}}}
+
+\newcommand\elet[3]{\ensuremath{\nhaskell{let} \ #1 = #2 \ \nhaskell{in} \ #3}}
+\newcommand\eletrec[3]{\ensuremath{\nhaskell{let rec} \ #1 = #2 \ \nhaskell{in} \ #3}}
+\newcommand\ecase[4]{\ensuremath{\nhaskell{case} \ (#1 = #2) \ \nhaskell{of} \ \mid_i  #3 \ \rightarrow \ #4}}
+
+%translation
+
+\newcommand\tx[1]{\ensuremath{\langle\!| #1 |\!\rangle}}
+\newcommand\txinv[1]{\ensuremath{\langle| #1 |\rangle^{-1}}}
+%%\newcommand\tx[1]{\ensuremath{\text{tx}(#1)}}
+%%\newcommand\txinv[1]{\ensuremath{\text{tx}^{-1}(#1)}}
+\newcommand\isWellFormedH[2]{\ensuremath{\tx{#1} \vdash_H \tx{#2}}}
+\newcommand\isSubTypeH[3]{\ensuremath{\tx{#1} \vdash_H {\tx{#2}} <: {\tx{#3}}}}
+\newcommand\hastypeH[3]{\ensuremath{#1 \vdash_H #2 : #3}}
+
+
+
+
+%types
+\newcommand\conlan{\ensuremath{\mathrm{F_H}}\xspace}
+\newcommand\corelan{$\lambda_{P}$\xspace}
+\newcommand\corelanm{$\lambda_{LP}$'\xspace}
+
+\newcommand{\reft}{\ensuremath{e}\xspace}
+\newcommand{\areft}{\ensuremath{p}\xspace}
+\newcommand\rvapp[2]{\ensuremath{{#1 \ \overline{#2}}}} 
+\newcommand\tref[2]{\ensuremath{\left\lbrace \vref : #1\mid #2\right\rbrace}}
+\newcommand{\tpp}[2]{{#1 \langle #2 \rangle}}
+\newcommand\tpref[3]{\tref{\tpp{#1}{#2}}{#3}}
+
+\newcommand\tbint{\ensuremath{\texttt{int}}\xspace}
+\newcommand\tbbool{\ensuremath{\texttt{bool}}\xspace}
+\newcommand\tc[1]{\ensuremath{tc\left(#1\right)}}
+\newcommand\tfun[3]{\ensuremath{{(#1:#2)} \rightarrow #3}}
+\newcommand\tcfun[2]{\ensuremath{{#1 \rightarrow #2}}}
+\newcommand\ptype[1]{\tcfun{#1}{\tbbool}}
+\newcommand\rpinst[3]{\ensuremath{{#1}[{#2} \vartriangleright {#3}]}}
+\newcommand\rpapply[5]{\ensuremath{\mathsf{Apply}(#1,#2,#3,#4,#5)}}
+
+
+
+\newcommand\trfun[4]{\ensuremath{\tref{\tfun{#1}{#2}{#3}}{#4}}}
+\newcommand\trfuntop[3]{\ensuremath{#1 : #2 \rightarrow #3}}
+\newcommand\tpabs[3]{\ensuremath{\forall #1 : #2 . #3}}
+\newcommand\ttabs[2]{\ensuremath{\forall #1 . #2}}
+
+
+\newcommand\tbool{\tbbool}
+\newcommand\tvar[2]{\tref{#1}{#2}}
+\newcommand\tcon[4]{\ensuremath{\tref{\nhaskell{#1} \ #3 \ #4}{#2}}}
+\newcommand\tclass[2]{\ensuremath{\nhaskell{#1} \ #2}}
+\newcommand\tforallPr[2]{\ensuremath{\forall #1 . #2}}
+\newcommand\tforallTy[2]{\ttabs{#1}{#2}}
+
+
+\newcommand\pdVar[3]{\ensuremath{#1}} %it seems that the pred var is just a var...
+%\newcommand\pdVar[3]{\ensuremath{#1 : #2 \left\langle #3 \right\rangle }}
+
+\newcommand\unifyTypes[3]{\ensuremath{ \left\langle {#1} , {#2} \right\rangle \models {#3}}}
+\newcommand\refa[3]{\ensuremath{ \left\lbrace #1 : #2 \mid #3 \right\rbrace }}
+\newcommand\sub[2]{\ensuremath{ \left[ #1 \mapsto #2 \right] }}
+\newcommand\subP[2]{\ensuremath{\left[#1\mapsto_\star #2\right]}}
+\newcommand\freshP[1]{\ensuremath{\text{fresh}\ \left( #1\right)}}
+\newcommand\freshT[1]{\ensuremath{\text{fresh}\ \left( #1\right)}}
+\newcommand\subT[2]{\ensuremath{\sub{#1}{#2}}}
+
+
+\newcommand\pdTy{\ensuremath{{T_P}}}
+\newcommand\lTy{\ensuremath{\hat{T}}}
+\newcommand\dTy{\ensuremath{T}}
+
+\newcommand\appTy[2]{\ensuremath{\parAny{#1} \left( #2 \right)  }}
+\newcommand\parTy[2]{\ensuremath{\parAny{#1} \left( \parAny{#2} \right)  }}
+\newcommand\parAny[1]{\ensuremath{\mathbb{#1}}}
+\newcommand\listOf[1]{\ensuremath{\left\langle #1 \right\rangle}}
+
+
+\newcommand\tyConPs[1]{\ensuremath{\text{predicates} \left( #1 \right)}}
+\newcommand\valid[2]{\ensuremath{#1 \Rightarrow #2}}
+\newcommand\inter[1]{\ensuremath{\dbrkts{#1}}}

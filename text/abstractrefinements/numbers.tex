@@ -1,0 +1,101 @@
+
+\def\benchToy{\texttt{Micro}}            
+\def\benchFold{\texttt{Folds}}          
+\def\benchVec{\texttt{Vector}}         
+\def\benchSort{\texttt{ListSort}}       
+\def\benchGsort{\texttt{Data.List.sort}} 
+\def\benchSplay{\texttt{Data.Set.Splay}} 
+\def\benchMap{\texttt{Data.Map.Base}}  
+
+
+\def\locToy{32}  
+\def\specToy{19}    
+\def\cspecToy{948}    
+\def\nspecToy{9}    
+\def\annToy{4}    
+\def\cannToy{115}    
+\def\nannToy{1}    
+\def\modToy{TBD}    
+\def\timeToy{2}    
+
+\def\locFold{0}  
+\def\specFold{0}  
+\def\annFold{0}  
+\def\modFold{TBD}  
+\def\timeFold{0}  
+
+\def\locVec{56}   
+\def\specVec{56}   
+\def\nspecVec{14}   
+\def\cspecVec{2203}   
+\def\annVec{2}  
+\def\cannVec{0}  
+\def\nannVec{0}  
+\def\modVec{TBD}  
+\def\timeVec{14}
+
+%ListSort.hs
+\def\locSort{29}  
+\def\specSort{4}  
+\def\cspecSort{193}  
+\def\nspecSort{4}  
+\def\annSort{1}  
+\def\cannSort{47}  
+\def\nannSort{1}  
+\def\modSort{TBD}  
+\def\timeSort{3}  
+
+%GhcListSort.hs
+\def\locGsort{71} 
+\def\specGsort{3}%lines
+\def\cspecGsort{142}%characters
+\def\nspecGsort{3}%number
+\def\annGsort{1}
+\def\cannGsort{47}
+\def\nannGsort{1}
+\def\modGsort{TBD}
+\def\timeGsort{8} 
+
+%Splay.hs
+\def\locSplay{136} 
+\def\specSplay{15} 
+\def\nspecSplay{15} 
+\def\cspecSplay{617} 
+\def\annSplay{11} 
+\def\nannSplay{6} 
+\def\cannSplay{590} 
+\def\modSplay{TBD} 
+\def\timeSplay{15} 
+
+\def\locMap{1399}   
+\def\specMap{119}   
+\def\cspecMap{10830}   
+\def\nspecMap{86}   
+\def\annMap{31}   
+\def\cannMap{761}   
+\def\nannMap{7}   
+\def\modMap{TBD}   
+\def\timeMap{235}
+
+%total
+\edef\locTot{\number\numexpr
+  \locToy + \locFold + \locVec + 
+  \locGsort + \locSort + \locSplay + \locMap 
+  \relax}   
+
+\edef\specTot{\number\numexpr
+  \specToy + \specFold + \specVec + 
+  \specGsort + \specSort + \specSplay + \specMap 
+  \relax}   
+
+\edef\annTot{\number\numexpr
+  \annToy + \annFold + \annVec + 
+  \annGsort + \annSort + \annSplay + \annMap 
+  \relax}   
+
+\def\modTot{0}   
+
+\edef\timeTot{\number\numexpr
+  \timeToy + \timeFold + \timeVec + 
+  \timeGsort + \timeSort + \timeSplay + \timeMap 
+  \relax}   

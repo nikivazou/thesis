@@ -1,0 +1,191 @@
+\begin{figure}[ht!]
+\judgementHead{Well-Formedness}{\isWellFormed{\Gamma}{\sigma}}
+
+$$\begin{array}{ccc}
+\inference
+  {}
+  {\isWellFormed{\Gamma}{\true(\vref)}}
+  [\wtTrue]
+&
+\quad
+&
+\inference
+    {\isWellFormed{\Gamma}{\areft(\vref)} && 
+     \hastype{\Gamma}{\rvapp{\rvar}{e} \ \vref}{\tbbool}
+    }
+    {\isWellFormed{\Gamma}{(\areft \wedge \rvapp{\rvar}{e})(\vref)}}
+    [\wtRVApp]
+\end{array}$$
+
+$$\inference
+    {\hastype{\Gamma, \vref:b}{\reft}{\tbbool} \quad 
+%     \isWellFormed{\Gamma, \vref:b}{\areft(\vref)}
+     \hastype{\Gamma, \vref:b}{\areft(\vref)}{\tbbool}
+    }
+    {\isWellFormed{\Gamma}{\tpref{b}{\areft}{\reft}}}
+    [\wtBase]
+$$
+
+$$
+\inference
+    {
+	%\hastype{\Gamma, v:\tfun{x}{\tau_x}{\tau}}{e}{\tbbool} &&
+	\hastype{\Gamma}{\reft}{\tbbool} &&
+    \isWellFormed{\Gamma}{\tau_x} &&
+	\isWellFormed{\Gamma, x:\tau_x}{\tau}
+    }
+    {\isWellFormed{\Gamma}{\trfun{x}{\tau_x}{\tau}{\reft}}}
+    [\wtFun]
+$$
+
+$$\begin{array}{ccc}
+\inference
+  {\isWellFormed{\Gamma, \rvar:\tau}{\sigma}}
+  {\isWellFormed{\Gamma}{\tpabs{\rvar}{\tau}{\sigma}}}
+  [\wtPred]
+&
+\quad
+&
+\inference
+    {\isWellFormed{\Gamma, \alpha}{\sigma}}
+    {\isWellFormed{\Gamma}{\ttabs{\alpha}{\sigma}}}
+    [\wtPoly]
+\end{array}$$
+
+\medskip \judgementHead{Subtyping}{\isSubType{\Gamma}{\sigma_1}{\sigma_2}}
+
+$$
+\inference
+   {\text{SMT-Valid}(\inter{\Gamma} \land \inter{\areft_1\ \vref} \land \inter{\reft_1} 
+                 \Rightarrow \inter{\areft_2\ \vref} \land \inter{\reft_2})}
+   {\isSubType{\Gamma}{\tpref{b}{\areft_1}{\reft_1}}{\tpref{b}{\areft_2}{\reft_2}}}
+   [\tsubBase]
+$$
+
+$$
+\inference
+   {%\text{Valid}(\inter{\Gamma}\land \inter{e_1} \Rightarrow \inter{e_2}) \\
+	\isSubType{\Gamma}{\tau_2}{\tau_1} &
+	\isSubType{\Gamma, x_2:{\tau_2}}{\SUBST{\tau_1'}{x_1}{x_2}}{\tau_2'}	
+   }
+   {\isSubType{\Gamma}
+	  {\trfun{x_1}{\tau_1}{\tau_1'}{\reft_1}}
+	  {\trfun{x_2}{\tau_2}{\tau_2'}{\true}}
+}[\tsubFun]
+$$
+
+
+$$
+\begin{array}{ccc}
+\inference
+   {\isSubType{\Gamma, \rvar:\tau}{\sigma_1}{\sigma_2}}
+   {\isSubType{\Gamma}{\tpabs{\rvar}{\tau}{\sigma_1}}{\tpabs{\rvar}{\tau}{\sigma_2}}}
+   [\tsubPred]
+&
+\quad
+&
+\inference
+   {\isSubType{\Gamma}{\sigma_1}{\sigma_2}}
+   {\isSubType{\Gamma}{\ttabs{\alpha}{\sigma_1}}{\ttabs{\alpha}{\sigma_2}}}
+   [\tsubPoly]
+\end{array}
+$$
+
+\medskip \judgementHead{Type Checking}{$\hastype{\Gamma}{e}{\sigma}$}
+
+$$\begin{array}{cc}
+
+\inference
+  {  \hastype{\Gamma}{e}{\sigma_2} && \isSubType{\Gamma}{\sigma_2}{\sigma_1} 
+  && \isWellFormed{\Gamma}{\sigma_1}
+  }
+  {\hastype{\Gamma}{e}{\sigma_1}}
+  [\tsub]
+&
+
+\inference
+  {}
+  {\hastype{\Gamma}{c}{\tc{c}}}
+  [\tconst]
+
+%\end{array}$$
+%$$\begin{array}{ccc}
+
+\\[0.2in]
+
+\inference
+  {x: \tpref{b}{\areft}{\reft} \in \Gamma}
+  {\hastype{\Gamma}{x}{\tpref{b}{\areft}{e \land \vref = x}}}
+  [\tbase]
+
+&
+
+\inference
+  {x:\tau \in \Gamma}
+  {\hastype{\Gamma}{x}{\tau}} 
+  [\tvariable]
+%\end{array}$$
+%$$\begin{array}{ccc}
+
+\\[0.2in]
+
+\inference
+   {\hastype{\Gamma, x:\tau_x}{e}{\tau} 
+    && \isWellFormed{\Gamma}{\tau_x}
+   }
+   {\hastype{\Gamma}{\efunt{x}{\tau_x}{e}}{\tfun{x}{\tau_x}{\tau}}}
+   [\tfunction]
+
+& 
+
+\label{tapp}
+\inference
+   {\hastype{\Gamma}{e_1}{\tfun{x}{\tau_x}{\tau}} 
+   &&  \hastype{\Gamma}{e_2}{\tau_x}
+   }
+   {\hastype{\Gamma}{\eapp{e_1}{e_2}}{\SUBST{\tau}{x}{e_2}}}
+   [\tapp]
+
+\\[0.2in]
+
+\inference
+  {\hastype{\Gamma, \alpha}{e}{\sigma}}
+  {\hastype{\Gamma}{\etabs{\alpha}{e}}{\ttabs{\alpha}{\sigma}}}
+  [\tgen]
+
+&  
+\inference
+  {\hastype{\Gamma}{e}{\ttabs{\alpha}{\sigma}} && 
+   \isWellFormed{\Gamma}{\tau}
+  }
+  {\hastype{\Gamma}{\etapp{e}{\tau}}{\SUBST{\sigma}{\alpha}{\tau}}}
+  [\tinst]
+
+\\[0.2in]
+
+\inference
+    {\hastype{\Gamma, \rvar:\tau}{e}{\sigma} &&
+     \isWellFormed{\Gamma}{\tau} 
+     % \tau \mbox{ is non-refined } 
+     %\isWellFormed{\Gamma}{\tpabs{p}{\tau}{\pi}} && 
+     %p \notin \fv{e}
+    }
+    {\hastype{\Gamma}{\epabs{\rvar}{\tau}{e}}{\tpabs{\rvar}{\tau}{\sigma}}}
+    [\tpgen]
+&  
+
+\inference
+    {\hastype{\Gamma}{e}{\tpabs{\rvar}{\tau}{\sigma}} && 
+     \hastype{\Gamma}{\efunbar{x:\tau_x}{\reft'}}{\tau}
+    }
+    {\hastype{\Gamma}
+             {\epapp{e}{\efunbar{x:\tau_x}{\reft'}}}
+             {\rpinst{\sigma}{\rvar}{\efunbar{x:\tau_x}{\reft'}}}
+     %        {\sigma\sub{\eapp{p}{\overline{e_p}}}{\eapp{\reft'}{\overline{e_p}}}}
+    }
+    [\tpinst]
+\end{array}$$
+\caption{\textbf{Static Semantics: Well-formedness, Subtyping and Type Checking}}
+\label{fig:rules}
+\end{figure}
+
