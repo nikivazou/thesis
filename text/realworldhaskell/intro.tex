@@ -1,0 +1,75 @@
+\section{Introduction}\label{sec:introduction}
+
+Refinement types enable specification of complex invariants 
+by extending the base type system with \emph{refinement predicates} 
+drawn from decidable logics. For example,
+%
+\begin{code}
+  type Nat = {v:Int | 0 <= v}
+  type Pos = {v:Int | 0 <  v}
+\end{code}
+%
+are refinements of the basic type @Int@ with a logical predicate 
+that states the \emph{values} @v@ being described must be 
+\emph{non-negative} and \emph{postive} respectively. 
+%
+We can specify \emph{contracts} of functions by refining function types. 
+For example, the contract for @div@
+%
+\begin{code}
+  div :: n:Nat -> d:Pos -> {v:Nat | v <= n}
+\end{code}
+%
+states that @div@ \emph{requires} a non-negative dividend @n@ and a positive
+divisor @d@, and \emph{ensures} that the result is less than the dividend.
+%
+If a program (refinement) type checks, we can be sure that @div@ will never 
+throw a divide-by-zero exception.
+
+What are refinement types good for?
+%
+While there are several papers describing the \emph{theory} behind  
+refinement types 
+~\cite{Zenger97,pfenningxi98,ORS92,flanagan06,GordonTOPLAS2011,fstar,LiquidPLDI08}, 
+even for \toolname~\cite{LiquidICFP14}, there is rather less 
+literature on how the approach can be \emph{applied} to large, real-world
+codes. In particular, we try to answer the following questions:
+%
+\begin{enumerate}
+  \item What properties can be specified with refinement types?
+  \item What inputs are provided and what feedback is received?
+  \item What is the process for modularly verifying a library?
+  \item What are the limitations of refinement types? 
+\end{enumerate}
+
+In this paper, we attempt to investigate these questions, by using the
+refinement type checker \toolname, to specify and verify a variety of 
+properties of over 10,000 lines of Haskell code from various popular 
+libraries, including @containers@, \hbox{@hscolor@,} @bytestring@, @text@, 
+@vector-algorithms@ and @xmonad@. 
+%
+First (\S~\ref{sec:liquidhaskell}), 
+we present a high-level overview of \toolname, through a tour 
+of its features.
+%
+Second, we present a qualitative discussion of the kinds of properties
+that can be checked -- ranging from generic application independent 
+criteria like totality (\S~\ref{sec:totality}), 
+\ie that a function is defined for all inputs (of a given type),  
+and termination, 
+(\S~\ref{sec:termination}) 
+\ie that a recursive function cannot diverge,
+to application specific concerns like memory safety (\S~\ref{sec:memory-safety}) 
+and functional correctness properties (\S~\ref{sec:structures}).
+%
+Finally (\S~\ref{sec:evaluation}), we present a quantitative evaluation of the approach, with a view
+towards measuring the efficiency and programmer's effort required for
+verification, 
+and we discuss various limitations of the approach which could
+provide avenues for further work.
+
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End: 

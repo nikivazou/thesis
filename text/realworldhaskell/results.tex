@@ -1,0 +1,42 @@
+\begin{table*}[ht!]
+\begin{scriptsize}
+\centering
+\begin{tabular}{|l|r|rrr|rrr|r|}
+\hline
+\textbf{Module} &\textbf{Version}           & \textbf{LOC} & \textbf{Mod} & \textbf{Fun} & \textbf{Specs} & \textbf{Annot} & \textbf{Qualif} & \textbf{Time (s)}\\
+\hline\hline
+\textsc{GHC.List} &      {7.4.1}    & 309          & 1            & 66           & 29 / 38        & 6 / 6          & 0 / 0           & 15 \\
+\textsc{Data.List} &    {4.5.1.0}    & 504          & 1            & 97           & 15 / 26        & 6 / 6          & 3 / 3           & 11 \\
+\hline
+\textsc{Data.Map.Base} &   {0.5.0.0} & 1396         & 1            & 180          & 125 / 173      & 13 / 13        & 0 / 0           & 174 \\
+\hline
+\textsc{Data.Set.Splay} &  {0.1.1} & 149          & 1            & 35           & 27 / 37        & 5 / 5          & 0 / 0           & 27 \\
+\hline
+\textsc{HsColour} &{1.20.0.0}          & 1047         & 16           & 234          & 19 / 40        & 5 / 5          & 1 / 1           & 196 \\
+\hline
+\textsc{XMonad.StackSet} & {0.11}  & 256          & 1            & 106          & 74 / 213       & 3 / 3          & 4 / 4           & 27 \\
+\hline
+\textsc{ByteString} &    {0.9.2.1}   & 3505         & 8            & 569          & 307 / 465      & 55 / 55        & 47 / 124        & 294 \\
+\hline
+\textsc{Text}        &    {0.11.2.3}  & 3128         & 17           & 493          & 305 / 717      & 52 / 54        & 49 / 97         & 499 \\
+\hline
+\textsc{Vector-Algorithms}& {0.5.4.2} & 1218         & 10           & 99           & 76 / 266       & 9 / 9          & 13 / 13         & 89 \\
+\hline
+\textbf{Total}            & & 11512        & 56           & 1879         & 977 / 1975     & 154 / 156      & 117 / 242       & 1336 \\
+\hline
+\end{tabular}
+\caption{\small A quantitative evaluation of our experiments. 
+  \textbf{Version} is version of the checked library.
+  \textbf{LOC} is the number of non-comment lines of source code as reported by \texttt{sloccount}.
+  \textbf{Mod}    is the number of modules in the benchmark and \textbf{Fun} is the number
+                  of functions.
+  \textbf{Specs}  is the number (/ line-count) of type specifications and aliases,
+                  data declarations, and measures provided.
+  \textbf{Annot}  is the number (/ line-count) of other annotations provided,
+                  these include invariants and hints for
+                  the termination checker.
+  \textbf{Qualif} is the number (/ line-count) of provided qualifiers.
+  \textbf{Time (s)}   is the time, in seconds, required to run \toolname. }
+\label{table:results}
+\end{scriptsize}
+\end{table*}

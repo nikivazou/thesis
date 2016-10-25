@@ -1,0 +1,275 @@
+\section{Totality}\label{sec:totality}
+%% OK \NV{DONE intro (R1)
+%% OK Sections 3 and 4 cover "totality" and "termination" respectively. It would be helpful to explain these terms at the start of section 3, so that the two are distinguished appropriately.
+%% OK }
+Well typed Haskell code can go very wrong:
+%
+\begin{code}
+  *** Exception: Prelude.head: empty list
+\end{code}
+%
+As our first application, let us see how to use 
+\toolname to statically guarantee the absence
+of such exceptions, \ie, to prove various 
+functions \emph{total}.
+
+\subsection{Specifying Totality}
+
+First, let us see how to specify the notion of
+totality inside \toolname. Consider the source of 
+the above exception:
+%
+\begin{code}
+  head :: [a] -> a
+  head (x:_) = x
+\end{code}
+%
+Most of the work towards totality checking is done by 
+the translation to GHC's Core, in which every function 
+\emph{is} total, but may explicitly call an \emph{error} 
+function that takes as input a string that describes the 
+source of the pattern-match failure and throws an exception.
+%
+For example @head@ is translated into
+%
+\begin{code}
+  head d = case d of 
+             x:xs -> x
+             []   -> patError "head"
+\end{code}
+
+Since every core function is total, but may explicitly 
+call error functions, to prove that the source function is 
+total, it suffices to prove that @patError@ 
+will \emph{never} be called.
+%
+We can specify this requirement by giving the error 
+functions a @false@ pre-condition:
+%
+\begin{code}
+  patError :: {v:String | false } -> a
+\end{code}
+%
+The pre-condition states that the input type is \emph{uninhabited}
+and so an expression containing a call to @patError@ will only type 
+check if the call is \emph{dead code}.
+
+
+\subsection{Verifying Totality}
+
+The (core) definition of @head@ does not typecheck
+as is; but requires a pre-condition that states that the function
+is only called with non-empty lists. Formally, we do so by 
+defining the alias
+%
+\begin{code}
+  predicate NonEmp X = 0 < len X 
+\end{code}
+%
+and then stipulating that 
+%
+\begin{code}
+  head :: {v : [a] | NonEmp v} -> a
+\end{code}
+%
+To verify the (core) definition of @head@, \toolname uses the above signature
+to check the body in an environment
+%
+\begin{code}
+  d :: {0 < len d}
+\end{code}
+%
+When @d@ is matched with @[]@, the environment is 
+strengthened with the corresponding refinement from 
+the definition of @len@, \ie,
+%
+\begin{code}
+  d :: {0 < (len d) && (len d) = 0}
+\end{code}
+%
+Since the formula above is a contradiction, \toolname concludes that the
+call to @patError@ is dead code, and thereby verifies the totality 
+of @head@. Of course, now we have pushed the burden of proof onto clients
+of @head@ -- at each such site, \toolname will check that the argument 
+passed in is indeed a @NonEmp@ list, and if it successfully does so, then
+we, at any uses of @head@, can rest assured that @head@ will never throw an 
+exception. 
+
+\mypara{Refinements and Totality} 
+While the @head@ example is quite simple, in general, refinements make
+it very easy to prove totality in complex situations, where we must track
+dependencies between inputs and outputs. For example, consider the @risers@
+function from \cite{catch}:
+%
+\begin{code}
+  risers []       = []
+  risers [x]      = [[x]]
+  risers (x:y:zs) 
+    | x <= y      = (x:s) : ss 
+    | otherwise   = [x] : (s:ss) 
+    where 
+      s:ss    = risers (y:etc)
+\end{code}
+%
+The pattern match on the last line is partial; its core translation is
+%
+\begin{code}
+  let (s, ss) = case risers (y:etc) of
+                  s:ss -> (s, ss)
+                  []   -> patError "..."
+\end{code}
+%
+What if @risers@ returns an empty list? 
+Indeed, @risers@ \emph{does}, on occasion, return an empty list per its
+first equation. However, on close inspection, it turns out that 
+\emph{if} the input is non-empty, \emph{then} the output is also
+non-empty. Happily, we can specify this as:
+%
+\begin{code}
+  risers :: l:_ -> {v:_ | NonEmp l => NonEmp v} 
+\end{code}
+
+\toolname verifies that @risers@ meets the above specification, 
+and hence that the @patError@ is dead code as at that 
+site, the scrutinee is obtained from calling @risers@ with a
+@NonEmp@ list.
+
+\mypara{Non-Emptiness via Measures}
+Instead of describing non-emptiness indirectly using @len@, a 
+user could a special measure:
+%
+\begin{code}
+  measure nonEmp  :: [a] -> Prop
+  nonEmp (x:xs)   = true
+  nonEmp []       = false
+
+  predicate NonEmp X = nonEmp X
+\end{code}
+%
+After which, verification would proceed analagous to the above.
+
+\mypara{Total Totality Checking} 
+@patError@ is one of many possible errors thrown by non-total functions.  
+@Control.Exception.Base@ has several others (@recSelError@, @irrefutPatError@, \etc) which serve the purpose of making 
+core translations total.
+%
+Rather than hunt down and specify @false@ preconditions one
+by one, the user may automatically turn on totality checking 
+by invoking \toolname with the \cmdtotality command line option, 
+at which point the tool systematically checks that all the above 
+functions are indeed dead code, and hence, that all definitions are total.
+
+\subsection{Case Studies}
+
+We verified totality of two libraries: \lbhscolour and \lbmap, earlier versions
+of which had previously been proven total by \texttt{catch}~\citep{catch}.
+
+\mypara{\lbmap} 
+is a widely used library for (immutable) key-value maps, implemented
+as balanced binary search trees.
+Totality verification of \lbmap was quite straightforward.
+We had previously verified termination and the crucial 
+binary search invariant~\citep{vazou13}. To verify 
+totality it sufficed to simply re-run verification with
+the \cmdtotality argument.
+%
+All the important specifications were already captured by the types, 
+and no additional changes were needed to prove totality.
+%
+%% \RJ{was it trivially total? i.e. is it total if you strip out all refinements
+%% from specs?}
+%% \NV{No, it fails in 6 functions all of which can trivially be reasoned to be total}
+%% \NV{hedgeUnion, hedgeDiff, hedgeMerge, submap', join, merge}
+%% \NV{The interesting story is that during verification \emph{we accidentally modified}
+%% turn a function to partial, see my commit 041f1f0fea4d34ee41f50dbf7ce43e3c084c2743}
+%
+
+This case study illustrates an advantage of \toolname over specialized provers 
+(\eg, \texttt{catch}~\citep{catch}), namely it can be used to prove totality, termination and
+functional correctness at the same time, facilitating a nice reuse of
+specifications for multiple tasks.
+
+%% DONE \NV{(R3)
+%% DONE Before discussing HsColour, I'd give a brief explanation of what it is.
+%% DONE }
+\mypara{\lbhscolour} is a library for generating syntax-highlighted LATEX and HTML from
+Haskell source files.
+Checking \lbhscolour was not so easy, as in some cases assumptions are used about the 
+structure of the input data:
+%
+For example, @ACSS.splitSrcAndAnnos@ handles an
+input list of @String@s and assumes that whenever
+a specific @String@ (say @breakS@) appears then 
+at least two @String@s (call them @mname@ and @annots@)
+follow it in the list.
+Thus, for a list @ls@ that starts with @breakS@ 
+the irrefutable pattern  @(_:mname:annots) = ls@
+should be total.
+%
+Currently it is somewhat cumbersome to specify such 
+properties, and these are interesting avenues for future work.
+%
+Thus to prove totality, we added a dynamic check that 
+validates that the length of the input @ls@ exceeds @2@.
+
+%% measure follows a b c = \case 
+%%   []   -> true
+%%   x:xs -> if x == a then first2 b c xs else follows a b c xs
+%% 
+%% measure first2 b c = \case
+%%   []   -> false
+%%   x:xs -> x == b && first1 c xs
+%% 
+%% measure first1 c = \case
+%%   []   -> false
+%%   x:xs -> x == c
+%% 
+%% Worse, \toolname has no way to express such an invariant: 
+%% \toolname naturally describes invariants that recursively 
+%% hold for every list element and 
+%% reaches its limitations when reasoning about non-recursive
+%% properties.
+
+In other cases assertions were imposed via monadic checks, 
+for example @HsColour.hs@ reads the input arguments and 
+checks their well-formedness using 
+%
+\begin{code}
+  when (length f > 1) $ errorOut "..."
+\end{code}
+%
+Currently \toolname does not support monadic reasoning that 
+allows assuming that @(length f <= 1)@
+holds when executing the action \emph{following} the @when@ check. 
+%
+Finally, code modifications were required to capture properties 
+that currently we do not know how to express with \toolname.
+%
+For example, @trimContext@ checks if there is an element that 
+satisfies @p@ in the list @xs@; if so it defines 
+%
+@ys = dropWhile (not . p) xs@
+%
+and computes @tail ys@.
+%
+By the check we know that @ys@ has at least one element, the 
+one that satisfies @p@, but this is a property that we could 
+not express in \toolname.
+
+%%% \mynote{Bug}
+%%% %
+%%% \RJ{WHY? Seems like a simple GHC CHECK?}
+%%% %
+%%% On the positive side, totality verification revealed a subtle bug:
+%%% %
+%%% The instance @Enum@ of @Highlight@ does not define the @toEnum@ 
+%%% method. In core, this reduces to a call to the error function 
+%%% @noMethodBinding@.
+%%% %
+%%% Even though this totality bug can be tracked by GHC compilation,
+%%% it exposes the strengths of our totality checker.
+
+On the whole, while proving totality can be cumbersome 
+(as in \lbhscolour) it is a nice side benefit of refinement
+type checking, and can sometimes be a fully automatic corollary
+of establishing more interesting safety properties (as in \lbmap).

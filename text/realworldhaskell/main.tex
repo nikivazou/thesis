@@ -1,0 +1,118 @@
+\documentclass{sigplanconf}
+%%% \usepackage[top=1.5cm,bottom=1.5cm,left=2.3cm,right=2cm]{geometry}
+
+\pagestyle{plain}
+\usepackage{times}
+%\usepackage[nocompress]{cite} % AR: comment this out if you wish hyperrefs 
+\usepackage{hyperref}
+
+\usepackage{amsmath,amssymb, latexsym}
+
+\usepackage{amsmath}
+\usepackage{amsthm}
+
+\usepackage{comment}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{mathtools}
+\usepackage{commands}
+\usepackage{liquidHaskell}
+\usepackage[inference]{semantic}
+\usepackage{enumerate}
+%\def\url{}
+\usepackage{xspace}
+\usepackage{epsfig}
+\usepackage{booktabs}
+\usepackage{listings}
+\usepackage{comment}
+\usepackage{ifthen}
+\usepackage{flushend}
+\newcommand\includeBytestring[1]{}
+
+% space at the beginning of an environment:
+\def\@envspa{\hspace{0.3em}}
+\def\@sa{\hspace{-0.2em}}
+\def\@sb{\hspace{0.5em}}
+\def\@sc{\hspace{-0.1em}}
+
+\def\sk{\smallskip}		% space before and after theorems
+
+\input{haskellListings}
+
+\begin{document}
+
+\conferenceinfo{Haskell~'14}{September 6, 2014, Gothenburg, Sweden}
+\copyrightyear{2014}
+\copyrightdata{978-1-4503-3041-1/14/09}
+\doi{2633357.2633366} 
+
+\title{LiquidHaskell: Experience with Refinement Types in the Real World 
+        \thanks{This work was supported by NSF grants 
+          CNS-0964702, CNS-1223850, CCF-1218344, CCF-1018672,
+          and a generous gift from Microsoft Research.
+        }}
+%\title{LiquidHaskell: Liquid Types for Real Haskell Programs} 
+
+\authorinfo{Niki Vazou \and Eric L. Seidel \and Ranjit Jhala}{UC San Diego}{}
+
+\maketitle
+%% CLEAR ENOUH WITH CITATION? \NV{(R2)
+%% CLEAR ENOUH WITH CITATION? make clear what the relationship of this work is to the authors'
+%% CLEAR ENOUH WITH CITATION? related paper appearing in ICFP '14, and what the novelty of this
+%% CLEAR ENOUH WITH CITATION? paper is in comparison to it.  For instance, the evaluation section of
+%% CLEAR ENOUH WITH CITATION? }
+
+%% FIXED \NV{(R3)
+%% FIXED You mention that totality checks are w.r.t. Core.  
+%% FIXED Are errors then also w.r.t. Core?}
+
+%% FIXED \NV{(R2)
+%% FIXED  Although the abstract mentions "a combination of refinement types
+%% FIXED  and SMT solvers", the paper never mentions SMT solvers again
+%% FIXED  except for a brief mention of Z3 in passing on page 9 and in the
+%% FIXED  related work on page 11.
+%% FIXED }
+
+%% LIMITATIONS \NV{(R3) Lessons learned:debugging the (not-so-friendly) SMT output?}
+
+%% LIMITATIONS \NV{(R3)
+%% LIMITATIONS Is there anything you couldn't verify (e.g., libraries that use 
+%% LIMITATIONS non-linear arithmetic or alternating quantifiers in the 
+%% LIMITATIONS specifications?  If not, why? State, average
+%% LIMITATIONS }
+
+%% UNCLEAR \NV{(R4)
+%% UNCLEAR The document is not intended to describe the structure of LH, 
+%% UNCLEAR however many develops with correctness concerns continue to 
+%% UNCLEAR pick and choose their underlying prover carefully.  
+%% UNCLEAR Whether or not the SMT solver is interchangeable 
+%% UNCLEAR interests audiences likely to put LH into practice.
+%% UNCLEAR }
+\input{abstract}
+\input{intro}
+\input{tool}
+\input{totality}
+\input{termination}
+\input{memory-safety}
+\input{structures}
+
+%% \input{xmonad}
+%% \input{redblack}
+
+\input{evaluation}
+%\input{discussion}
+\input{related}
+\input{conclusion}
+\subsection*{Acknowledgements}
+We thank Dimitrios Vytiniotis and Simon Peyton-Jones for inspiring 
+our work on checking totality. 
+Also, we thank Colin S. Gordon and users of \toolname for their feedback
+and bug reports.
+
+{
+\bibliographystyle{plain}
+\bibliography{sw}
+}
+
+
+\end{document}

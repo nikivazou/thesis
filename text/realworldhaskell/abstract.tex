@@ -1,0 +1,39 @@
+\begin{abstract}
+Haskell has many delightful features. 
+%
+Perhaps the one most beloved by its users is its type 
+system that allows developers to specify and verify a
+variety of program properties at compile time. 
+%
+However, many properties, typically those that depend 
+on relationships \emph{between} program values are 
+impossible, or at the very least, cumbersome to encode 
+within the existing type system. 
+%
+Many such properties can be verified using a combination 
+of Refinement Types and external SMT solvers.
+%
+We describe the refinement type checker \toolname, which
+we have used to specify and verify a variety of properties 
+of over 10,000 lines of Haskell code from various popular 
+libraries, including 
+\verb+containers+, 
+\verb+hscolour+, 
+\verb+bytestring+, 
+\verb+text+, 
+\verb+vector-algorithms+ and 
+\verb+xmonad+. 
+%
+First, we present a high-level overview of \toolname, 
+through a tour of its features. 
+%
+Second, we present a qualitative discussion of the kinds 
+of properties that can be checked -- ranging from generic 
+application independent criteria like totality and termination,
+to application specific concerns like memory safety and 
+data structure correctness invariants.
+%
+Finally, we present a quantitative evaluation of the approach, 
+with a view towards measuring the efficiency and programmer effort
+required for verification, and discuss the limitations of the approach. 
+\end{abstract}

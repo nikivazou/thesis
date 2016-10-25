@@ -1,0 +1,232 @@
+Next %, to give a qualitative sense of the kinds of properties analyzed 
+% during the course of our evaluation, 
+we present a brief overview of the verification of \libtext, which 
+is the standard library used for serious unicode text processing. 
+\libtext uses byte arrays and stream fusion to guarantee 
+performance while providing a high-level API.
+In our evaluation of \toolname on \libtext,%~\cite{text},
+we focused on two types of properties: 
+(1) the safety of array index and write operations, and 
+(2) the functional correctness of the top-level API.
+%
+These are both made more interesting by the fact that 
+\libtext internally encodes characters using UTF-16, 
+in which characters are stored in either two or four bytes.
+%
+\libtext is a vast library spanning 39 modules and 5,700 lines of
+code, however we focus on the 17 modules that are relevant
+to the above properties.
+%
+While we have verified exact functional correctness size properties
+for the top-level API, we focus here on the low-level functions 
+and interaction with unicode.
+
+\spara{Arrays and Texts}
+A @Text@ consists of an (immutable) @Array@ of 16-bit words,
+an offset into the @Array@, and a length describing the
+number of @Word16@s in the @Text@.  
+The @Array@ is created and filled using a
+\emph{mutable} @MArray@. 
+All write operations in \libtext are performed on @MArray@s 
+in the @ST@ monad, but they are \emph{frozen} into @Array@s
+before being used by the @Text@ constructor.
+%
+We write a measure denoting the size of an @MArray@ and use
+it to type the write and freeze operations.
+%
+\begin{code}
+  measure malen       :: MArray s -> Int
+  predicate EqLen A MA = alen A = malen MA
+  predicate Ok I A     = 0 <= I < malen A
+  type VO A            = {v:Int| Ok v A} 
+  
+  unsafeWrite  :: m:MArray s
+               -> VO m -> Word16 -> ST s ()
+  unsafeFreeze :: m:MArray s
+               -> ST s {v:Array | EqLen v m}
+\end{code}
+
+\spara{Reasoning about Unicode}
+The function @writeChar@ (abbreviating \texttt{UnsafeChar.unsafeWrite})
+writes a @Char@ into an @MArray@.
+\libtext uses UTF-16 to represent characters internally,
+meaning that every @Char@ will be encoded using two or 
+four bytes (one or two @Word16@s).
+%
+\begin{code}
+  writeChar marr i c
+      | n < 0x10000 = do
+          unsafeWrite marr i (fromIntegral n)
+          return 1
+      | otherwise = do
+          unsafeWrite marr i lo
+          unsafeWrite marr (i+1) hi
+          return 2
+      where n = ord c
+            m = n - 0x10000
+            lo = fromIntegral
+               $ (m `shiftR` 10) + 0xD800
+            hi = fromIntegral
+               $ (m .&. 0x3FF) + 0xDC00
+\end{code}
+%
+The UTF-16 encoding complicates the specification of the function
+as we cannot simply require @i@ to be less than the length of 
+@marr@; if @i@ were @malen marr - 1@ and @c@ required two 
+@Word16@s, we would perform an out-of-bounds write. 
+%
+We account for this subtlety with a predicate that states 
+there is enough @Room@ to encode @c@.
+%
+% measure ord         :: Char -> Int
+\begin{code}
+  predicate OkN I A N  = Ok (I+N-1) A
+  predicate Room I A C = if ord C < 0x10000
+                         then OkN I A 1
+                         else OkN I A 2
+  
+  type OkSiz I A = {v:Nat  | OkN  I A v}
+  type OkChr I A = {v:Char | Room I A v}
+\end{code}
+%
+@Room i marr c@ says 
+``if @c@ is encoded using one @Word16@, 
+  then @i@ must be less than @malen marr@,
+  otherwise @i@ must be less than @malen marr - 1@.''
+%
+@OkSiz I A@ is an alias for a valid number of @Word16@s 
+remaining after the index @I@ of array @A@. 
+@OkChr@ specifies the @Char@s for which there is room (to write)
+at index @I@ in array @A@.
+%
+The specification for @writeChar@ states that given an array \hbox{@marr@,}
+an index @i@, and a valid @Char@ for which there is room at index \hbox{@i@,}
+the output is a monadic action returning the number of @Word16@ occupied
+by the @char@.
+%
+\begin{code}
+  writeChar :: marr:MArray s
+            -> i:Nat
+            -> OkChr i marr
+            -> ST s (OkSiz i marr)
+\end{code}
+%
+\spara{Bug}
+Thus, clients of @writeChar@ should only call it with suitable indices
+and characters.
+%
+Using \toolname we found an error in one client, @mapAccumL@, 
+which combines a map and a fold over a @Stream@, and stores 
+the result of the map in a @Text@. Consider the inner loop of @mapAccumL@.
+%
+% \begin{code}
+% mapAccumL f z0 (Stream next0 s0 len) =
+%   (nz, Text na 0 nl)
+%  where
+%   mlen = upperBound 4 len
+%   (na,(nz,nl)) = runST $ do
+%        (marr,x) <- (new mlen >>= \arr ->
+%                     outer arr mlen z0 s0 0)
+%        arr      <- unsafeFreeze marr
+%        return (arr,x)
+%   outer arr top = loop
+%    where
+%     loop !z !s !i =
+%       case next0 s of
+%         Done          -> return (arr, (z,i))
+%         Skip s'       -> loop z s' i
+%         Yield x s'
+%           | j >= top  -> do
+%             let top' = (top + 1) `shiftL` 1
+%             arr' <- new top'
+%             copyM arr' 0 arr 0 top
+%             outer arr' top' z s i
+%           | otherwise -> do
+%             let (z',c) = f z x
+%             d <- writeChar arr i c
+%             loop z' s' (i+d)
+%           where j | ord x < 0x10000 = i
+%                   | otherwise       = i + 1
+% \end{code}
+\begin{code}
+  outer arr top = loop
+   where
+    loop !z !s !i =
+      case next0 s of
+        Done          -> return (arr, (z,i))
+        Skip s'       -> loop z s' i
+        Yield x s'
+          | j >= top  -> do
+            let top' = (top + 1) `shiftL` 1
+            arr' <- new top'
+            copyM arr' 0 arr 0 top
+            outer arr' top' z s i
+          | otherwise -> do
+            let (z',c) = f z x
+            d <- writeChar arr i c
+            loop z' s' (i+d)
+          where j | ord x < 0x10000 = i
+                  | otherwise       = i + 1
+\end{code}
+%
+Let's focus on the @Yield x s'@ case.
+%
+We first compute the maximum index @j@ to 
+which we will write and determine the safety of a write. 
+%
+If it is safe to write to @j@ we call the provided 
+function @f@ on the accumulator @z@ and the character 
+@x@, and write the \emph{resulting} character @c@ into the array. 
+%
+However, we know nothing about @c@, in particular, 
+whether @c@ will be stored as one or two @Word16@s! 
+Thus, \toolname flags the call to @writeChar@ as \emph{unsafe}.
+The error can be fixed by lifting @f z x@ into the @where@ clause and defining the
+write index @j@ by comparing @ord c@ (not @ord x@). \toolname (and the authors)
+readily accepted our fix.
+
+%% INCLUDEPROOF To illustrate why the call is in fact buggy, 
+%% INCLUDEPROOF consider a sample iteration of @loop@ 
+%% INCLUDEPROOF where @i = malen arr - 1@ and
+%% INCLUDEPROOF @ord x < 0x10000@. 
+%% INCLUDEPROOF %
+%% INCLUDEPROOF In this case @j@ will equal @i@ and we will enter
+%% INCLUDEPROOF the @otherwise@ branch. 
+%% INCLUDEPROOF %
+%% INCLUDEPROOF Next, suppose @f z x@ returns a
+%% INCLUDEPROOF @c@ such that  @ord c >= 0x10000@. 
+%% INCLUDEPROOF %
+%% INCLUDEPROOF The action @writeChar arr i c@ will write to
+%% INCLUDEPROOF indices @i@ \emph{and} @i+1@ of @arr@, but 
+%% INCLUDEPROOF @i+1 = malen arr@ and is not a valid index 
+%% INCLUDEPROOF for writing! 
+%% INCLUDEPROOF %
+%% INCLUDEPROOF The error lies dormant till the next loop 
+%% INCLUDEPROOF iteration, when @i = malen arr + 1@ and we 
+%% INCLUDEPROOF trigger the @j >= top@ branch. 
+%% INCLUDEPROOF %
+%% INCLUDEPROOF Here, we allocate a larger array and copy 
+%% INCLUDEPROOF the contents of the previous array into the 
+%% INCLUDEPROOF new array. 
+%% INCLUDEPROOF %
+%% INCLUDEPROOF The @copyM arr' 0 arr 0 top@ call
+%% INCLUDEPROOF only copies @top@ elements, \ie it 
+%% INCLUDEPROOF \emph{does not}
+%% INCLUDEPROOF copy the element \emph{at} \texttt{top},
+%% INCLUDEPROOF \emph{losing} a @Word16@ and so 
+%% INCLUDEPROOF yielding the wrong  output.
+%% INCLUDEPROOF The fix is to replace...
+%% INCLUDEPROOF \begin{code}
+%% INCLUDEPROOF    | j >= top  -> do ...
+%% INCLUDEPROOF    | otherwise -> do
+%% INCLUDEPROOF      d <- writeChar arr i c
+%% INCLUDEPROOF      loop z' s' (i+d)
+%% INCLUDEPROOF    where (z',c) = f z x
+%% INCLUDEPROOF          j | ord c < 0x10000 = i
+%% INCLUDEPROOF            | otherwise       = i + 1
+%% INCLUDEPROOF \end{code}
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End: 

@@ -1,0 +1,20 @@
+\section{Memory Safety}\label{sec:memory-safety}
+
+The terms ``Haskell'' and ``pointer arithmetic'' rarely occur in the same
+sentence, yet many Haskell programs are constantly manipulating pointers under
+the hood by way of using the \bytestring and \libtext libraries. These libraries
+sacrifice safety for (much needed) speed and are therefore natural candidates for
+verification through \toolname.
+
+\subsection{Bytestring}\label{sec:bytestring}
+\input{bytestring}
+
+\subsection{Text}\label{sec:text}
+\input{text}
+
+
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End: 

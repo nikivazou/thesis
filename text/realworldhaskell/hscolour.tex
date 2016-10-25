@@ -1,0 +1,35 @@
+\begin{itemize}
+\item Reading the input.
+@HsColour.hs@ reads the input arguments and checks their well-formedness
+using the when statement
+%
+\begin{code}
+when (length outFile > 1) \$ errorOut "Can only have one output file"
+\end{code}
+%
+Currently \toolname can not take advantage of such specifications, 
+thus explicit @assume@ is used.
+
+\item Lists with structure:
+@ACSS.splitSrcAndAnnos@ handles a list of Strings and makes the following assumption.
+when the specific @breakS@ appears then the name and annotations follow (ie., at least two elements).
+So if a list @ls@ starts with @breakS@ then it uses an refutable pattern  @(_:mname:annots) = ls@
+to match the list.
+This invariant about the inputs list cannot be proven statically.
+Worse, \toolname has no way to express such invariant, 
+as refinement of list elements \textit{relies} on polymorphism: 
+\toolname naturally describes invariants that recursively hold for every list element and 
+reaches it edge when reasoning about non-recursive properties.
+
+\item The instance @Enum@ of @Highlight@ does not define the @toEnum@ method, 
+which as discussed reduces to a @noMethodBinding@ error that makes verification unsafe.
+
+\item trimContext initially checks whether there exists an element that satisfies @p@ in the list @xs@.
+If it is it creates @ys = dropWhile (not p) xs@, and then calls the tail of @ys@.
+By the check we know that @ys@ has at least one element, the one that satisfies @p@, 
+a property that is not trivially expressed via refinement types.
+
+
+\item filter data constructors: @foo (filter (`elem` [A, B, C])@ and then partially define 
+@foo@ on only the data constructors @A@, @B@, and @C@.
+\end{itemize}

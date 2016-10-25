@@ -1,0 +1,255 @@
+\section{Related Work}\label{sec:related}
+
+Next, we situate \toolname with 
+existing Haskell verifiers.
+
+\spara{Dependent Types} are the basis of many verifiers, 
+or more generally, proof assistants.
+%
+Verification of haskell code is possible with
+``full'' dependently typed systems like Coq~\cite{coq-book}, 
+Agda~\cite{norell07}, Idris~\cite{Brady13}, Omega~\cite{Sheard06}, and
+ {$\lambda_\rightarrow$}~\cite{LohMS10}.
+ %
+ While these systems are highly expressive,
+their expressiveness comes at the cost of making logical validity checking undecidable
+thus rendering verification cumbersome.	
+ %
+ Haskell itself can be considered a dependently-typed language,
+ as type level computation is allowed via 
+ Type Families~\cite{McBride02},
+ Singleton Types\cite{Weirich12}, 
+ Generalized Algebraic  Datatypes (GADTs)~\cite{JonesVWW06, SchrijversJSV09}, 
+ % more GADS ~\cite{Cheney02, GRDC03},
+ and type-level functions~\cite{ChakravartyKJ05}.
+ %
+Again, 
+verification in haskell itself turns out to be quite painful~\cite{LindleyM13}.
+
+\spara{Refinement Types} are a form of dependent types where 
+invariants are encoded via a combination of types and predicates
+from a restricted \emph{SMT-decidable} 
+logic~\cite{Rushby98,pfenningxi98,Dunfield07,GordonTOPLAS2011}. 
+%
+\toolname uses Liquid Types~\cite{LiquidPLDI09} 
+that restrict the invariants even more
+to allow type inference, a crucial feature of a usable type system.
+%
+Even though the language of refinements is restricted,
+as we presented, the combination of
+Abstract Refinements~\cite{vazou13} 
+with sophisticated measure definitions 
+allows specification and verification of a wide variety 
+of program properties.
+
+\spara{Static Contract Checkers} 
+like ESCJava~\cite{ESCJava} are a classical way of verifying 
+correctness through assertions and pre- and post-conditions. 
+%
+%
+%% One can view Refinement Types as a type-based 
+%% generalization of this approach. 
+%
+%% Classical contract checkers check ``partial''
+%% (as opposed to ``total'') correctness (\ie safety) 
+%% for \emph{eager}, typically first-order, languages
+%% and need not worry about termination.
+%% %
+%% We have shown that in the lazy setting, even 
+%% ``partial'' correctness requires proving ``total''
+%% correctness!
+%
+\cite{XuPOPL09} describes a static contract checker for 
+Haskell that uses symbolic execution to unroll procedures
+upto some fixed depth, yielding weaker ``bounded'' soundness
+guarantees.
+% 
+%% The (checker's) termination requires that recursive 
+%% procedures only be unrolled up to some fixed depth.
+%% While this approach removes inconsistencies, it yields 
+%% weaker, ``bounded'' soundness guarantees.
+%
+Similarly, Zeno~\cite{ZENO} is an automatic Haskell 
+prover that combines unrolling with heuristics for rewriting
+and proof-search. 
+%%Based on rewriting, it is sound but 
+%%``Zeno might loop forever'' when faced with 
+%%non-termination.
+%
+Finally, the Halo~\cite{halo} contract checker encodes 
+Haskell programs into first-order logic by directly 
+modeling the code's denotational semantics,
+again, requiring heuristics for instantiating axioms 
+describing functions' behavior.
+%
+%%Unlike any of the above, our type-based approach does 
+%%not rely on heuristics for unrolling recursive procedures, 
+%%or instantiating axioms. 
+%%%
+%%Instead we are based on decidable SMT validity 
+%%checking and abstract interpretation~\cite{LiquidPLDI08} 
+%%which makes the tool predictable and the overall workflow
+%%scale to the verification of large, real-world
+%%code bases.
+%%
+%%
+%%\spara{Tracking Divergent Computations}
+%%The notion of type stratification to track potentially 
+%%diverging computations dates to at least~\citep{ConstableS87} 
+%%which uses %$\bar{\typ}$ 
+%%to encode diverging terms, and types 
+%%%$\efix{}$ as $(\bar{\typ}\rightarrow\bar{\typ}) \rightarrow \bar{\typ}$).
+%%%
+%%More recently, \cite{Capretta05} tracks diverging 
+%%computations within a \emph{partiality monad}.
+%%%
+%%Unlike the above, we use refinements to 
+%%obtain terminating fixpoints %(\etfix{}), 
+%%which let us prove 
+%%the vast majority (of sub-expressions) in real world libraries 
+%%as non-diverging, avoiding the restructuring that would
+%%be required by the partiality monad.
+%%
+
+\spara{Totality Checking}
+is feasible by GHC itself, via an option flag that warns of any incomplete patterns.
+%
+Regrettably, GHC's warnings are local, \ie
+GHC will raise a warning for @head@'s partial definition, 
+but not for its caller, as the programmer would desire.
+%%(2)~ and preservative:
+%%a warning will be raised for any incomplete pattern
+%%without an attempt to reason if it is reachable or not.
+%
+Catch~\cite{catch}, 
+a fully automated tool that tracks incomplete patterns,
+addresses the above issue
+%
+by computing functions' pre- and post-conditions.
+Moreover, catch statically analyses the code 
+to track reachable incomplete patterns.
+%
+\toolname allows more precise analysis than catch, 
+thus, by assigning the appropriate
+types to $\star$Error functions (\S~\ref{sec:totality}) 
+it tracks reachable incomplete patters 
+%we get catch analysis
+as a side-effect of verification.
+
+\spara{Termination Analysis}
+is crucial for \toolname's soundness~\cite{LiquidICFP14} 
+and is implemented in a technique inspired by~\cite{XiTerminationLICS01}, 
+%
+Various other authors have proposed techniques to verify termination of
+recursive functions, either using the ``size-change
+principle''~\cite{JonesB04,Sereni05}, or by annotating types with size indices
+and verifying that the arguments of recursive calls have smaller
+indices~\cite{HughesParetoSabry96,BartheTermination}.
+%
+To our knowledge, none of the above analyses have been empirically
+evaluated on large and complex real-world libraries.
+
+AProVE~\cite{Giesl11} implements a powerful, fully-automatic
+termination analysis for Haskell based on term-rewriting.
+%
+Compared to AProVE,
+encoding the termination proof via 
+refinements provides advantages that are crucial in 
+large, real-world code bases. 
+Specifically, refinements
+let us
+%
+(1) prove termination over a subset 
+    (not all) of inputs; many functions (\eg @fac@) 
+    terminate only on @Nat@ inputs and not all @Int@s,
+%
+(2) encode pre-conditions, 
+    post-conditions, and auxiliary invariants that 
+    are essential for proving termination, (\eg @qsort@),
+%
+(3) easily specify non-standard 
+    decreasing metrics and prove termination, (\eg @range@).
+%
+In each case, the code could be (significantly) 
+\emph{rewritten} to be amenable to AProVE but this defeats
+the purpose of an automatic checker.
+%
+
+
+% Could use APROVE, but didn't
+% 1. refinements let us reason about /partial functions/
+% 2. refinements let us reason about /auxiliary invariants/
+% 3. refinements let us specify witness expressions for termination
+
+% Given the existence of such standalone termination provers, one might
+% ask why we chose to prove termination ourselves. While certainly
+%% We could use one such existing termination analysis; however, we found that
+%% encoding the termination proof via refinements provided a synergy that
+%% would have been impossible with an external oracle. 
+%% %
+%% Specifically, we
+%% found that 
+%% (1) refinements let us prove termination of \emph{partial functions},
+%% (2) refinements let us reason about \emph{auxiliary invariants}, and 
+%% (3) refinements let us express termination metrics that require 
+%%     a \emph{witness} without editing the actual code.
+
+% Given our the structure of our proof, with the Termination Oracle
+% Hypothesis, one might ask why we chose not to use an existing
+% termination prover for Haskell to discharge the termination
+% requirement. 
+% While certainly possible, we found that encoding the
+% termination proof via refinements provided a synergy that would have
+% been impossible with an external tool like AProVe. Consider the
+% following program:
+% %
+% \begin{code}
+%   -- countDown :: Nat -> Int
+%   countDown 0 = 0
+%   countDown n = countDown (n - 1)
+% \end{code}
+% %
+% We include the type as a comment to show the intended usage. A
+% TRS-based oracle will (correctly) say that @countDown@ may not
+% terminate, it could be called with a \emph{negative} input! Suppose,
+% however, that @countDown@ is only called with @Nat@s. \toolname will
+% then \emph{infer} the commented-out type, which will allow it to prove
+% that @countDown@ does, in fact, terminate on all \emph{provided}
+% inputs. The distinction between terminating on all possible vs.\ all
+% actual inputs is crucial for us since we are only concerned with
+% termination insofar as it allows us to prove safety properties.
+
+%%\spara{Testing}
+%%QuickCheck~\cite{quickcheck} is an automatic random testing tool
+%%for Haskell programs.
+%%%
+%%Compared to numerous existing static contract checkers, 
+%%testing fails to provide a
+%%complete correctness proof of a Haskell program, 
+%%but is tremendously easier to use.
+%%%
+%%The heavy usage of QuickCheck by the haskell programmers
+%%shows that 
+%%users do care for verification of their code,
+%%but are reluctant to spend much time
+%%to get complete correctness proof.
+%%%
+%%Combining testing and proving 
+%%(as in~\cite{Dybjer03}) would be ideal.
+%%%
+%%%%In an attempt to simplify correctness proves ~\citep{Dybjer03} 
+%%%%leaves some lemmas to be tested only.
+%%%
+%%One can directly translate  
+%%a QuickCheck property
+%%to a Haskell function that proves its correctness (\ref{sec:xmonad}).
+%%%
+%%We envision that \toolname 
+%%will be able to completely prove 
+%%a great number of QuickCheck properties 
+%%with a minimum effort from the user.
+%%
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End: 

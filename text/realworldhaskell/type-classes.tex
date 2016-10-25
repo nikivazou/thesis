@@ -1,0 +1,186 @@
+\subsection{Type Classes}\label{sec:type-classes}
+
+So far we have only discussed \toolname in the context of 
+concrete Haskell functions, but many Haskell programs make
+use of ad-hoc polymorphism via type-classes.
+%
+While the implementation of each type-class instance is 
+different, there is often a common interface that we 
+expect all instances to satisfy.
+
+\mypara{Class Measures}
+For example, consider the classes
+%
+\begin{code}
+  class Indexable f where
+    size :: f a -> Int
+    at   :: f a -> Int -> a
+\end{code}
+%
+For safe access, we might require that @at@'s second 
+parameter be bounded by the @size@ of the container.
+To this end, we can define a \emph{type-indexed} 
+measure, using the @class measure@ keyword
+%
+\begin{code}
+  class measure sz :: a -> Nat
+\end{code}
+%
+Now, we can specify the safe-access preconditions  
+independant of particular instances of @Indexable@ 
+as:
+%
+\begin{code}
+  class Indexable f where
+    size :: xs:f a -> {v:Nat | v = (sz xs)}
+    at   :: xs:f a -> {v:Nat | v < (sz xs)} -> a
+\end{code}
+
+\mypara{Instance Measures}
+For each concrete type for which a class is instantiated, we require 
+a corresponding definition for the measure. For example, we may want
+to define lists to be an instance of @Indexable@. To do so, we would
+define the @sz@ instance for lists as:
+%
+\begin{code}
+  instance measure sz :: [a] -> Nat
+  sz []     = 0
+  sz (x:xs) = 1 + (sz xs)
+\end{code}
+%
+%% Similarly, for a binary tree, we might define:
+%% %
+%% \begin{code}
+%%   instance measure sz :: Tree a -> Nat
+%%   size Leaf         = 0
+%%   size (Node x l r) = 1 + (sz l) + (sz r)
+%% \end{code}
+%
+Class measures work just like regular measures. 
+The above definitions are used to refine the types 
+of the data constructors, \eg
+%
+\begin{code}
+  []  :: {v:[a] | (sz v) = 0}
+  (:) :: a -> xs:[a] 
+      -> {v:[a] | (sz v) = 1 + (sz xs)}
+\end{code}
+
+Once we have defined the measure, we can define the actual
+instance as:
+%
+\begin{code}
+  instance Indexable [] where
+    size []        = 0
+    size (x:xs)    = 1 + size xs
+
+    (x:xs) `at` 0  = x
+    (x:xs) `at` i  = index xs (i-1)
+\end{code}
+%
+Now, \toolname will use the definition of the @sz@ measure for lists
+to check that @size@ and @at@ satisfy the refined class specifications,
+and hence, that the above instance creates a valid instance dictionary.
+
+\mypara{Client Verification}
+On the client side of a type-class we can use the refined 
+types of class methods just as we would any regular function. 
+For example, consider a @sum@ function that works for any 
+@Indexable@.
+%
+\begin{code}
+  sum :: (Indexable f) => f Int -> Int
+  sum xs = go 0
+  where
+    go i
+      | i < size xs = (xs `at` i) + go (i+1)
+      | otherwise   = 0
+\end{code}
+%
+\toolname proves that each call to @at@ is safe, by using the refined
+class specifications of @Indexable@. 
+Specifically, each call to @at@ is guarded by a check @i < size xs@,
+which, combined with the fact that @i@ is monotonically increasing 
+from 0, allows \toolname to prove that @xs `at` i@ will always be safe.
+
+%%%%%%%%   %% 
+%%%%%%%%   %% We now have the task of recognizing each instance declaration 
+%%%%%%%%   %% and matching it up with the correct class specification, a 
+%%%%%%%%   %% non-trivial task in GHC's Core representation.
+%%%%%%%%   %% 
+%%%%%%%%   %% Luckily for us, Haskell type-classes are implemented by passing around
+%%%%%%%%   %% dictionaries of functions~\ES{CITE}. A typical instance for @Sized@ 
+%%%%%%%%   %
+%%%%%%%%   %% then \toolname will check that the generated class dictionary's @size@ field
+%%%%%%%%   %% satisfies the above refinement type, \ie returns an
+%%%%%%%%   %% will look something like the following in Core
+%%%%%%%%   %
+%%%%%%%%   \begin{code}
+%%%%%%%%     $csize    = \xs -> case xs of
+%%%%%%%%       []      -> 0
+%%%%%%%%       (x:xs') -> 1 + $csize xs'
+%%%%%%%%     $fSized[] = D:Sized $csize
+%%%%%%%%   \end{code}
+%%%%%%%%   %
+%%%%%%%%   where @D:Sized@ is the dictionary data constructor. Instead of
+%%%%%%%%   assigning a type directly to @$csize@ %$
+%%%%%%%%   we assign a refined type to the data constructor @D:Sized@, specifically
+%%%%%%%%   %
+%%%%%%%%   % When \toolname sees a refined type-class definition it does two
+%%%%%%%%   % things:
+%%%%%%%%   % \begin{enumerate}
+%%%%%%%%   % \item it \emph{assumes} the types of the class methods
+%%%%%%%%   % \item it \emph{strengthens} the type of the dictionary data constructor to
+%%%%%%%%   %   enforce the method types
+%%%%%%%%   % \end{enumerate}
+%%%%%%%%   % For our @Sized@ class this results in the type
+%%%%%%%%   %
+%%%%%%%%   \begin{code}
+%%%%%%%%     D:Sized :: (xs:f a -> {v:Nat | v = size xs}) 
+%%%%%%%%             -> Sized f
+%%%%%%%%   \end{code}
+%%%%%%%%   %
+%%%%%%%%   from which \toolname creates the subtyping query
+%%%%%%%%   %
+%%%%%%%%   \begin{code}
+%%%%%%%%     $csize <: (xs:f a -> {v:Nat | v = size xs})
+%%%%%%%%   \end{code}
+%%%%%%%%   %$
+%%%%%%%%   which is valid, thus the instance declaration is safe.
+%%%%%%%%   %
+%%%%%%%%   Similarly for @Indexable@ we might find the instance
+%%%%%%%%   %
+%%%%%%%%   \begin{code}
+%%%%%%%%     instance Indexable [] where
+%%%%%%%%       index []     i = error "impossible"
+%%%%%%%%       index (x:xs) 0 = x
+%%%%%%%%       index (x:xs) i = index xs (i-1)
+%%%%%%%%   \end{code}
+%%%%%%%%   %
+%%%%%%%%   translated into
+%%%%%%%%   %
+%%%%%%%%   \ES{FIXME: why does this next code block break latex???}
+%%%%%%%%   % \begin{code}
+%%%%%%%%   %   $cindex = \xs i -> case xs of
+%%%%%%%%   %     []      -> error "impossible"
+%%%%%%%%   %     (x:xs') -> case i of
+%%%%%%%%   %       0 -> x
+%%%%%%%%   %       _ -> $cindex xs' (i-1)
+%%%%%%%%   %   $fIndexable[] = D:Indexable $fSized[] $cindex
+%%%%%%%%   % \end{code}
+%%%%%%%%   %$
+%%%%%%%%   which will result in a similar subtyping query as above. The actual class
+%%%%%%%%   methods merely select the correct function from the dictionary, \eg
+%%%%%%%%   %
+%%%%%%%%   \begin{code}
+%%%%%%%%     index (D:Indexable sz idx) = idx
+%%%%%%%%   \end{code}
+%%%%%%%%   %
+%%%%%%%%   so verification is trivial, as \toolname gets to assume the type of
+%%%%%%%%   @D:Indexable@ when pattern-matching against it.
+
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End: 

@@ -1,0 +1,640 @@
+\newcommand\lbxmonad{\texttt{xmonad}\xspace}
+
+\section{Functional Correctness Invariants}\label{sec:structures}
+
+So far, we have considered a variety of general, application independent
+correctness criteria. Next, let us see how we can use \toolname to specify 
+and statically verify critical application specific correctness properties,
+using two illustrative case studies: red-black trees, and the stack-set data
+structure introduced in the \lbxmonad system.
+
+\subsection{Red-Black Trees}\label{sec:redblack}
+
+Red-Black trees have several non-trivial invariants that are ideal for 
+illustrating the effectiveness of refinement types, and contrasting with
+existing approaches based on GADTs~\cite{Kahrs01}.
+%
+The structure can be defined via the following Haskell type:
+%
+\begin{code}
+  data Col    = R | B
+  data Tree a = Leaf 
+              | Node Col a (Tree a) (Tree a)
+\end{code}
+%
+However, a @Tree@ is a valid Red-Black tree only if it 
+satisfies three crucial invariants:
+%
+\begin{itemize}
+  \item{\emphbf{Order:}} 
+    The keys must be binary-search ordered, \ie the key at each node must
+    lie between the keys of the left and right subtrees of the node,
+  \item{\emphbf{Color:}}
+    The children of every \emph{red} @Node@ must be colored \emph{black}, 
+    where each @Leaf@ can be viewed as black,
+  \item{\emphbf{Height:}}
+    The number of black nodes along any path from each @Node@ to its @Leaf@s 
+    must be the same.
+\end{itemize}
+
+Red-Black trees are especially tricky as various operations create 
+trees that can temporarily violate the invariants. Thus, while 
+the above invariants can be specified with singletons and GADTs, 
+encoding all the properties (and the temporary violations) results
+in a proliferation of data constructors that can somewhat obfuscate 
+correctness. In contrast, with refinements, we can specify and verify
+the invariants in isolation (if we wish) and can trivially compose
+them simply by \emph{conjoining} the refinements.
+
+\mypara{Color Invariant}
+To specify the color invariant, we define a \emph{black-rooted tree} as:
+%
+\begin{code}
+  measure isB           :: Tree a -> Prop 
+  color (Node c x l r)  = c == B
+  color (Leaf)          = true
+\end{code}
+%
+and then we can describe the color invariant simply as:
+%
+\begin{code}
+  measure isRB        :: Tree a -> Prop
+  isRB (Leaf)         = true
+  isRB (Node c x l r) = isRB l && isRB r &&
+                        c = R => (isB l && isB r)
+\end{code}
+%
+The insertion and deletion procedures create intermediate \emph{almost} 
+red-black trees where the color invariant may be violated at the root. 
+Rather than create new data constructors we can define almost red-black 
+trees with a measure that just drops the invariant at the root:
+%
+\begin{code}
+  measure almostRB        :: Tree a -> Prop
+  almostRB (Leaf)         = true
+  almostRB (Node c x l r) = isRB l && isRB r
+\end{code}
+
+\mypara{Height Invariant}
+To specify the height invariant, we define a black-height measure:
+%
+\begin{code}
+  measure bh        :: Tree a -> Int
+  bh (Leaf)         = 0
+  bh (Node c x l r) = bh l 
+                    + if c = R then 0 else 1
+\end{code}
+%
+and we can now specify black-height balance as:
+%
+\begin{code}
+  measure isBal        :: Tree a -> Prop
+  isBal (Leaf)         = true
+  isBal (Node c x l r) = bh l = bh r 
+                       && isBH l && isBH r 
+\end{code}
+%
+Note that @bh@ only considers the left sub-tree, 
+but this is legitimate, because @isBal@ will 
+ensure the right subtree has the same @bh@.
+
+\mypara{Order Invariant}
+Finally, to encode the binary-search ordering property, we parameterize 
+the datatype with abstract refinements:
+%
+\begin{code}
+  data Tree a <l::a->a->Prop, r::a->a->Prop>
+    = Leaf
+    | Node { c   :: Col
+           , key :: a
+           , lt  :: Tree<l,r> a<l key>
+           , rt  :: Tree<l,r> a<r key> }
+\end{code}
+%
+Intuitively, @l@ and @r@ are relations between the root @key@ 
+and \emph{each} element in its left and right subtree respectively.
+Now the alias:
+%
+\begin{code}
+  type OTree a 
+    = Tree <{\k v -> v<k}, {\k v -> v>k}> a
+\end{code}
+%
+describes binary-search ordered trees!
+
+\mypara{Composing Invariants}
+Finally, we can compose the invariants, and define a 
+Red-Black tree with the alias:
+%
+\begin{code}
+  type RBT a = {v:OTree a | isRB v && isBal v}
+\end{code}
+%
+An almost Red-Black tree is the above with @isRB@ 
+replaced with @almostRB@, \ie does not require any 
+new types or constructors.
+If desired, we can ignore a particular invariant 
+simply by replacing the corresponding refinement 
+above with @true@.
+Given the above -- and suitable signatures \toolname 
+verifies the various insertion, deletion and rebalancing
+procedures for a Red-Black Tree library.
+
+\subsection{Stack Sets in XMonad}\label{sec:xmonad}
+
+\lbxmonad is a dynamically tiling \texttt{X11} 
+window manager that is written and configured in Haskell. 
+The set of windows managed by XMonad is organized into a
+hierarchy of types. At the lowest level we have a 
+\emph{set} of windows @a@ represented as a @Stack a@
+%
+\begin{code}
+  data Stack a = Stack { focus :: a   
+                       , up    :: [a] 
+                       , down  :: [a] }
+\end{code}
+%
+The above is a zipper~\cite{zipper} where @focus@ is the 
+``current" window and @up@ and @down@ the windows ``before"
+and ``after" it.
+%
+Each \hbox{@Stack@} is wrapped inside a @Workspace@ that has
+additional information about layout and naming:
+%
+\begin{code}
+  data Workspace i l a = Workspace 
+     { tag    :: i
+     , layout :: l
+     , stack  :: Maybe (Stack a) }
+\end{code}
+%
+which is in turn, wrapped inside a @Screen@:
+%
+\begin{code}
+  data Screen i l a sid sd = Screen 
+    { workspace    :: Workspace i l a
+    , screen       :: sid
+    , screenDetail :: sd }
+\end{code}
+%
+The set of all screens is represented by the top-level zipper:
+%
+\begin{code}
+  data StackSet i l a sid sd = StackSet 
+    { cur :: Screen i l a sid sd  
+    , vis :: [Screen i l a sid sd]
+    , hid :: [Workspace i l a]   
+    , flt :: M.Map a RationalRect } 
+\end{code}
+
+
+\mypara{Key Invariant: Uniqueness of Windows}
+The key invariant for the @StackSet@ type is that each window @a@
+should appear at most once in a @StackSet i l a sid sd@. That is,
+a window should \emph{not be duplicated} across stacks or workspaces.
+Informally, we specify this invariant by defining a measure for the 
+\emph{set of elements} in a list, @Stack@, @Workspace@ and @Screen@,
+and then we use that measure to assert that the relevant sets are 
+disjoint.
+
+\mypara{Specification: Unique Lists} To specify that the set of elements
+in a list is unique, \ie there are no duplicates in the list we first define
+a measure denoting the set using Z3's~\citep{Z3} built-in theory of sets:
+%
+\begin{code}
+  measure elts :: [a] -> Set a 
+  elts ([])   = emp  
+  elts (x:xs) = cup (sng x) (elts xs) 
+\end{code}
+%
+Now, we can use the above to define uniqueness:
+%
+\begin{code}
+  measure isUniq :: [a] -> Prop 
+  isUniq ([])   =  true 
+  isUniq (x:xs) =  notIn x xs && isUniq xs
+\end{code}
+%
+where @notIn@ is an abbreviation: 
+%
+\begin{code}
+  predicate notIn X S = not (mem X (elts S))
+\end{code}
+
+\mypara{Specification: Unique Stacks}
+We can use @isUniq@ to define unique, \ie, duplicate free,
+@Stack@s as:
+%
+\begin{code}
+  data Stack a = Stack 
+   { focus :: a   
+   , up    :: {v:[a] | Uniq1 v focus}
+   , down  :: {v:[a] | Uniq2 v focus up} }
+\end{code}
+%
+using the aliases
+%
+\begin{code}
+  predicate Uniq1 V X    
+    = isUniq V  && notIn X V
+  predicate Uniq2 V X Y  
+    = Uniq1 V X && disjoint Y V
+  predicate disjoint X Y 
+    = cap (elts X) (elts Y) = emp
+\end{code}
+%
+\ie the field @up@ is a unique list of elements different 
+from @focus@, and the field @down@ is additionally disjoint 
+from @up@.
+
+\mypara{Specification: Unique StackSets}
+It is straightforward to lift the @elts@ measure to 
+the @Stack@ and the wrapper types @Workspace@ and 
+@Screen@, and then correspondingly lift @isUniq@ to 
+@[Screen]@ and \hbox{@[Workspace]@.}
+%
+Having done so, we can use those measures to refine 
+the type of @StackSet@ to stipulate that there are 
+no duplicates:
+%
+\begin{code}
+  type UniqStackSet i l a sid sd 
+    = {v: StackSet i l a sid sd | NoDups v} 
+\end{code}
+%
+using the predicate aliases
+%
+\begin{code}
+  predicate NoDups V 
+    =  disjoint3 (hid V) (cur V) (vis V) 
+    && isUniq (vis V)
+    && isUniq (hid V)
+  
+  predicate disjoint3 X Y Z 
+    =  disjoint X Y
+    && disjoint Y Z
+    && disjoint X Z
+\end{code}
+%
+\toolname automatically turns the record selectors of 
+refined data types to measures that return the values 
+of appropriate fields, hence @hid x@ (resp. @cur x@, @vis x@)
+are the values of the \hbox{@hid@,} @cur@ and @vis@ fields of
+a @StackSet@ named @x@.
+
+%%%% \begin{code}
+%%%% data Stack a = Stack { focus :: a   
+%%%%                      , up    :: ULNEq a focus
+%%%%                      , down  :: ULNEq a focus }
+%%%% 
+%%%% data StackSet i l a sid sd = StackSet 
+%%%%    { lcurrent  ::  Screen i l a sid sd   
+%%%%    , lvisible  :: [Screen i l a sid sd]
+%%%%    , lhidden   :: [Workspace i l a]
+%%%%    , lfloating :: M.Map a RationalRect     
+%%%%    }
+%%%% \end{code}
+%%%% %
+%%%% data Stack a = Stack { focus  :: !a   
+%%%%                      , up     :: [a]   
+%%%%                      , down   :: [a] } 
+%%%%                                   
+%%%% data Stack a = Stack { focus :: a   
+%%%%                      , up    :: UListDif a focus
+%%%%                      , down  :: UListDif a focus }
+%%%% 
+%%%% data Workspace i l a = Workspace  { tag :: !i, layout :: l, stack :: Maybe (Stack a) }
+%%%% 
+%%%% data Workspace i l a = Workspace  { tag :: i, layout :: l, stack :: Maybe (UStack a) }
+%%%% 
+%%%% type UStack a = {v:(Stack a) | (ListDisjoint (getUp v) (getDown v))}
+%%%% 
+%%%% 
+%%%% data Screen i l a sid sd = Screen { workspace     :: !(Workspace i l a)
+%%%%                                   , screen        :: !sid
+%%%%                                   , screenDetail  :: !sd }
+%%%% 
+%%%% data StackSet i l a sid sd =
+%%%%     StackSet { current  :: !(Screen i l a sid sd)    -- ^ currently focused workspace
+%%%%              , visible  :: [Screen i l a sid sd]     -- ^ non-focused workspaces, visible in xinerama
+%%%%              , hidden   :: [Workspace i l a]         -- ^ workspaces not visible anywhere
+%%%%              , floating :: M.Map a RationalRect      -- ^ floating windows
+%%%%              } 
+%%%% 
+%%%% A workspace is just a @Stack@ of virtual workspaces 
+%%%% tagged with a tag @i@ and its layout @l@
+%%%% @Workspace i l a@.
+%%%% 
+%%%% To view a workspace on a physical screen one needs to 
+%%%% associate the workspace with physical screen's id @sid@
+%%%% and details @sd@, 
+%%%% forming the new data structure @Screen i l a sid sd@.
+%%%% 
+%%%% Xinerama in X11 allows viewing multiple virtual workspaces
+%%%% simultaneously. 
+%%%% %
+%%%% While only one the current one will ever be in focus (i.e. will
+%%%% receive keyboard events), other workspaces may be passively
+%%%% viewable.  
+%%%% %
+%%%% We thus need to track which virtual workspaces are
+%%%% associated (viewed) on which physical screens.  
+%%%% %
+%%%% To keep track of
+%%%% this, \lbxmonad's main data structure  @StackSet i l a sid sd@ 
+%%%% keeps, apart from the current screen,
+%%%% separate lists of visible but non-focused
+%%%% workspaces (@Screen@) , and non-visible workspaces (@Workspace@).
+
+%%%% \mypara{Unique Stack} 
+%%%% Assume the existence of a predicate 
+%%%% @ULNeq (X::a) (XS::[a])@ that ensures that 
+%%%% (1)~the list @XS@ has no duplicates and
+%%%% (2)~@X@ is not an element of @XS@.
+%%%% %
+%%%% With that magical predicate we define an \emph{almost unique}
+%%%% stack: 
+%%%% \begin{code}
+%%%% data Stack a = Stack { focus :: a   
+%%%%                      , up    :: ULNEq a focus
+%%%%                      , down  :: ULNEq a focus }
+%%%% \end{code}
+%%%% The stack has a @focus@ element @a@ and 
+%%%% and two unique lists of @a@'s @up@ and @down@ of the focus.
+%%%% 
+%%%% The above Stack is almost unique, as an element 
+%%%% may appear both in the @up@ and the @down@ lists.
+%%%% %
+%%%% We define a type alias for @U@nique@Stack@
+%%%% that rejects with possibility:
+%%%% 
+%%%% \begin{code}
+%%%% type UStack a = {v:(Stack a) |  (LDisjoint (up v) (down v))}
+%%%% 
+%%%% predicate LDisjoint X Y = 
+%%%%   (Set_emp (Set_cap (elts X) (elts Y)))
+%%%% \end{code}
+%%%% 
+%%%% 
+%%%% Note that the above definitions crucially depend on set theoretic properties.
+%%%% Thus, verification of \lbxmonad is achieved using an SMT back-end 
+%%%% that supports set theory (like Z3~\citep{Z3}).
+%%%% 
+%%%% We slightly modify the above measure definition
+%%%% to define @dups@, a measure that returns the 
+%%%% duplicate elements of a list.
+%%%% %
+%%%% \begin{code}
+%%%%   measure dups :: [a] -> Set a
+%%%%   dups ([])  = emp v
+%%%%   dups(x:xs) = if mem x (elts xs) 
+%%%%                  then cup (sng x) (dups xs)
+%%%%                  else (dups xs)
+%%%% \end{code}
+%%%% 
+%%%% Using @dups@ we define the magical list type @ULNEq a N@ 
+%%%% as a list @v@ that has no duplicates, \ie the set @dups v@
+%%%% is empty, and @N@ does not belong to the set @elts v@.
+%%%% 
+%%%% \begin{code}
+%%%% type ULNEq a N = {v:[a] | ( (UL v) && (not (LElt N v))}
+%%%% predicate LElt N LS  = (Set_mem N (elts LS)) 
+%%%% predicate UL     LS  = (Set_emp (dups LS)   )
+%%%% \end{code}
+%%%% 
+%%%% Throughout verification
+%%%% we need to establish and use the invariant 
+%%%% that each Stack is Unique.
+%%%% %
+%%%% This is achieved by the following annotation
+%%%% \begin{code}
+%%%% using (Stack a) as (UStack a)
+%%%% \end{code}
+%%%% that allows \toolname to 
+%%%% (1)~ use the invariant:
+%%%% each time a Stack value is retrieved from the environment
+%%%% \toolname strengthens its type with the disjointness information;
+%%%% (2)~ prove the invariant:
+%%%% each time @Stack@ data constructor is used,
+%%%% an disjoint constraint should be proved.
+%%%% Failure to prove this constraint will raise an 
+%%%% ``Invariant Check'' error.
+%%%% 
+%%%% \mypara{Unique StackSet} 
+%%%% Establishing Uniqueness on StackSets is a generalization of the above procedure.
+%%%% 
+%%%% The definition of a @StackSet@ includes the @current@ Screen, the list of @visible@ screens,
+%%%% and the list of @hidden@ workspaces.
+%%%% \begin{code}
+%%%% data StackSet i l a sid sd = StackSet 
+%%%%    { lcurrent  ::  Screen i l a sid sd   
+%%%%    , lvisible  :: [Screen i l a sid sd]
+%%%%    , lhidden   :: [Workspace i l a]
+%%%%    , lfloating :: M.Map a RationalRect     
+%%%%    }
+%%%% \end{code}
+%%%% %
+%%%% \toolname automatically turns the record selectors of refined data types
+%%%% to measures that return the appropriate fields.
+%%%% %
+%%%% Thus we infix the refined selectors with an @l@
+%%%% to distinguish between the haskell (\eg, @current@)
+%%%% and the logical (\eg, @lcurrent@) selectors. 
+%%%% 
+%%%% To prove absence of duplicates we need to @use@
+%%%% only @StackSet@s that have no duplicates:  
+%%%% \begin{code}
+%%%% using (StackSet i l a sid sd) 
+%%%%  as  {v:StackSet i l a sid sd|(NoDuplicates v)}
+%%%% \end{code}
+%%%% 
+%%%% @NoDuplicates@ ensures that the elements of
+%%%% @hidden@, @current@, and @visible@ 
+%%%% workspaces are mutually disjoint
+%%%% and that the @visible@ and @hidden@ workspaces
+%%%% have no duplicates.
+%%%% %
+%%%% \begin{code}
+%%%% predicate NoDuplicates SS = 
+%%%%     (Disjoint3  (workspacesElts (lhidden  SS)) 
+%%%%                 (screenElts     (lcurrent SS)) 
+%%%%                 (screensElts    (lvisible SS))) 
+%%%%   &&
+%%%%     (Set_emp (screensDups    (lvisible SS))) 
+%%%%   &&
+%%%%     (Set_emp (workspacesDups (lhidden  SS)))
+%%%% \end{code}
+%%%% %
+%%%% Again we used recursively defined measures to grap 
+%%%% the elements and the duplicates of the structures.
+%%%% For example, @screenElts@ returns 
+%%%% the elements of the stack of the workspace of the screen, 
+%%%% and is used by @screensDup@ to grap the duplicates of 
+%%%% a list of Screens.
+%%%% 
+\mypara{Verification}
+\toolname uses the above refined type to verify the key invariant,
+namely, that no window is duplicated.
+%
+% However, the verification process, while eventually successful, 
+% revealed several limitations of our approach.
+%
+Three key actions of the, eventually successful, verification process
+can be summarized as follows:
+\begin{itemize}
+\item\emph{Strengthening library functions.} 
+  \lbxmonad repeatedly concatenates the lists of a Stack. %edit to fix overful box
+  %
+  To prove that for some \hbox{@s:Stack a@,} @(up s ++ down s)@ is a unique list,
+  the type of @(++)@ needs to capture that concatenation of two unique and
+  disjoint lists is a unique list.
+  %
+  For verification, we assumed that Prelude's @(++)@ satisfies this property.
+  %
+  But, not all arguments of @(++)@ are unique disjoint lists:
+  @"StackSet"++"error"@ is a trivial example that does not satisfy
+  the assumed preconditions of @(++)@ thus creating a type error.
+  % 
+  Currently, \toolname does not support intersection types, 
+  thus we used an unrefined @(++.)@ variant of @(++)@ for such cases.
+     
+\item\emph{Restrict the functions' domain.}
+%% \RJ{Seems like you HAVE to do this -- has nothing to do with LH?}
+  @modify@ is a @maybe@-like function that, given a default value @x@,
+  a function @f@, and a StackSet @s@, applies @f@ on the @Maybe (Stack a)@
+  values inside @s@. 
+  %
+\begin{code}
+modify :: x:{v:Maybe (Stack a) | isNothing v}
+       -> (y:Stack a 
+           -> Maybe {v:Stack a | SubElts v y})
+       -> UniqStackSet i l a s sd 
+       -> UniqStackSet i l a s sd
+\end{code}
+	%
+        Since inside the StackSet @s@ each @y:Stack a@ could be replaced
+    with either the default value @x@ or with @f y@, we need to
+    ensure that both these alternatives will not insert duplicates.
+	%
+	This imposes the curious precondition that the default
+	value should be @Nothing@.
+
+			
+	\item\emph{Code inlining}
+    %
+    Given a tag @i@ and a StackSet @s@,  @view i s@ will set the current Screen 
+    to the screen with tag @i@, if such a screen exists in @s@.
+    %
+    Below is the original definition for @view@ in case when a screen with tag 
+    @i@ exists in visible screens
+    %
+\begin{code}
+view :: (Eq s, Eq i) => i 
+     -> StackSet i l a s sd 
+     -> StackSet i l a s sd
+view i s    
+  | Just x <- find ((i==).tag.workspace) 
+                     (visible s)
+  = s { current = x
+      , visible = current s 
+                : deleteBy (equating screen) x 
+                           (visible s) } 
+\end{code}
+    %
+    Verification of this code is difficult as we cannot suitably type @find@. 
+    %
+    Instead we \emph{inline} the call to @find@ and the field update into a 
+    single recursive function @raiseIfVisible i s@ that in-place replaces @x@ 
+    with the current screen.  
+\end{itemize}
+
+Finally, \lbxmonad comes with an extensive suite of QuickCheck properties,
+that were formally verified in Coq~\cite{Swierstra2012}. In future work,
+it would be interesting to do a similar verification with \toolname, 
+to compare the refinement types to proof-assistants.
+
+%%% TODO \subsection{QuickCheck Properties}
+%%% TODO 
+%%% TODO \lbxmonad is tested against $113$ \texttt{quickcheck} properties.
+%%% TODO %
+%%% TODO Of those $15$ check the uniqueness invariant 
+%%% TODO and the rest $113$ check various functional properties.
+%%% TODO %
+%%% TODO We started the endeavour of verifying these properties with \toolname.
+%%% TODO %
+%%% TODO We looked at a sample of $15$ properties to conclude that
+%%% TODO which we categorized as follows:
+%%% TODO \begin{itemize}
+%%% TODO \item\emph{Easy to be proved.}
+%%% TODO Consider the \texttt{quickcheck} property that checks that @view@ing 
+%%% TODO a @StackSet a@ is idempotent:
+%%% TODO \begin{code}
+%%% TODO prop_view_idem (x :: T) (i :: NonNegative Int) 
+%%% TODO   = i `tagMember` x ==> view i (view i x) == (view i x)
+%%% TODO \end{code}
+%%% TODO %
+%%% TODO The above property directly translated to a haskell function
+%%% TODO \begin{code}
+%%% TODO type Valid     = {v:Bool | (Prop v) }
+%%% TODO 
+%%% TODO prop_view_idem :: StackSet i l a sid sd -> i -> Valid
+%%% TODO prop_view_idem x i 
+%%% TODO   | i `tagMember` x = view i (view i) == v
+%%% TODO   | otherwise       = True
+%%% TODO \end{code}
+%%% TODO %
+%%% TODO By the above type signature,
+%%% TODO \ie by the result type @Valid@, 
+%%% TODO we specify that the function should always returns True.
+%%% TODO %
+%%% TODO When typechecking the above function,
+%%% TODO \toolname proves that the property holds.
+%%% TODO %
+%%% TODO \toolname is able to verify this property as the result type of @view@
+%%% TODO is strengthens with a refinement 
+%%% TODO (in this case @EqTag x i => x = v@) 
+%%% TODO that directly implies this property.
+%%% TODO 
+%%% TODO The above is generalizing to (10/17) properties that we checked:
+%%% TODO strengthening the function types by refinements that \toolname can prove
+%%% TODO is sufficient to verify these properties.
+%%% TODO 
+%%% TODO \item\emph{Can be estimated.}
+%%% TODO In some other properties (like checking that @view@ing is reversible),
+%%% TODO two StackSets (@s1@ and @s2@) were normalized before being compared,
+%%% TODO that is their elements were first sorted.
+%%% TODO %
+%%% TODO In our logic we do not support any operation that can normalize structures in such a way.
+%%% TODO %
+%%% TODO Thus we cannot prove this exact property.
+%%% TODO %
+%%% TODO Instead we approximated it, by proving that proving that @s1@ and @s2@
+%%% TODO have the same sets of elements.
+%%% TODO %
+%%% TODO We approximated (3/17) of the properties.
+%%% TODO 
+%%% TODO \item\emph{Their proof cannot be supported, currently.} [1]
+%%% TODO One \texttt{quickcheck} property checks 
+%%% TODO that @i@ cannot belong to an empty stackset.
+%%% TODO %
+%%% TODO We used abstract refinements to encode empty stacksets.
+%%% TODO %
+%%% TODO Proving the above property would be easy 
+%%% TODO if we could mix abstract and concrete refinements in logical formulas
+%%% TODO or if \toolname supported sum types.
+%%% TODO %
+%%% TODO Both the alternatives constitutes features that
+%%% TODO we would like to extend \toolname with in the near future.
+%%% TODO %
+%%% TODO Still, currently we are not able to prove such kind of properties.
+%%% TODO \item\emph{Cannot be expressed}
+%%% TODO Other properties %, like @prop_focus_left_master@ 
+%%% TODO check that the order of the windows is not affected by certain operations.
+%%% TODO %
+%%% TODO Though not infeasible we acknowledge that \toolname 
+%%% TODO is not appropriate for reasoning about order preserving
+%%% TODO and verification of such properties 
+%%% TODO would require many code modifications.
+%%% TODO %
+%%% TODO (3/17) are order preserving properties.
+%%% TODO \end{itemize}

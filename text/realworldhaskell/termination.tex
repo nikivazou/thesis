@@ -1,0 +1,364 @@
+\section{Termination}\label{sec:termination}
+
+To soundly account for Haskell's non-strict evaluation, a refinement
+type checker must distinguish between terms that may potentially 
+diverge and those that will not~\cite{LiquidICFP14}.
+%
+Thus, by default, \toolname proves termination of each recursive function.
+Fortunately, refinements make this onerous task quite straightforward. 
+We need simply associate a \emph{well-founded termination metric} % $\mu$
+on the function's parameters, and then use refinement typing to check 
+that the metric strictly decreases at each recursive call. In practice,
+due to a careful choice of defaults, this amounts to about a line 
+of termination-related hints per hundred lines of source. 
+Details about the termination checker may be found in \cite{LiquidICFP14}, 
+we include a brief description here to make the paper self-contained.
+
+\mypara{Simple Metrics}
+As a starting example, consider the @fac@ function
+%
+\begin{code}
+  fac :: n:Nat -> Nat / [n]
+  fac 0 = 1 
+  fac n = n * fac (n-1)
+\end{code}
+%
+The termination metric is simply the parameter @n@; 
+as @n@ is non-negative and decreases at the recursive 
+call, \toolname verifies that @fac@ will terminate.
+%
+We specify the termination metric in the type signature 
+with the @/[n]@.
+
+Termination checking is performed at the same 
+time as regular type checking, as it can be 
+reduced to refinement type checking with a 
+special terminating fixpoint combinator~\cite{LiquidICFP14}.
+Thus, if \toolname fails to prove that a given 
+termination metric is well-formed and decreasing, 
+it will report a @Termination Check@ @Error@. 
+%% \RJ{Seems untrue -- I just get a plain old liquid type error?
+%% NV: IF you provide termination metrics, you DO get termination check error}.
+At this point, the user can either debug 
+the specification, or mark the function 
+as non-terminating.
+
+
+%%\mypara{Refinements Enable Termination} 
+%%Consider Euclid's GCD:
+%%%
+%%\begin{code}
+%%  gcd :: a:Nat -> {v:Nat | v < a} -> Nat 
+%%  gcd a 0 = a
+%%  gcd a b = gcd b (a `mod` b)
+%%\end{code}
+%%%
+%%Here, the termination metric is the first parameter @a@.
+%%To prove that @a@ is decreasing requires
+%%the fact that the second parameter is smaller than the first 
+%%and that @mod@ returns results smaller than its second 
+%%parameter. Both facts are easily expressed as refinements, 
+%%but elude non-extensible checkers~\cite{Giesl11}.
+%%
+%%\mypara{Explicit Termination Metrics}
+%%The termination metric can be some parameter \emph{other} than the first 
+%%argument.
+%%For example, consider: % As an example, consider the tail-recursive factorial:
+%%%
+%%\begin{code}
+%%  tfac     :: Nat -> n:Nat -> Nat / [n] 
+%%  tfac x 0 = if n == 0 then x
+%%                       else tfac (n*x) (n-1)
+%%\end{code}
+%%%
+%%%
+%%It can be checked that @n@, \ie, the second argument is decreasing at each recursive call.
+%%
+\mypara{Termination Expressions} 
+Sometimes, no single parameter decreases across recursive calls,
+but there is some \emph{expression} that forms the decreasing 
+metric.
+%
+For example recall @range lo hi@ (from \S~\ref{sec:tool:verification}) 
+which returns the list of @Int@s from @lo@ to @hi@:
+%
+\begin{code}
+  range lo hi 
+    | lo < hi   = lo : range (lo+1) hi
+    | otherwise = [] 
+\end{code}
+%
+Here, neither parameter is decreasing (indeed, the first 
+one is increasing) but @hi-lo@ decreases across each call. 
+To account for such cases, we can specify as the termination
+metric a (refinement logic) expression over the function
+parameters. Thus, to prove termination, we could type @range@ as:
+\begin{code}
+  lo:Int -> hi:Int -> [(Btwn lo hi)] / [hi-lo]
+\end{code}
+
+\mypara{Lexicographic Termination}
+The Ackermann function
+%
+\begin{code}
+  ack m n 
+    | m == 0    = n + 1
+    | n == 0    = ack (m-1) 1 
+    | otherwise = ack (m-1) (ack m (n-1))
+\end{code}
+%
+is curious as there exists no simple, natural-valued, 
+termination metric that decreases at each recursive call.
+%
+However @ack@ terminates because at each call \emph{either}
+@m@ decreases \emph{or} @m@ remains the same and @n@ decreases. 
+%
+In other words, the pair @(m,n)@ strictly decreases according to a
+\emph{lexicographic} ordering. 
+%
+Thus \toolname supports termination metrics that are a 
+\emph{sequence of} termination expressions. For example, 
+we can type @ack@ as:
+%
+\begin{code}
+  ack :: m:Nat -> n:Nat -> Nat / [m, n]
+\end{code}
+%
+At each recursive call \toolname uses a lexicographic 
+ordering to check that the sequence of termination 
+expressions is decreasing (and well-founded in each component).
+
+\mypara{Mutual Recursion}
+%
+The lexicographic mechanism lets us check termination of
+mutually recursive functions, \eg @isEven@ and @isOdd@
+%
+\begin{code}
+  isEven 0 = True
+  isEven n = isOdd $ n-1
+  
+  isOdd n  = not $ isEven n 
+\end{code}
+%
+Each call terminates as either @isEven@ calls @isOdd@ with a 
+decreasing parameter, \emph{or} @isOdd@ calls @isEven@ with 
+the same parameter, expecting the latter to do the decreasing.
+%
+For termination, we type:
+%
+\begin{code}
+  isEven :: n:Nat -> Bool / [n, 0]
+  isOdd  :: n:Nat -> Bool / [n, 1]
+\end{code}
+%
+To check termination, \toolname verifies that at each recursive 
+call the metric of the caller is less than the metric of the 
+callee.
+%
+When @isEven@ calls @isOdd@, it proves that the caller's 
+metric, namely @[n,0]@ is greater than the callee's @[n-1,1]@.
+When \hbox{@isOdd@} calls @isEven@, it proves that the 
+caller's metric @[n,1]@ is greater than the callee's @[n,0]@,
+thereby proving the mutual recursion always terminates.
+
+\mypara{Recursion over Data Types}
+The above strategies generalize easily to functions that recurse
+over (finite) data structures like arrays, lists, and trees.
+In these cases, we simply use \emph{measures} to project the 
+structure onto @Nat@, thereby reducing the verification to 
+the previously seen cases. 
+For example, we can prove that @map@ 
+%
+\begin{code}
+  map f (x:xs) = f x : map f xs
+  map f []     = []
+\end{code}
+%
+terminates, by typing @map@ as 
+%
+\begin{code}
+  (a -> b) -> xs:[a] -> [b] / [len xs]
+\end{code}
+%
+\ie, by using the measure @len xs@, from \S~\ref{sec:tool:measures}, 
+as the metric.
+
+%%% %
+%%% \begin{code}
+%%%   data L [sz] a = N | C a (L a)
+%%% \end{code}
+%%% %
+%%% we can define a \emph{measure}
+%%% %
+%%% \begin{code}
+%%%   measure sz  :: L a -> Nat
+%%%   sz (C x xs) = 1 + (sz xs)
+%%%   sz N        = 0
+%%% \end{code}
+%%% %
+%%% We prove that @map@ terminates using the type:
+%%% %
+%%% \begin{code}
+%%%   map :: (a -> b) -> xs:L a -> L b / [sz xs]
+%%%   map f (C x xs) = C (f x) (map f xs)
+%%%   map f N        = N
+%%% \end{code}
+%%% %
+%%% That is, by simply using @(sz xs)@  as the 
+%%% decreasing metric.
+
+\mypara{Generalized Metrics Over Datatypes}
+In many functions there is no single argument 
+whose measure provably decreases. Consider
+%
+\begin{code}
+  merge (x:xs) (y:ys)
+    | x < y     = x : merge xs (y:ys)
+    | otherwise = y : merge (x:xs) ys
+\end{code}
+%
+from the homonymous sorting routine. Here, neither
+parameter decreases, but the \emph{sum} of their 
+sizes does. To prove termination, we can type @merge@ as:
+%
+\begin{code}
+  xs:[a] -> ys:[a] -> [a] / [len xs + len ys]
+\end{code}
+
+%%%% \begin{figure*}[!t]
+%%%% 	\begin{code}
+%%%% 	type OL  a   =  [a]<{\fld v -> (v >= fld)}>
+%%%% 
+%%%% 	qsort :: (Ord a) => xs:[a] -> OL a / [(len xs), 0]
+%%%% 	qsort []         = []
+%%%% 	qsort (x:xs)     = qpart x xs [] []
+%%%% 
+%%%% 	qpart :: (Ord a) => x:a -> q:[a] -> r: [{v:a|v<x}] -> p: [{v:a|v>=x}] -> OL a 
+%%%% 	       / [((len q) + (len r) + (len p)), ((len q) + 1)]
+%%%% 	qpart x []     rlt rge             = app x (qsort rlt) (x:qsort rge)
+%%%% 	qpart x (y:ys) rlt rge | x > y     = qpart x ys (y:rlt) rge
+%%%% 	                       | otherwise = qpart x ys rlt (y:rge)
+%%%% 
+%%%% 	app k []     ys = ys
+%%%% 	app k (x:xs) ys = x : (app k xs ys)
+%%%% 	\end{code}
+%%%% \caption{Mutual-recursive qsort}
+%%%% \label{fig:code:qsort}
+%%%% \end{figure*}
+
+
+\mypara{Putting it all Together}
+The above techniques can be combined to prove 
+termination of the mutually recursive quick-sort (from~\citep{XiTerminationLICS01})% \RJ{from where?}
+%
+\begin{code}
+  qsort (x:xs)   = qpart x xs [] []
+  qsort []       = []
+
+  qpart x (y:ys) l r 
+    | x > y      = qpart x ys (y:l) r 
+    | otherwise  = qpart x ys l (y:r)
+  qpart x [] l r = app x (qsort l) (qsort r) 
+
+  app k []     z = k : z
+  app k (x:xs) z = x : app k xs z
+\end{code}
+%
+@qsort (x:xs)@ calls @qpart x xs@ to partition @xs@ 
+into two lists @l@ and @r@ that have elements less 
+and greater or equal than the pivot @x@, respectively.
+%
+When @qpart@ finishes partitioning it mutually recursively
+calls @qsort@ to sort the two list and appends the results 
+with @app@. 
+%
+\toolname proves sortedness as well~\cite{vazou13} but let us 
+focus here on termination. To this end, we type the functions
+as:
+%
+\begin{code}
+  qsort :: xs:_ -> _ 
+        / [len xs, 0]
+    
+  qpart :: _ -> ys:_ -> l:_ -> r:_ -> _ 
+        / [len ys + len l + len r, 1 + len ys]
+\end{code}
+%
+As before, \toolname checks that at each recursive call 
+the caller's metric is less than the callee's. 
+%
+When @qsort@ calls @qpart@ the length of the unsorted 
+list @len (x:xs)@ exceeds the \hbox{@len xs + len [] + len []@}.
+%
+When @qpart@ recursively calls itself the first component
+of the metric is the same, but the length of the unpartitioned 
+list decreases, \ie @1 + len y:ys@ exceeds \hbox{@1 + len ys@}.
+%
+Finally, when @qpart@ calls @qsort@ we have \hbox{@len ys + len l + len r@}
+exceeds both @len l@ and @len r@, thereby ensuring termination.
+
+
+%%% Before we dive into proving termination, note that the 
+%%% type alias @OL a@ uses Abstract Refinements~\citep{vazou13} to describe 
+%%% Ordered Lists. 
+%%% Thus, when \toolname decides that the @qsort@ is SAFE, 
+%%% it proves both termination and sortedness.
+%%%%Note that classical appending @rlt ++ rge@ of the two sorted lists will lose 
+%%%%the crucial for sorting information that every element of @rlt@ is less than each element of @rge@.
+%%%%%
+%%%%Thus we defined a new version of list appending @app@ that uses the pivot element @k@
+%%%%as a ghost-parameter.
+%%%%%
+%%%%Good news is that \toolname will automatically infer the appropriate type of @app@!
+
+%% Let \mus{xs} and \mup{q}{r}{p} be the (well-founded) termination pairs
+%% for @qsort xs@ and @qpart x q r p@ respectively, as annotated in the type signatures.
+%% %
+%%%$\mu_s(x:xs) = (1 + len xs, 0) > (len xs + 0 + 0, len xs + 1) = \mu_p(xs, [], [])$
+%%%$\mu_p(y:ys, rlt, rge) = ((1 + (len ys)) + (len rlt) + (len rge), (1 + len ys) + 1) > 
+%%%(len ys + (1 + (len rlt)) + (len rge), ((len ys) + 1)) = \mu_p(ys, y:rlt, rge) $
+%%%$\mu_p([], rlt, rge) = (0 + len rlt + len rge, 1) > (len rlt, 0) = \mu_s(rlt)$ 
+
+%% Existing techniques~\citep{CookPR11} could be used to 
+%% come up with termination metrics.
+%% We leave embedding these techniques into \toolname as a future work, and instead
+%% we use some defaults to automate termination proving 
+%% on functions with trivial metrics.
+
+\mypara{Automation: Default Size Measures}
+%
+The @qsort@ example illustrates that while \toolname is 
+very expressive, devising appropriate termination metrics 
+can be tricky.
+%
+Fortunately, such patterns are very uncommon, and the vast
+majority of cases in real world programs are just structural 
+recursion on a datatype.
+%
+\toolname automates termination proofs for this common case,
+by allowing users to specify a \emph{default size measure} 
+for each data type, \eg @len@ for @[a]@.
+%
+Now, if no explicit termination metric is given, by default 
+\toolname assumes that the \emph{first} argument whose type
+has an associated size measure decreases.
+%
+Thus, in the above, we need not specify metrics for @fac@ 
+or @map@ as the size measure is automatically 
+used to prove termination. 
+%
+This heuristic suffices to \emph{automatically}
+prove 67\% of recursive functions terminating.
+
+\mypara{Disabling Termination Checking}
+In \texttt{Haskell}'s lazy setting not all functions are terminating.
+% 
+\toolname provides two mechanisms the disable termination proving.
+%
+A user can disable checking a single function by marking 
+that function as lazy. For example, specifying @lazy repeat@ 
+tells the tool to not prove @repeat@ terminates.
+%
+Optionally, a user can disable termination checking for a whole
+module by using the command line argument \cmdnotermination
+for the entire file.

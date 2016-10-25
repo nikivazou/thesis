@@ -1,0 +1,385 @@
+\newcommand\lbxmonad{\texttt{xmonad}\xspace}
+
+\NV{(R3)
+ Regarding your XMonad experience, you might want to compare your approach to the work of Wouter Swierstra: "Xmonad in Coq (Experience Report)
+}
+\section{XMonad: From Testing to Static Verification}\label{sec:xmonad}
+
+In this section we discuss our experience in the on-going endeavour of 
+static verification of \lbxmonad.
+%
+We start by summarizing the data structures used in \lbxmonad, as described in the documentation.
+%
+We continue by specifying and proving \lbxmonad's invariant, \ie, that
+virtual workspaces are unique
+%
+Finally, we comment on proving \lbxmonad properties to conclude 
+that static verification can be not much harder than testing.
+
+\subsection{The structure}
+
+\lbxmonad is a dynamically tiling \texttt{X11} 
+window manager that is written and configured in Haskell.
+
+The window (@a@) is a set of virtual workspaces. 
+On each workspace is a stack of windows. 
+A given workspace is always current, and a given
+window on each workspace has focus. 
+The focused window on the current
+workspace is the one which will take user input. 
+%
+\lbxmonad uses a Zipper~\citep{zipper} data structure 
+to directly track focus on the virtual workspaces, 
+and calls this structure @Stack a@.
+
+A workspace is just a @Stack@ of virtual workspaces 
+tagged with a tag @i@ and its layout @l@
+@Workspace i l a@.
+
+To view a workspace on a physical screen one needs to 
+associate the workspace with physical screen's id @sid@
+and details @sd@, 
+forming the new data structure @Screen i l a sid sd@.
+
+Xinerama in X11 allows viewing multiple virtual workspaces
+simultaneously. 
+%
+While only one the current one will ever be in focus (i.e. will
+receive keyboard events), other workspaces may be passively
+viewable.  
+%
+We thus need to track which virtual workspaces are
+associated (viewed) on which physical screens.  
+%
+To keep track of
+this, \lbxmonad's main data structure  @StackSet i l a sid sd@ 
+keeps, apart from the current screen,
+separate lists of visible but non-focused
+workspaces (@Screen@) , and non-visible workspaces (@Workspace@).
+
+\subsection{Uniqueness of windows}
+We proved that each window @a@ appears once in the @StackSet i l a sid sd@
+bottom-up: 
+We proved that each @Stack@ has unique elements
+and that all the stacks that appear in @StackSet@ are disjoint.
+
+\mypara{Unique Stack} 
+Assume the existence of a predicate 
+@ULNeq (X::a) (XS::[a])@ that ensures that 
+(1)~the list @XS@ has no duplicates and
+(2)~@X@ is not an element of @XS@.
+%
+With that magical predicate we define an \emph{almost unique}
+stack: 
+\begin{code}
+data Stack a = Stack { focus :: a   
+                     , up    :: ULNEq a focus
+                     , down  :: ULNEq a focus }
+\end{code}
+The stack has a @focus@ element @a@ and 
+and two unique lists of @a@'s @up@ and @down@ of the focus.
+
+The above Stack is almost unique, as an element 
+may appear both in the @up@ and the @down@ lists.
+%
+We define a type alias for @U@nique@Stack@
+that rejects with possibility:
+
+\begin{code}
+type UStack a = {v:(Stack a) | 
+  (LDisjoint (up v) (down v))}
+
+predicate LDisjoint X Y = 
+  (Set_emp (Set_cap (listElts X) (listElts Y)))
+\end{code}
+
+where @listElts@ is a recursively defined measure that 
+returns the Set of elements of the input list, 
+that is build in \toolname.
+\begin{code}
+measure listElts :: [a] -> (Set a) 
+ listElts([])   = {v | (Set_emp v) }
+ listElts(x:xs) = {v | v = 
+   (Set_cup (Set_sng x) (listElts xs))} 
+\end{code}
+
+Note that the above definitions crucially depend on set theoretic properties.
+Thus, verification of \lbxmonad is achieved using an SMT back-end 
+that supports set theory (like Z3~\citep{Z3}).
+
+We slightly modify the above measure definition
+to define @listDup@, a measure that returns the duplicate
+elements of a list.
+%
+\begin{code}
+measure listDup :: [a] -> (Set a)
+ listDup([])   = {v | (Set_emp v)}
+ listDup(x:xs) = {v | v = 
+   if (Set_mem x (listElts xs)) 
+    then (Set_cup (Set_sng x) (listDup xs))
+    else (listDup xs))                      }
+\end{code}
+
+Using @listDup@ we define the magical list type @ULNEq a N@ 
+as a list @v@ that has no duplicates, \ie the set @listDup v@
+is empty, and @N@ does not belong to the set @listElts v@.
+
+\begin{code}
+type ULNEq a N = {v:[a] | ( (UL v) && (not (LElt N v))}
+
+predicate LElt N LS  = (Set_mem N (listElts LS)) 
+predicate UL     LS  = (Set_emp (listDup LS)   )
+\end{code}
+
+Throughout verification
+we need to establish and use the invariant 
+that each Stack is Unique.
+%
+This is achieved by the following annotation
+\begin{code}
+using (Stack a) as (UStack a)
+\end{code}
+that allows \toolname to 
+(1)~ use the invariant:
+each time a Stack value is retrieved from the environment
+\toolname strengthens its type with the disjointness information;
+(2)~ prove the invariant:
+each time @Stack@ data constructor is used,
+an disjoint constraint should be proved.
+Failure to prove this constraint will raise an 
+``Invariant Check'' error.
+
+\mypara{Unique StackSet} 
+Establishing Uniqueness on StackSets is a generalization of the above procedure.
+
+The definition of a @StackSet@ includes 
+the @current@ Screen, 
+the list of @visible@ screens,
+and the list of @hidden@ workspaces.
+\begin{code}
+data StackSet i l a sid sd = StackSet 
+   { lcurrent  ::  Screen i l a sid sd   
+   , lvisible  :: [Screen i l a sid sd]
+   , lhidden   :: [Workspace i l a]
+   , lfloating :: M.Map a RationalRect     
+   }
+\end{code}
+%
+\toolname automatically turns the record selectors of refined data types
+to measures that return the appropriate fields.
+%
+Thus we infix the refined selectors with an @l@
+to distinguish between the haskell (\eg, @current@)
+and the logical (\eg, @lcurrent@) selectors. 
+
+To prove absence of duplicates we need to @use@
+only @StackSet@s that have no duplicates:  
+\begin{code}
+using (StackSet i l a sid sd) 
+ as  {v:StackSet i l a sid sd|(NoDuplicates v)}
+\end{code}
+
+@NoDuplicates@ ensures that the elements of
+@hidden@, @current@, and @visible@ 
+workspaces are mutually disjoint
+and that the @visible@ and @hidden@ workspaces
+have no duplicates.
+%
+\begin{code}
+predicate NoDuplicates SS = 
+    (Disjoint3  (workspacesElts (lhidden  SS)) 
+                (screenElts     (lcurrent SS)) 
+                (screensElts    (lvisible SS))) 
+  &&
+    (Set_emp (screensDups    (lvisible SS))) 
+  &&
+    (Set_emp (workspacesDups (lhidden  SS)))
+\end{code}
+%
+Again we used recursively defined measures to grap 
+the elements and the duplicates of the structures.
+For example, @screenElts@ returns 
+the elements of the stack of the workspace of the screen, 
+and is used by @screensDup@ to grap the duplicates of 
+a list of Screens.
+
+\mypara{Verification Procedure}
+Using the above unique types make \toolname verify the absence of duplicates.
+%
+It was not surprising that when we first run \toolname 
+against these stronger types many type errors where created.
+%
+The 
+can be summarized as follows:
+\begin{itemize}
+	\item\emph{Strengthening library functions.}
+      \lbxmonad repeatedly concatenates the list fields of a Stack.
+      %
+      To prove that for some `s::UStack a`, `(up s ++ down s)` is a unique list, 
+      the type of `(++)`
+      needs to capture that concatenation of two unique and disjoint lists is a unique list.
+      %
+      For verification, we assumed that Prelude's `(++)` satisfies this property.
+      %
+      But, not all arguments of `(++)` are unique disjoint lists:
+      @"StackSet" ++ "error"@ is a trivial example that does not satisfy
+      the assumed preconditions of `(++)` thus creating a type error.
+      % 
+      Sadly, \toolname does not currently support sum types, 
+      thus we used an unrefined `(++.)` variant of `(++)` for such cases.
+%%
+%%	Thus function @mapLayout@ seemed en auto-provable one, 
+%%	as it only modify the layout elements @l@ 
+%%	which cannot affect the uniqueness of @a@ elements.
+%%	%
+%%\begin{code}
+%%mapLayout :: (l -> l') 
+%%          -> StackSet i l a s sd 
+%%          -> StackSet i l' a s sd
+%%\end{code}
+     
+	\item\emph{Restrict the functions' domain.}
+	@modify@ is a @maybe@ like function
+	that given a default value @x@,
+	a function @f@ and a StackSet @s@,
+	applies @f@ on the @Maybe (Stack a)@ values inside @s@. 
+	%
+\begin{code}
+modify :: 
+    x:{v:Maybe (UStack a) | (isNothing v)}
+ -> f:(y:(UStack a) 
+     -> Maybe {v:UStack a) | (SubElts v y)})
+ -> s:StackSet i l a s sd 
+ -> StackSet i l a s sd
+\end{code}
+	%
+	Since inside the StackSet each @y:Maybe (Stack a)@
+	could be replaced with either the default value @x@
+	or @f y@ we need to ensure that both there alternatives
+	will not insert duplicates.
+	%
+	This imposes the interesting precondition that the default
+	value should be @Nothing@, which dramatically restricts 
+	@modify@'s domain.
+	%
+	Given this restriction, \toolname should verify 
+	that all user functions satisfy it.
+			
+	\item\emph{Code inlining}
+    %
+    Given a tag @i@ and a StackSet @s@, 
+    @view i s@ will set the current Screen 
+    to the screen with tag @i@, 
+    if such screen exists in @s@.
+    %
+    Below is the original definition for @view@
+    in case when a screen with tag @i@ exists in 
+    visible screens
+    %
+\begin{code}
+view :: (Eq s, Eq i) => i 
+    -> StackSet i l a s sd -> StackSet i l a s sd
+view i s    
+  | Just x <- L.find ((i==).tag.workspace) 
+                     (visible s)
+  = s { current = x
+      , visible = current s : 
+          L.deleteBy (equating screen) x 
+                     (visible s)} 
+\end{code}
+    %
+    Verification of this code is difficult
+    as the properties of all intermediate values 
+    are too complicated to be expressed.
+    %
+    Instead we replaces this code with a call to a 
+    recursive function @raiseIfVisible i s@
+    that in-place replaces @x@ with the current screen.  
+  
+\end{itemize}
+
+\subsection{QuickCheck Properties}
+
+\lbxmonad is tested against $113$ \texttt{quickcheck} properties.
+%
+Of those $15$ check the uniqueness invariant 
+and the rest $113$ check various functional properties.
+%
+We started the endeavour of verifying these properties with \toolname.
+%
+We looked at a sample of $15$ properties to conclude that
+which we categorized as follows:
+\begin{itemize}
+\item\emph{Easy to be proved.}
+Consider the \texttt{quickcheck} property that checks that @view@ing 
+a @StackSet a@ is idempotent:
+\begin{code}
+prop_view_idem (x :: T) (i :: NonNegative Int) 
+  = i `tagMember` x ==> view i (view i x) == (view i x)
+\end{code}
+%
+The above property directly translated to a haskell function
+\begin{code}
+type Valid     = {v:Bool | (Prop v) }
+
+prop_view_idem :: StackSet i l a sid sd -> i -> Valid
+prop_view_idem x i 
+  | i `tagMember` x = view i (view i) == v
+  | otherwise       = True
+\end{code}
+%
+By the above type signature,
+\ie by the result type @Valid@, 
+we specify that the function should always returns True.
+%
+When typechecking the above function,
+\toolname proves that the property holds.
+%
+\toolname is able to verify this property as the result type of @view@
+is strengthens with a refinement 
+(in this case @EqTag x i => x = v@) 
+that directly implies this property.
+
+The above is generalizing to (10/17) properties that we checked:
+strengthening the function types by refinements that \toolname can prove
+is sufficient to verify these properties.
+
+\item\emph{Can be estimated.}
+In some other properties (like checking that @view@ing is reversible),
+two StackSets (@s1@ and @s2@) were normalized before being compared,
+that is their elements were first sorted.
+%
+In our logic we do not support any operation that can normalize structures in such a way.
+%
+Thus we cannot prove this exact property.
+%
+Instead we approximated it, by proving that proving that @s1@ and @s2@
+have the same sets of elements.
+%
+We approximated (3/17) of the properties.
+
+\item\emph{Their proof cannot be supported, currently.} [1]
+One \texttt{quickcheck} property checks 
+that @i@ cannot belong to an empty stackset.
+%
+We used abstract refinements to encode empty stacksets.
+%
+Proving the above property would be easy 
+if we could mix abstract and concrete refinements in logical formulas
+or if \toolname supported sum types.
+%
+Both the alternatives constitutes features that
+we would like to extend \toolname with in the near future.
+%
+Still, currently we are not able to prove such kind of properties.
+\item\emph{Cannot be expressed}
+Other properties %, like @prop_focus_left_master@ 
+check that the order of the windows is not affected by certain operations.
+%
+Though not infeasible we acknowledge that \toolname 
+is not appropriate for reasoning about order preserving
+and verification of such properties 
+would require many code modifications.
+%
+(3/17) are order preserving properties.
+\end{itemize}

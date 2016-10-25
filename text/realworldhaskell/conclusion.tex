@@ -1,0 +1,32 @@
+\section{Conclusion}
+
+We presented \toolname, a refinement type checker
+for Haskell programs.
+Specifically, we presented 
+a high-level overview of \toolname, through a tour of its features;
+a qualitative discussion of the kinds of properties that can be checked; and
+a quantitative evaluation of the approach.
+
+\toolname users, especially the ones coming from a dependent type theory 
+background, should keep in mind that the refinement language is not arbitrary
+haskell terms. Instead it is a restricted logical language determined by the 
+underlying SMT solver.
+Thus, a natural question that arises is:
+%%
+%%Ideally, at this point,  we would like to be able to provide a crisp 
+%%answer to the question: 
+``What kinds of properties or constructs can(not) be verified by \toolname?''
+%
+Unfortunately, we have no such answers since the boundaries of
+what is possible are constantly expanding, either by improvements 
+in the tool, by creatively encoding specifications~\cite{vazou13},
+or by modifying the code slightly to facilitate verification.
+Indeed, to appreciate the difficulty of answering this question, 
+replace \toolname with ``Haskell's type system".
+Instead, over the course of this work we have qualitatively 
+circumscribed the wide space of use cases for refinement types,
+and have identified some lacunae that may be addressed in future work. 
+%
+Ultimately, we hope that with more users and experience, we will be able
+identify various common specification patterns or idioms to easily 
+demarcate the boundary of what is possible with automatic SMT-based verification.

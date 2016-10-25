@@ -1,0 +1,244 @@
+\section{Evaluation}\label{sec:evaluation}
+
+% We implemented our technique by extending \toolname~\cite{vazou13}. 
+% Next, we describe the tool, the benchmarks, 
+% and a quantitative summary of our results.
+% We then present a qualitative discussion 
+% of how \toolname was used to verify safety, 
+% termination, and functional correctness 
+% properties of a large library, and 
+% discuss the strengths and limitations 
+% unearthed by the study.
+
+% \subsection{Benchmarks and Results}
+
+% Our goal was to use \toolname to verify a suite of real-world Haskell 
+% programs, to evaluate whether our approach is
+% %
+% %\begin{itemize}
+% %  \item 
+%     \emph{efficient}  enough for large programs,
+% %  \item 
+%     \emph{expressive} enough to  specify key correctness properties, and
+% %  \item 
+%     \emph{precise}    enough to  verify idiomatic Haskell codes.
+% %\end{itemize}
+% %
+% %\mypara{Benchmarks}
+% Thus, we used these libraries as benchmarks:
+% %
+% \begin{itemize}
+% \item \texttt{GHC.List} and \texttt{Data.List}, which together implement many standard
+%       list operations; we verify various
+%       size related properties,
+% \item \texttt{Data.Set.Splay}, which implements a splay-tree
+%       based functional set data type; we verify that all interface 
+%       functions terminate and return well ordered trees,
+% \item \texttt{Data.Map.Base}, which implements a functional 
+%       map data type; we verify that all interface functions 
+%       terminate and return binary-search ordered trees~\cite{vazou13}, 
+% \item \libvectoralgos, which includes a suite of 
+%       ``imperative'' (\ie monadic) array-based sorting algorithms; 
+%       we verify the correctness of vector accessing, indexing, and slicing.
+% \item \bytestring, a library for manipulating byte arrays, we
+%       verify termination, low-level memory safety, and high-level
+%       functional correctness properties\includeProof{(\ref{sec:bytestring})},
+% \item \libtext, a library for high-performance unicode text 
+%       processing; we verify various pointer safety and 
+%       functional correctness properties (\ref{sec:text}),
+%       during which we find a subtle bug.
+% \end{itemize}
+% %
+% We chose these benchmarks as they represent a wide spectrum of idiomatic
+% Haskell codes: the first three are widely used libraries based on recursive 
+% data structures, the fourth and fifth perform subtle, low-level arithmetic 
+% manipulation of array indices and pointers, and the last is a rich, high-level
+% library with sophisticated application-specific invariants. 
+% These last three libraries are especially representative as they pervasively 
+% intermingle high level abstractions like higher-order loops, folds, and fusion, 
+% with low-level pointer manipulations in order to deliver high-performance. 
+% They are an appealing target for \toolname, as refinement types are an ideal 
+% way to statically enforce critical invariants that are outside the scope of
+% run-time checking as even Haskell's highly expressive type system.
+
+We now turn to a quantitative evaluation of our experiments with \toolname.
+
+\input{results}
+
+\subsection{Results}
+
+We have used the following libraries as benchmarks:
+%
+\begin{itemize}
+\item \texttt{GHC.List} and \texttt{Data.List}, which together implement many standard
+      list operations; we verify various
+      size related properties,
+\item \texttt{Data.Set.Splay}, which implements a splay-tree
+      based functional set data type; we verify that all interface 
+      functions terminate and return well ordered trees,
+\item \texttt{Data.Map.Base}, which implements a functional 
+      map data type; we verify that all interface functions 
+      terminate and return binary-search ordered trees~\cite{vazou13}, 
+\item \texttt{HsColour}, a syntax highlighting program for Haskell code, we
+      verify totality of all functions (\S~\ref{sec:totality}),
+\item \texttt{XMonad}, a tiling window manager for X11, we verify the uniqueness
+      invariant of the core datatype, as well as some of the QuickCheck
+      properties (\S~\ref{sec:xmonad}),
+\item \bytestring, a library for manipulating byte arrays, we
+      verify termination, low-level memory safety, and high-level
+      functional correctness properties (\S~\ref{sec:bytestring}),
+\item \libtext, a library for high-performance unicode text 
+      processing; we verify various pointer safety and 
+      functional correctness properties (\S~\ref{sec:text}),
+      during which we find a subtle bug,
+\item \libvectoralgos, which includes a suite of 
+      ``imperative'' (\ie monadic) array-based sorting algorithms; 
+      we verify the correctness of vector accessing, indexing, and slicing \etc.
+\end{itemize}
+
+Table~\ref{table:results} summarizes our experiments, which covered 56 modules
+totaling 11,512 non-comment lines of source code and 1,975 lines of specifications.
+%
+The results are on a machine with an Intel Xeon X5660 and 32GB of RAM~(no benchmark required more than 1GB.)
+%
+The upshot is that \toolname is very effective on real-world code bases.
+%
+The total overhead due to hints, \ie the sum of \bfAnnot and \bfQualif, is 3.5\% of \bfLOC.
+%
+The specifications themselves are machine checkable versions of the comments 
+placed around functions describing safe usage and behavior, and required around
+two lines to express on average.
+%
+% Our default metric, namely the first parameter with an associated size measure,
+% suffices to prove \todonum\% of (recursive) functions terminating.
+%
+% \todonum\% require a hint (\ie the position of the decreasing argument) or a
+% witness (\todonum\% required both), and the remaining \todonum\% were marked as potentially diverging.
+%
+% Of the \todonum functions marked as potentially diverging, we suspect \todonum
+% actually terminate but were unable to prove so.
+%
+While there is much room for improving the running times, the tool is fast enough 
+to be used interactively, verify a handful of API functions and associated helpers 
+in isolation.
+
+\subsection{Limitations}\label{sec:discussion}
+%% \NV{
+%% * When applying LiquidHaskell to a given library were any improvements to the tool necessary to complete the analysis, or was the tool sufficiently complete such that other users (not the maintainers) could have performed the same analysis?
+%% }\NV{
+%% * How practical is organizing and keeping source copies of all imported modules?
+%% }\NV{
+%% * When writing code, how can a developer know what constructs will present verification difficulties of the sort in HsColour?
+%% }
+
+Our case studies also highlighted several limitations
+of \toolname that we will address in future work. 
+In most cases, we could alter the code slightly to 
+facilitate verification. 
+
+\mypara{Ghost parameters} are sometimes needed in 
+order to materialize values that are not needed 
+for the computation, but are necessary to prove 
+various specifications. For example, the @piv@ 
+parameter in the @append@ function for red-black trees
+(\S~\ref{sec:redblack}).
+
+\mypara{Fixed-width integer and floating-point numbers}
+\toolname uses the theories of linear arithmetic and
+real numbers to reason about numeric operations. In some
+cases this causes us to lose precision, \eg when we have to
+approximate the behavior of bitwise operations. We could
+address this shortcoming by using the theory of bit-vectors
+to model fixed-width integers, but we are unsure of the
+effect this would have on \toolname's performance.
+
+\mypara{Higher-order functions} 
+must sometimes be \emph{specialized} because the 
+original type is not precise enough. 
+%
+For example, the \texttt{concat} function that
+concatenates a list of input @ByteString@s %@xs@,
+pre-allocates the output region by computing the 
+total size of the input.
+%
+\begin{code}
+  len = sum . map length $ xs
+\end{code}
+%$
+Unfortunately, the type for @map@ is not sufficiently
+precise to conclude that the value @len@ equals 
+@bLens xs@, se we must manually specialize
+the above into a single recursive traversal that 
+computes the lengths.
+%
+Rather than complicating the type system with a very
+general higher-order type for @map@ we suspect the 
+best way forward will be to allow the user to specify
+inlining in a clean fashion.
+
+\mypara{Functions as Data} Several libraries like \lbtext
+encode data structures like (finite) streams using functions,
+in order to facilitate fusion. Currently, it is not possible
+to describe sizes of these structures using measures, as this
+requires describing the sizes of input-output chains starting
+at a given seed input for the function. In future work, it will 
+be interesting to extend the measure mechanism to support 
+multiple parameters (\eg a stream and a seed) in order to reason
+about such structures. 
+
+\mypara{Lazy binders} sometimes get in the way of verification. 
+A common pattern in Haskell code is to define \emph{all} 
+local variables in a single @where@ clause and use them 
+only in a subset of all branches. 
+%
+\toolname flags a few such definitions as \emph{unsafe},
+not realizing that the values will only be demanded in a
+specific branch. 
+%
+Currently, we manually transform the code by pushing 
+binders inwards to the usage site. % (via @let@).
+This transformation could be easily automated.
+
+\mypara{Assumes} 
+which can be thought of as ``hybrid" run-time checks,
+had to be placed in a couple of cases where the verifier 
+loses information. 
+%
+One source is the introduction of assumptions about
+mathematical operators that are currently conservatively 
+modeled in the refinement logic (\eg that multiplication 
+is commutative and associative). 
+These may be removed by using more advanced non-linear 
+arithmetic decision procedures.
+
+\mypara{Error messages} are a crucial part of any type-checker.
+Currently, we report error locations in the provided source
+file and output the failed constraint(s). Unfortunately, the
+constraints often refer to intermediate values that
+have been introduced during the ANF-transformation, which
+obscures their relation to the program source. In future work,
+we may attempt to map these intermediate values back to their
+source expressions, which should increase the comprehensibility
+of our error messages. Another interesting possibility would be
+to search for concrete counterexamples when \toolname detects an
+invalid constraint.
+
+
+%% TECHREP
+%% \RJ{CUT: No context} Another is the introduction 
+%% of axioms about the semantics of uninterpreted 
+%% measures, like @numchars@ used to model the 
+%% number of (unicode) characters in a packed 
+%% array~\cite{techreport}.
+%% %
+%% \RJ{CUT: Not enough context} Another source is current 
+%% limitations in handling Haskell features like 
+%% rank-2 polymorphism \eg like the @liquidAssume@ 
+%% in @mapAccumL@ for @Text@.
+
+
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End: 
