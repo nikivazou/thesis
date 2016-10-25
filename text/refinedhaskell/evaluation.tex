@@ -1,0 +1,485 @@
+\section{Evaluation}\label{sec:evaluation}
+
+Our goal is to build a practical and effective 
+SMT \& refinement type-based verifier for Haskell. 
+%
+We have shown that lazy evaluation requires the 
+verifier to reason about divergence; we have proposed 
+an approach for implicitly reasoning about divergence 
+by eagerly proving termination, thereby optimizing 
+the precision of the verifier.
+%
+Next, we describe an experimental evaluation of our 
+approach that uses \toolname to prove termination and 
+functional correctness properties of a suite of widely 
+used Haskell libraries totaling more than 10KLOC.
+%
+Our evaluation seeks to determine whether our approach is
+%
+\emph{suitable} for a lazy language (\ie do most Haskell functions terminate?),
+\emph{precise}  enough to  capture the termination reasons (\ie is \toolname able to prove that most functions terminate?), 
+\emph{usable}   without placing an unreasonably high burden on the user in the form of explicit termination annotations, and
+\emph{effective}  enough to  enable the verification of functional correctness properties.
+%
+For brevity, we omit a description of the properties other
+than termination, please see~\cite{realworldliquid14} for details.
+
+\spara{Implementation} \toolname takes as input:
+%
+(1)~A Haskell \emph{source} file, 
+%
+(2)~Refinement type \emph{specifications}, 
+    including refined datatype definitions,
+    measures, predicate and type aliases,
+    and function signatures, and
+%
+(3)~Predicate fragments called \emph{qualifiers}
+    which are used to infer refinement types using 
+    the abstract interpretation framework of Liquid
+    Typing~\cite{LiquidPLDI08}.
+%
+The verifier returns as output, \textsc{Safe} or \textsc{Unsafe}, 
+depending on whether the code meets the specifications or not, 
+and, importantly for debugging the code (or specification!) 
+the inferred types for all sub-expressions.
+
+\spara{Benchmarks}
+As benchmarks, we used the following libraries:
+%
+\texttt{GHC.List} and \texttt{Data.List}, which together implement many standard
+list operations,
+\texttt{Data.Set.Splay}, which implements an splay functional set,
+\texttt{Data.Map.Base}, which implements a functional 
+map,
+\libvectoralgos, 
+which includes a suite of ``imperative'' % (\ie monadic)
+array-based sorting algorithms,
+\bytestring, a library for manipulating byte arrays, and
+\libtext, a library for high-performance Unicode text processing. 
+%
+These benchmarks represent a wide spectrum of idiomatic
+Haskell codes: the first three are widely used libraries 
+based on recursive data structures, the fourth and fifth 
+perform subtle, low-level arithmetic manipulation of array
+indices and pointers, and the last is a rich, high-level
+library with sophisticated application-specific invariants,
+well outside the scope of even Haskell's expressive type system.
+Thus, this suite provides a diverse and challenging test-bed 
+for evaluating \toolname.
+
+%% Thus, proving termination of functions in these libraries should
+%% require a variety of termination metrics, ranging from simple
+%% structural recursion to sophisticated numerical invariants, and should
+%% provide a rich test-bed for evaluating our approach.
+%% These last three libraries are especially representative as they pervasively 
+%% intermingle high level abstractions like higher-order loops, folds, and fusion, 
+%% with low-level pointer manipulations in order to deliver high-performance. 
+%% They are an appealing target for \toolname, as refinement types are an ideal 
+%% way to statically enforce critical invariants that are outside the scope of
+%% run-time checking as even Haskell's highly expressive type system.
+
+\input{results}
+
+\spara{Results}
+Table~\ref{table:results} summarizes our experiments, which 
+covered 39 modules totaling 10,209 non-comment lines of 
+source code. % and 1,652 lines of specifications.
+%
+The results were collected on a machine with an Intel Xeon 
+X5600 and 32GB of RAM~(no benchmark required more than 1GB).
+%
+Timing data was for runs that performed full
+verification of safety and functional correctness 
+properties in addition to termination. %; we only discuss the latter here.
+
+\begin{itemize}
+  \item{\emph{Suitable:}} Our approach of eagerly proving termination is in
+    fact, \emph{highly} suitable: of the % a total of 1,539 functions, including
+    504 recursive functions, only 12 functions were \emph{actually}
+    non-terminating (\ie non-inductive).
+    That is, 97.6\% of recursive functions 
+    % (or 99.1\% of all functions)
+    are inductively defined.
+
+  \item{\emph{Precise:}} Our approach is extremely precise, as refinements
+    provide auxiliary invariants and extensibility that is crucial for 
+    proving termination. We successfully \emph{prove} that 96.0\% of 
+    recursive functions % (or 98.6\% of all functions)
+    terminate. 
+    % (Of the 8 that we fail on, 1 terminates for reasons not fully clear to us!)
+
+  \item{\emph{Usable:}} Our approach is highly usable and only places a 
+    modest annotation burden on the user. The default metric, namely the first 
+    parameter with an associated size measure, suffices to automatically 
+    prove 65.7\% of recursive functions terminating. Thus, only 34.3\% require 
+    explicit termination metric, totaling about 1.7 witnesses (about 1 line
+    each) per 100 lines of code.
+
+  \item{\emph{Effective:}} Our approach is extremely effective at improving the
+    precision of the overall verifier (by allowing the VC to use facts
+    about binders that provably reduce to values.) 
+    % As shown in the \textbf{Err} column in Table~\ref{table:results}, 
+    Without the termination optimization, \ie by only using information 
+    for matched-binders (thus in WHNF), \toolname reports 1,395 
+    unique functional correctness warnings -- about 1 per 7 lines.
+    With termination information, this number goes to zero.
+\end{itemize}
+
+%%% Our default metric, namely the first parameter with an associated size
+%%% measure, suffices to prove 67\% of (recursive) functions terminating.
+%%% %
+%%% 30\% require a hint (\ie the position of the decreasing argument) or a
+%%% termination metric (3\% required both), and the remaining 3\% were marked as
+%%% potentially diverging.
+%%% %
+%%% Of the 18 functions marked @lazy@ (\ie potentially diverging), 
+%%% we suspect 6 actually terminate but were unable to prove so.
+%%% 
+%%% There are two important results to emphasize here:
+%%% %
+%%%     (1) \emph{most} Haskell functions terminate on finite inputs, and
+%%% %
+%%%     (2) the termination metrics are \emph{easily} specified in \toolname.
+
+
+\begin{comment}
+
+
+Next, we present a qualitative overview of how to prove termination
+properties using \toolname.
+\subsection{Proving Termination with Refinements}
+\label{sec:proving-termination-with-refinements}
+{
+
+% 1. Nats
+% 2. structural recursion on Lists
+% 3. auxiliary invariants that need ghost variables or termination
+% expressions, e.g. list merge
+% 4. Bytestring
+\ES{Assuming we have already outlined the approach with sized types
+  encoded via refinements in the overview.}
+
+Let us begin with one of the simplest recursive functions, the
+fibonacci function.
+%
+\begin{code}
+  fib  :: Nat -> Int
+  fib 0 = 1
+  fib 1 = 1
+  fib n = fib (n-1) + fib (n-2)
+\end{code}
+%
+Recall that we have simply defined @Nat@ as @{v:Int | v>=0}@. In
+this case, the argument @n@ can itself be used as the termination
+metric. The precondition ensures that @n@ will be non-negative, \ie
+@n@ is \emph{well-founded}, and \toolname knows from the type of
+@(-)@ that @n-1@ and @n-2@ are both strictly less than @n@, therefore
+@fib@ \emph{must} terminate. 
+
+Not all recursive functions on @Nat@s have such simple termination
+metrics, one famous example is the Ackermann function.
+%
+\begin{code}
+  ack m n 
+    | m == 0    = n + 1
+    | n == 0    = ack (m-1) 1 
+    | otherwise = ack (m-1) (ack m (n-1))
+\end{code}
+%
+Neither @m@ nor @n@ can be shown to decrease in each recursive call,
+however @ack@ can still be proven terminating because \emph{either}
+@m@ decreases \emph{or} @m@ remains the same and @n@ decreases. In
+other words, the pair @(m,n)@ strictly decreases according to a
+well-founded \emph{lexicographic} ordering. We express lexicographic
+termination in \toolname using \emph{termination expressions}, which
+take the form @x :: t / e@ where @e@ is a list of \toolname
+expressions that should be used to prove termination. In the case of
+@ack@ the expressions will simply be references to the parameters @m@
+and @n@
+%
+\begin{code}
+  ack :: m:Nat -> n:Nat -> Nat / [m,n]
+\end{code}
+%
+encoding the requirement that @(m,n)@ is a lexicographically
+decreasing pair.
+
+\spara{Measuring the Size of Structures}
+Many functions are structurally recursive and can be proven
+terminating by showing that they always recur on a \emph{substructure}.
+Consider the function @map@ defined over the standard list type.
+%
+\begin{code}
+  map f []     = [] 
+  map f (x:xs) = f x : map f xs
+\end{code}
+%
+In @map@, the recursive call is made with a ``smaller'' input.
+We formalize the notion of size with \emph{measures}.
+%
+\begin{code}
+  measure len :: [a] -> Nat
+  len []     = 0
+  len (x:xs) = 1 + len xs
+\end{code}
+%
+With the above definition, 
+the @measure@ strengthens the type of the data constructors to:
+%
+\begin{code}
+  []  :: {v: [a] | len v = 0}
+  (:) :: x:a -> xs:[a]
+      -> {v:[a] | len v = 1 + len xs}
+\end{code}
+%
+where @len@ is simply an uninterpreted function in the SMT
+logic~\cite{LiquidPLDI09}. With the strengthened data constructors,
+\toolname happily proves that @map@ is always called recursively with
+smaller inputs\footnote{\toolname defaults to the second parameter
+  here for proving termination because it has no notion of the size of
+  a function.}, and that the input size is bounded below by 0,
+therefore it must terminate.
+\spara{Expressing Termination} 
+Sometimes, the decreasing metric cannot be associated with a single
+parameter or lexicographically ordered sequence of parameters, but is
+instead an auxiliary value that is a \emph{function} of the
+parameters.
+%
+For example, here is the @union@ function from the splay-tree-based
+set library
+%
+\begin{code}
+  union Leaf         t = t
+  union (Node x a b) t = Node x taa tbb
+    where 
+      taa          = union ta a
+      tbb          = union tb b
+      (ta, _, tb)  = split x t
+\end{code}
+%
+which uses the following datatype:
+%
+\begin{code}
+  data Splay a = Leaf 
+               | Node a (Splay a) (Splay a)
+\end{code}
+%
+Here, as the recursive call ``swaps'' the parameters, \ie the first
+(resp. second) argument of the recursive call is computed from the
+second (resp. first) parameter, neither parameter provably decreases,
+nor do they form a lexicographically-ordered pair.
+%
+However, on closer inspection it turns out that the \emph{sum}
+of the sizes of the trees strictly decreases, as @split@ has type
+%
+\begin{code}
+  a -> t:Splay a -> (SplayL a t, SplayL a t)
+\end{code}
+%
+where the output type uses the alias
+%
+\begin{code}
+  type SplayL a T 
+    = {v:Splay a | size v <= size T}
+\end{code}
+%
+and @size@ is a \emph{measure} akin to @len@.
+%
+\begin{code}
+  measure size     :: Splay a -> Nat
+  size Leaf         = 0
+  size (Node v l r) = 1 + size l + size r
+\end{code}
+%
+We already know how to express this type of termination metric using
+our handy termination expressions, so we give @union@ the following type:
+%
+\begin{code}
+  union :: Ord a => x:Splay a -> y:Splay a
+        -> Splay a / [size x + size y]
+\end{code}
+
+% For example, here is the standard @merge@ function from the eponymous sorting
+% procedure:
+% %
+% \begin{code}
+%     merge xs@(x:xs') ys@(y:ys') 
+%       | x < y     = x : merge xs' ys
+%       | otherwise = y : merge xs  ys'
+% \end{code}
+% %
+% neither parameter provably decreases in both calls, but the \emph{sum}
+% of the sizes of the parameters strictly decreases. 
+
+% In these cases, we can reuse our termination expression syntax from
+% above, but with a more complex expression.
+% %
+% \begin{code}
+%     merge :: xs:[a] -> ys:[a] -> [a] 
+%           / [len xs + len ys]
+% \end{code}
+% %
+% This is equivalent to rewriting @merge@ to take a \emph{ghost}
+% parameter that acts as a termination witness, \eg
+% %
+% \begin{code}
+%     merge :: xs:[a] -> ys:[a] 
+%           -> {v:Nat | v = len xs + len ys} 
+%           -> [a] 
+% \end{code}
+% %
+% except that with the termination expression, one need not modify the
+% actual code! Now, \toolname verifies that in each recursive call the
+% expression @len xs + len ys@ is strictly smaller, thereby proving that
+% @merge@ terminates.
+
+\spara{Pointer-based Termination}
+For our last example we will look at the \bytestring
+library. \bytestring is an interesting target for our termination
+experiments because proving termination of \bytestring functions often
+requires reasoning about the length of the memory segment that a
+pointer points to.
+
+A (strict) @ByteString@ is a triple of a @pay@load pointer, 
+an @off@set into the memory buffer referred to by the pointer 
+(at which the string actually ``begins'') and a @len@gth 
+corresponding to the number of bytes in the string, which is 
+the size of the buffer \emph{after} the @off@set, that
+corresponds to the string.
+%
+We define a measure for the \emph{size} of 
+a @ForeignPtr@'s buffer, and use it to define 
+the key invariants as a refined datatype 
+%
+\begin{code}
+  measure fplen  :: ForeignPtr a -> Nat
+  data ByteString = PS
+   { pay :: ForeignPtr Word8
+   , off :: {v:Nat | v       <= fplen pay}
+   , len :: {v:Nat | off + v <= fplen pay} 
+   }
+\end{code}
+%
+\ES{can probably kill this para about invariants if we need space}
+The definition states that 
+the offset is a @Nat@ no bigger than the size of 
+the @payload@'s buffer, and that
+the sum of the @off@set and non-negative @len@gth
+is no more than the size of the payload buffer.
+Finally, we encode a @ByteString@'s size as a measure.
+%
+\begin{code}
+  measure blen   :: ByteString -> Nat
+  blen (PS p o l) = l
+\end{code}
+
+Consider the function @findIndex@, which searches through a
+@ByteString@ for a @Word8@ that satisfies some predicate @p@.
+
+\begin{code}
+  findIndex p (PS x s l) = inlinePerformIO $ 
+    withForeignPtr x $ \f -> 
+      go l (f `plusPtr` s) 0
+  where
+    go :: ptr:_ -> n:_ -> _ / [l - n]
+    go ptr n
+      | n >= l    = return Nothing
+      | otherwise = do 
+          w <- peek ptr
+          if p w
+            then return (Just n)
+            else go (ptr `plusPtr` 1) (n+1)
+\end{code}
+
+The bulk of the work is done by the recursive inner function @go@,
+which repeatedly increments @ptr@ until it finds an appropriate byte
+or it reaches the end of the valid memory region. We use @l - n@ as
+the termination metric for @go@, which denotes the number of bytes
+remaining in the valid memory region.
+
+\spara{Nested Data}
+For our final example, consider @group@, which
+splits a string like @"aart"@ into the list
+@["aa","r","t"]@.
+% , \ie a list of
+% (a)~non-empty @ByteString@s whose 
+% (b)~total length equals that of the input. 
+% To specify these requirements, we define a measure for 
+% the total length of strings in a list and use it to
+% write an alias for a list of \emph{non-empty} strings
+% whose total length equals that of another string:
+
+% \begin{code}
+% measure blens :: [ByteString] -> Int 
+% blens ([])     = 0
+% blens (x:xs)   = blen x + blens xs
+
+% type ByteStringNE 
+%   = {v:ByteString | blen v > 0}
+% type ByteStringsEq B
+%   = {v:[ByteStringNE] | blens v = blen b}
+% \end{code}
+%
+% \toolname uses the above to verify that 
+%
+\begin{code}
+  group xs
+    | null xs   = []
+    | otherwise = (y `cons` ys) : group zs
+    where
+      x         = unsafeHead xs
+      xs'       = unsafeTail xs
+      (ys, zs)  = spanByte x xs' 
+\end{code}
+%
+This example illustrates why refinements are critical for
+proving termination. \toolname determines that @unsafeTail@ 
+returns a \emph{shorter} @ByteString@ than its input, and that
+each element returned by @spanByte@ is no longer than the 
+input, concluding that @zs@ is smaller than @xs@, and hence
+checking the body under the termination-weakened environment.
+
+\ES{figure out why things break when we change spanByte to use term exprs}
+
+Let's also look at @spanByte@, which splits strings into a pair, to
+see how \toolname infers its crucial type:
+%
+\begin{code}
+  spanByte c ps@(PS x s l) 
+    = inlinePerformIO $ withForeignPtr x $
+        \p -> go (p `plusPtr` s) 0
+    where
+      go :: p:_ -> i:_ -> _ / [l - i]
+      go p i 
+        | i >= l    = return (ps, empty)
+        | otherwise = do
+            c' <- peekByteOff p i
+            if c /= c'
+            then let b1 = unsafeTake i ps
+                     b2 = unsafeDrop i ps
+                 in  return (b1, b2)
+            else go p (i+1)
+\end{code}
+%
+Here again, the work is all done by the inner recursive function @go@,
+which uses the same termination metric as above. \toolname can 
+infer that both @ByteString@s in the pair are no longer than @ps@
+through a case analysis. In the base case, @blen ps <= blen ps@ and 
+@blen empty <= blen ps@ both hold trivially, and in the recursive case
+@blen b1 <= blen ps@ and @blen b2 <= blen ps@ both hold because
+\toolname infers that @unsafeTake@ and @unsafeDrop@ both
+return shorter strings. Thus, both @ByteString@s returned by
+@spanByte@ are at most as long as its input @xs'@, which is
+\emph{strictly} shorter than the input to @group@; therefore @group@
+is only called recursively on smaller inputs and it must terminate!
+
+So the bright side is that, although sound and precise refinements in
+a lazy language incurs the additional burden of termination proofs,
+refinements make proving termination easy!
+
+\end{comment}
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End: 

@@ -1,0 +1,62 @@
+\begin{figure}
+\hrule width 0.48\textwidth \vspace{0.05in}
+$$
+\begin{array}{rrcl}
+
+\emphbf{Constants} \quad 
+  & c & ::=    & 0,1,-1,\ldots \spmid \etrue, \efalse \\
+  &   & \spmid & +,-,\ldots \spmid =, <, \ldots \spmid \ecrash 
+  \\[0.05in]
+
+\emphbf{Values} \quad 
+  & \val & ::= &  c \spmid \efun{x}{\typ}{e} \spmid \edapp{D}{e}
+  \\[0.05in] 
+
+\emphbf{Expressions} \quad 
+  & e & ::=    & \val \spmid x \spmid \eapp{e}{e} \spmid \elet{x}{e}{e} \\ 
+  &   & \spmid & \ecase{e}{D}{\overline{x}}{e}{x} \\[0.05in] 
+
+\emphbf{Refinements} \quad 
+  & r & ::= &   e \\[0.05in] 
+
+\emphbf{Basic Types} \quad 
+  & \tbase & ::= & \tint \spmid \tbool \spmid \ttct \\[0.05in] 
+
+\emphbf{Types} \quad 
+  & \typ & ::= & \tref{v}{\Base}{}{r} \spmid \tfunref{x}{\typ}{\typ}{v}{e} \\[0.1in]
+\end{array}
+$$
+% \hrule width 0.48\textwidth
+
+$$
+\begin{array}{rrcl}
+\emphbf{Contexts} \quad 
+  & C
+  & ::= 
+  &   	 \bullet 
+  \spmid \eapp{C}{e} 
+  \spmid \eapp{c}{C} 
+  \spmid D\ \overline{e}\ C\ \overline{e}\\
+  &&\spmid &
+  \ecase{C}{D}{\overline{y}}{e}{x}
+  \\[0.05in] 
+\end{array}
+$$
+
+\judgementHead{Reduction}{\eval{e}{e}}
+
+$$
+\begin{array}{rcl}
+\eval{C[e]&}{&C[e']} \qquad \text{if}\ \eval{e}{e'} \\
+	\eval{\eapp{c}{v}&}{& \ceval{c}{v}}\\
+\eval{\eapp{(\efun{x}{\tau_x}{e})}{e_x}&}{&e\sub{x}{e_x}}\\
+	\eval{\elet{x}{e_x}{e}&}{&e\sub{x}{e_x}} \\
+	\eval{\ecase{D_j\ \overline{e}}{D_i}{\overline{y_i}}{e_i}{x}&}
+	{&e_j\sub{x}{D_j\ \overline{e}}\sub{\overline{y_j}}{\overline{e}}} \\
+\end{array}
+$$
+
+\caption{\undeclang: Syntax and Operational Semantics}
+\label{fig:undeclang}
+\label{fig:operational}
+\end{figure}

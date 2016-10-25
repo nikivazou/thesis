@@ -1,0 +1,298 @@
+%
+\begin{enumerate}
+\item \label{proof:ssub} Assume \issubtype{\Gamma}{\tau_1}{\tau_2}. 
+We will prove it by induction on the derivation tree:
+
+\begin{itemize}
+\item\rsubbase. We have
+$$\issubtype{\Gamma}{\tref{v}{B}{l}{e_1}}{\tref{v}{B}{l}{e_2}}$$
+By inversion we get 
+$$\issubref{\Gamma, v\colon B}{e_1}{e_2}$$
+By inversion of \rimpl we have
+$$	\forall \theta. \theta\in \interp{\Gamma}\Rightarrow
+	\generalconditionImpl{\thetasub{\theta}{e_1}}
+						{\thetasub{\theta}{e_2}}
+\ (1)$$
+
+We want to prove 
+$$\sissubtype{\Gamma}{\tref{v}{B}{l}{e_1}}{\tref{v}{B}{l}{e_2}}$$
+Equivalently
+$$	
+	\forall \theta . \iswellformedtheta{\Gamma}{\theta} \Rightarrow 
+	\interp{\theta\ \tref{v}{B}{l}{e_1}} \subseteq \interp{\theta\ \tref{v}{B}{l}{e_2}}
+$$
+
+Since the labels are the same it suffices to prove that
+\begin{align*}
+	\forall \theta . \iswellformedtheta{\Gamma}{\theta} & \Rightarrow 
+		\{e \mid \hastype{}{e}{B} 
+ 			\land 
+			\generalconditionInterp{e}{\thetasub{\theta}{e_1\sub{v}{e}}} 
+		\}	
+	\\& \subseteq 
+		\{e \mid \hastype{}{e}{B} 
+			\land 
+			\generalconditionInterp{e}{\thetasub{\theta}{e_2\sub{v}{e}}}
+		 \}	
+\end{align*}
+Since $e \in \interp{B}$, we have \iswellformed{\Gamma,v\colon B}{\theta,\sub{v}{e}}.
+So, from $(1)$ for $\theta := \theta,\sub{v}{e}$
+we have 
+$$	
+	\generalconditionImpl
+		{\thetasub{\theta}{e_1\sub{v}{e}}}
+		{\thetasub{\theta}{e_2\sub{v}{e}}}
+$$
+\item\rsubfun Assume
+$$
+	\issubtype{\Gamma}{\tfunref{x}{\tau_x}{\tau}{v}{e_1}}{\tfunref{x}{\tau'_x}{\tau'}{v}{e_2}}
+$$
+By inversion we have
+$$	
+	\issubtype{\Gamma}{\tau'_x}{\tau_x} \qquad
+	\issubtype{\Gamma, x \colon \tau'_x}{\tau}{\tau'} 
+$$
+By IH
+$$	
+	\sissubtype{\Gamma}{\tau'_x}{\tau_x} \ (1) \qquad
+	\sissubtype{\Gamma, x \colon \tau'_x}{\tau}{\tau'} \ (2)
+$$
+We want to show that 
+$$
+	\sissubtype{\Gamma}
+		{\tfunref{x}{\tau_x}{\tau}{v}{e_1}}
+		{\tfunref{x}{\tau'_x}{\tau'}{v}{e_2}}
+$$
+Equivalently
+$$	
+	\forall \theta . \iswellformedtheta{\Gamma}{\theta} \Rightarrow 
+	\interp{\thetasub{\theta}{\tfunref{x}{\tau_x}{\tau}{v}{e_1}}} 
+	\subseteq 
+	\interp{\thetasub{\theta}{\tfunref{x}{\tau'_x}{\tau'}{v}{e_2}}}
+$$
+Equivalently
+\begin{align*}
+	&\forall \theta. \iswellformedtheta{\Gamma}{\theta} \\&\Rightarrow 
+	\{e \mid \hastype{}{e}{\erase{\tau_x} \rightarrow \erase{\tau}} 
+	\land 
+	\forall e_x \in \interp{\thetasub{\theta}{\tau_x}}. \
+	 \eapp{e}{e_x} \in \interp{\thetasub{\theta}{\tau\sub{x}{e_x}}} 
+	 \}\\ &
+	\subseteq 
+	\{e \mid \hastype{}{e}{\erase{\tau'_x} \rightarrow \erase{\tau'}} 
+	\land 
+	\forall e_x \in \interp{\thetasub{\theta}{\tau'_x}}. \
+	 \eapp{e}{e_x} \in \interp{\thetasub{\theta}{\tau'\sub{x}{e_x}}} 
+	 \}
+\end{align*}
+The above holds, as for any $e, e_x$
+if $e_x \in \interp{\thetasub{\theta}{\tau_x'}}$
+then by $(1)$
+$e_x \in \interp{\thetasub{\theta}{\tau_x}}$.
+Also, by $(2)$
+if $\eapp{e}{e_x} \in \interp{\thetasub{\theta}{\tau\sub{x}{e_x}}}$
+then
+$\eapp{e}{e_x} \in \interp{\thetasub{\theta}{\tau'\sub{x}{e_x}}}$.
+\end{itemize}
+
+
+\item Assume \hastype{\Gamma}{e}{\tau}. 
+We will prove it by induction on the derivation tree.
+\begin{itemize}
+\item\rtvar Assume \hastype{\Gamma}{e}{\tau}
+	where $e \equiv x$.
+	By inversion we have
+	$$(x,\tau) \in \Gamma$$
+	We need to show that 
+	$$	\forall \theta . \iswellformedtheta{\Gamma}{\theta} 
+		\Rightarrow \thetasub{\theta}{x} \in \interp{\thetasub{\theta}{\tau}}$$
+	Which holds by the definition of well-formed substitutions.
+
+\item\rtconst. Assume \hastype{\Gamma}{e}{\tau}
+	where $e \equiv c$  and $\tau\equiv\constty{c}$.
+	Then \shastype{\Gamma}{e}{\tau} holds by Definition \ref{def:constants}.
+
+\item\rtsub Assume \hastype{\Gamma}{e}{\tau}.
+	By inversion
+	$$
+	\hastype{\Gamma}{e}{\tau'}\ (1) \qquad
+	\issubtype{\Gamma}{\tau'}{\tau}\ (2) \qquad
+	\iswellformed{\Gamma}{\tau}\ (3)
+	$$
+%
+	By IH on $(1)$ we have
+	$$\shastype{\Gamma}{e}{\tau'}\ (4)$$
+%
+	By \ref{proof:ssub} on $(2)$
+	$$\sissubtype{\Gamma}{\tau'}{\tau}\ (5)$$
+%
+	By $(4)$ and $(5)$ we get
+	$$\shastype{\Gamma}{e}{\tau}$$
+
+\item\rtfun Assume \hastype{\Gamma}{e}{\tau},
+	where $e \equiv \efun{x}{}{e'}$ and 
+	$\tau \equiv\tfun{x}{\tau'_x}{\tau'}$.
+	By inversion we get
+	$$
+	\hastype{\Gamma, x\colon\tau'_x}{e'}{\tau'}\ (1) \qquad
+	\iswellformed{\Gamma}{\tau'_x}\ (2)
+	$$
+	By IH on $(1)$ we have
+	$$
+	\shastype{\Gamma, x\colon\tau'_x}{e'}{\tau'}\ (3)
+	$$
+	Equivalently
+	$$	
+	\forall \theta . \iswellformedtheta{(\Gamma,x\colon\tau'_x)}{(\theta\sub{x}{e_x})} 
+		\Rightarrow \thetasub{(\theta\sub{x}{e_x})}{e'} \in 
+		\interp{\thetasub{(\theta\sub{x}{e_x})}{\tau'}}\\
+	$$
+	Or
+	$$	
+	\forall \theta . \iswellformedtheta{\Gamma}{\theta} \Rightarrow
+	\forall e_x . e_x \in \interp{\tau'_x} \Rightarrow
+		\thetasub{\theta}{\eapp{e}{e_x}} \in \interp{\thetasub{\theta}{\tau'\sub{x}{e_x}}}\\
+	$$
+%
+	Moreover, $\hastypebase{}{e}{\erase{\tau'_x}\rightarrow{\erase{\tau}}}$.
+%
+	So,
+	$$	
+	\forall \theta . \iswellformedtheta{\Gamma}{\theta}. \thetasub{\theta}{e}\in \interp{\thetasub{\theta}{\tau}}
+	$$
+	Or, $$\shastype{\Gamma}{e}{\tau}$$
+
+\item\rtapp. Assume \hastype{\Gamma}{e}{\tau},
+	where $e\equiv\eapp{e_1}{e_2}$ and $\tau\equiv\tau'\sub{x}{e_2}$.
+	By inversion:
+	$$
+	\hastype{\Gamma}{e_1}{(\tfunref{x}{\tau'_{x}}{\tau'}{v}{e_r})}\ (1)\qquad
+	\hastype{\Gamma}{e_2}{\tau'_{x}}\ (2)
+	$$
+	By IH we get
+	$$
+	\shastype{\Gamma}{e_1}{(\tfunref{x}{\tau'_{x}}{\tau'}{v}{e_r})}\ (3)\qquad
+	\shastype{\Gamma}{e_2}{\tau'_{x}}\ (4)
+	$$
+	So 
+	$$\forall \theta. \iswellformedtheta{\Gamma}{\theta}\Rightarrow
+	\forall e_x \in \interp{\thetasub{\theta}{\tau'_x}} \Rightarrow
+		\eapp{(\thetasub{\theta}{e_1})}{e_x} \in 
+		\interp{\thetasub{\theta}{\tau'\sub{x}{e_x}}}
+	\ (5)$$
+	and
+	$$\forall \theta. \iswellformedtheta{\Gamma}{\theta}\Rightarrow
+		\thetasub{\theta}{e_2} \in 
+		\interp{\thetasub{\theta}{\tau'_x}}
+	\ (6)$$
+%
+	From $(5)$ and $(6)$, we get
+	$$\forall \theta. \iswellformedtheta{\Gamma}{\theta}\Rightarrow
+		\theta\ e \in \interp{\thetasub{\theta}{\tau}}
+	$$
+	Or $$\shastype{\Gamma}{e}{\tau}$$
+
+\item\rtlet. Assume \hastype{\Gamma}{e}{\tau}, 
+	where $e \equiv\elet{x}{e_x}{e'}$.
+	By inversion:
+	$$
+	\hastype{\Gamma}{e_x}{\tau_{x}}\ (1) \qquad
+	\hastype{\Gamma,x\colon\tau_x}{e'}{\tau}\ (2)\qquad
+	\iswellformed{\Gamma}{\tau}\ (3)
+	$$
+	By IH we get
+	$$
+	\shastype{\Gamma}{e_x}{\tau_{x}}\ (4) \qquad
+	\shastype{\Gamma,x\colon\tau_x}{e'}{\tau}\ (5)
+	$$
+	By $(5)$
+	$$\forall \theta'. \iswellformedtheta{\Gamma, x:\tau_x}{\theta'}\Rightarrow
+		\thetasub{\theta'}{e'} \in \interp{\thetasub{\theta'}{\tau}}
+		\ (6)
+	$$
+	By $(4)$, 
+	$$
+	 	\iswellformedtheta{\Gamma}{\theta}
+		\Rightarrow 
+		\iswellformedtheta{\Gamma, x:\tau_x}{\theta\sub{x}{e_x}}
+	\ (7)$$
+	From $(6)$, $(7)$ and $(3)$, we get
+	$$\forall \theta. \iswellformedtheta{\Gamma}{\theta}\Rightarrow
+		\thetasub{\theta}{e'\sub{x}{e_x}} \in \interp{\thetasub{\theta}{\tau}}
+	$$
+	By Lemma \ref{lemma:closesem}, we get
+	$$\forall \theta. \iswellformedtheta{\Gamma}{\theta}\Rightarrow
+		\thetasub{\theta}{e} \in \interp{\thetasub{\theta}{\tau}}
+	$$
+	So, $$\shastype{\Gamma}{e}{\tau}$$
+\item\rtbot Assume \hastype{\Gamma}{e}{\tau}, 
+	where $e \equiv\ebot$ and $\tau \equiv \tref{v}{B}{}{p}$.
+	Since \ebot does not evaluate, 
+	$$\forall \theta. \iswellformedtheta{\Gamma}{\theta}\Rightarrow
+		\thetasub{\theta}{e} \in \interp{\thetasub{\theta}{\tau}}
+	$$
+	So, $$\shastype{\Gamma}{e}{\tau}$$
+
+\item\rtcase Assume \hastype{\Gamma}{e}{\tau}, 
+	where $e' \equiv \ecase{e}{D^i_T}{\overline{y}}{e_i}{x}$.
+	By inversion
+$$
+	l \not \in \{\finite, \trivial\} \Rightarrow \tau \ \text{is}\ \Div\ (1)\qquad
+	\hastype{\Gamma}{e}{\tref{v}{T}{l}{e_T}} \ (2)\qquad
+	 \iswellformed{\Gamma}{\tau}\ (3)
+$$
+$$
+\forall i. 0 < i \leq \arity{T}\{
+$$
+$$
+	\constty{D^i_T} = \tfun{y_1}{\tau_1}{\dots\rightarrow\tfun{y_n}{\tau_n}{\tref{v}{T}{}{e_{T_i}}}}\ (4)
+$$
+$$
+		\hastype{\Gamma,  
+				\overline{y_i\colon \tau_i},
+				x\colon\tlref{v}{T}{\restrictdecidable{\trivial}
+				{\addtechnical{}{\ltrivial}}
+				}{e_T \land e_{T_i}}}{e_i}{\tau}\ (5) \}
+$$
+
+By IH on $(2)$ we get 
+$$
+	\shastype{\Gamma}{e'}{\tref{v}{T}{l}{e_T}}\ (6)
+$$
+
+We fix a $\theta$ such that $\iswellformedtheta{\Gamma}{\theta}$
+We split cases on whether \thetasub{\theta}{e'} evaluates to a WNF or not:
+\begin{itemize}
+\item If \evals{\thetasub{\theta}{e'}}{v}.
+By $(6)$, for some $i$ such that $0 < i \leq \arity{T}$, 
+%
+$\evals{\thetasub{\theta}{e'}}{D^i_T\ \overline{e_j}}$.
+
+By IH on $(4)$ and the Definition~\ref{def:constants}
+$$
+		\shastype{\Gamma}{e_i\sub{y_i}{e_j}\sub{x}{e'}}{\tau}
+$$
+Finally, by Lemma~\ref{lemma:closesem}
+$$
+		\shastype{\Gamma}{e}{\tau}
+$$
+\item If $\thetasub{\theta}{e'}$, then by $(6)$
+$l \not \in \{\finite, \trivial \}$.
+Moreover, $e$ diverges so it trivially belongs to the 
+interpretation of any \Div type, or by $(1)$
+$$
+		\shastype{\Gamma}{e}{\tau}
+$$
+%%$$
+%%\interp{\tref{v}{T}{}{p}} \doteq
+%%\{
+%%e \mid \hastypebase{}{e}{T}, 
+%%\evals{e}{D^i_T\overline{e_j}} \Rightarrow
+%%\constty{D^i_T} = \tfun{y_1}{\tau_1}{\dots\rightarrow\tfun{y_n}{\tau_n}{\tref{v}{T}{}{q}}} \Rightarrow
+%%e_i \in \interp{\tau_i\sub{y_j}{e_j}}, 
+%%\evals{p \land q\sub{y_j}{e_j}}{\etrue}
+%%\}
+%%$$
+\end{itemize}
+\end{itemize}
+\end{enumerate}

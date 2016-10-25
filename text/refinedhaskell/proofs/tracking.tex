@@ -1,0 +1,152 @@
+\section{Tracking Substitutions}
+
+Then we define the notion of tracking substitutions.
+In Figure~\ref{fig:proofs:tracking} we extend the operational
+semantics with a state $\sigma$, \ie a mapping from variables to 
+expressions that tracks evaluation of its expressions
+
+\input{proofs/tracksemantics}
+
+First we prove that evaluation to a constant exists \textit{iff} 
+tracking evaluation to the same constant exists.
+\begin{lemma}\label{lemma:teval}
+$\forall\theta, e, c, \exists\theta'. \evals{\thetasub{\theta}{e}}{c} \Leftrightarrow 
+	\tevals{\theta}{e}{\theta'}{c}$.
+\end{lemma}
+\showproofsketch{
+\begin{proofsketch}
+\begin{itemize} We prove each direction:
+\item $\Rightarrow$.
+Given the derivation $\evals{\thetasub{\theta}{e}}{v}$, we can track the appearances 
+of each expressions $\theta(x_i)$ and its derivatives and replace them with $x_i$.
+Thus, given the initial derivation we can transverse it
+(left-to-right and post-order); 
+for every tracked appearance we use the appropriate rules 
+that update the stack every time a tracked expressions evaluates, ie., 
+appears in the left hand side of a rule; 
+and remove the multiple evaluations of expressions in the stack
+and construct the evaluation 
+\tevals{\theta}{e}{\theta'}{c}.
+
+Note that if $\theta(x_i)$ goes to a value, then 
+$\theta(x_i) \equiv e_0 \hookrightarrow \dots e_i \dots e_n \equiv v$.
+By the way we transverse the tree, 
+after the stack is updated to $e_k$ and before it is updated to $e_{k+1}$
+all tracked computations for $x_i$ are $e_j, j \leq k$.
+
+If $\theta(x_i)$ does not go to a value, it cannot appear in the left hand side of 
+a rule, because evaluation would diverge, thus the stack is not updated for $x_i$.
+
+When a tracked expression reaches a value, we use the appropriate value to 
+substitute (and untrack) the value.
+Since the result of the initial evaluation is a constant, 
+then the result of the tracked computation is the same constant. 
+
+\item $\Leftarrow$.
+Given $\tevals{\theta}{e}{\theta'}{c}$
+we can construct the derivation \evals{\thetasub{\theta}{e}}{c} replacing each query to the 
+stack with the initial computation of the expression.
+\end{itemize}
+\end{proofsketch}
+}
+
+Then we define a \textit{bottomize} function \mkbot{\bullet}
+that replaces non-evaluated expressions with \ebot:
+\begin{definition}{[Bottomize]}
+$$
+\mkbot{\theta}(x) = 
+\left\{
+	\begin{array}{ll}
+		D\ \overline{\mkbot{\theta}(y)}  & \mbox{if } \theta(x) = D\ \overline{y}\\
+		v  & \mbox{if } \theta(x) = v \not = D\ \overline{y}\\
+		\ebot & \mbox{otherwise}
+	\end{array}
+\right.
+$$
+\end{definition}
+
+Using the bottomize function we show that evaluation does not depend 
+on non-evaluated expressions:
+\begin{lemma}\label{lemma:mkbot}
+If \tevals{\theta}{e}{\theta'}{c}, 
+then \evals{\mkbot{\theta'}\ e}{c}.
+\end{lemma}
+\showproofsketch{
+\begin{proofsketch}
+Since \tevals{\theta}{e}{\theta'}{c}$(1)$, 
+then \tevals{\theta'}{e}{\theta'}{c}$(2)$:
+From the evaluation tree $(1)$ we can construct the evaluation tree $(2)$.
+The trees differ on store related rules.
+
+Say that in $(1)$ the store in $x$ is updated, for an arbitrary $x$: 
+\teval{(x,e_x)\theta_x}{x}{(x,e'_x)\theta_x}{x}
+Since $(1)$ is finite, it should be that
+$\tevals{\theta_x}{e_x}{\theta_x}{v} (3)$.
+Call $v_x = D\ \overline{y}$ if $v = D\ \overline{e}$, $v$ otherwise.
+Then in $(1)$ there should be a ``subtree'' with $(3)$
+after which the value of $x$ cannot change in the store.
+Or $\theta'(x) = v_x$.
+We construct $(2)$ by removing the ``subtree'' with $(3)$.
+After that all rules that relate store with $x$ will be the same
+on $(1)$ and $(2)$.
+
+If $x$ is not updated in $(1)$ then 
+$x$ does not appear in the left hand side of a rule; 
+thus $\theta'(x) = \theta(x)$.
+
+We construct $\theta''(x)= \left\{
+	\begin{array}{ll}
+		v  & \mbox{if}\ \theta'(x)= v\\
+		\ebot & \mbox{otherwise}
+	\end{array}
+\right.$
+
+Then \tevals{\theta''}{e}{\theta''}{c}.
+If $\theta'(x)$ is not a value, then it does not appear in the left hand side 
+of any rule in $(2)$, thus evaluation of $e$ cannot depend on $x$.
+
+Then by Lemma \ref{lemma:teval}, \evals{\thetasub{\theta''}{e}}{c}.
+But $\mkbot{\theta'} e = \thetasub{\theta''}{e}$, so \evals{\thetasub{\mkbot{\theta'}}{e}}{c}.
+\end{proofsketch}
+}
+
+Also, replacing \ebot with any expression yields the same evaluation:
+\begin{lemma}\label{lemma:rmbot}
+If \evals{\thetasub{\mkbot{\theta}}{e}}{c}, 
+then \evals{\thetasub{\theta}{e}}{c}.
+\end{lemma}
+\showproofsketch{
+\begin{proof}
+Since \evals{\thetasub{\mkbot{\theta}}{e}}{c}$(1)$, then
+\tevals{\mkbot{\theta}}{e}{\theta'}{c}$(2)$.
+\ebot expressions in \mkbot{\theta} are not evaluated, 
+otherwise $(2)$ would get stuck.
+Thus they can be instantiated with any expression.
+$\theta$ provides such an instantiation, thus
+\tevals{\theta}{e}{\theta''}{c}$(3)$.
+By Lemma \ref{lemma:teval}, \evals{\thetasub{\theta}{e}}{c}.
+\end{proof}
+}
+
+Finally, we define lifting substitutions
+%
+\begin{definition}{[Lifting Substitutions]}
+$
+\trackevals{\sto}{\botsto} \doteq 
+\exists e, e', \theta' \tevals{\theta}{e}{\theta'}{e'} \land \botsto = \mkbot{\theta'}
+$
+\end{definition}
+
+and prove the Lifting Lemma
+\begin{lemma}{[Lifting]}\label{lemma:proofs:lifting}
+$\evals{\thetasub{\sto}{e}}{c}$ iff $\exists \trackevals{\sto}{\botsto}$ s.t. 
+$\evals{\thetasub{\botsto}{e}}{c}$.
+\end{lemma}
+\showproofsketch{
+\begin{proofsketch}
+The $\Rightarrow$ direction follows immediately from Lemmata~\ref{lemma:teval} and~\ref{lemma:mkbot}.
+The $\Leftarrow$ direction follows immediately from Lemmata~\ref{lemma:teval} and~\ref{lemma:rmbot}.
+\end{proofsketch}
+}
+
+

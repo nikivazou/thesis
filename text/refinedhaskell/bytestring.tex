@@ -1,0 +1,261 @@
+The terms ``Haskell'' and ``pointer arithmetic'' 
+rarely occur in the same sentence. 
+Thus, from a verification point of view, the 
+single most important aspect of the \bytestring 
+library~\cite{bytestring}, our first
+case study, is its pervasive intermingling of
+high level abstractions like higher-order loops,
+folds, and fusion, with low-level pointer 
+manipulations in order to achieve high-performance. 
+%
+%% From the package description, \bytestring is, 
+%% ``A time and space-efficient implementation of byte vectors using packed
+%% Word8 arrays, suitable for high performance use, both in terms of large
+%% data quantities, or high speed requirements. Byte vectors are encoded as
+%% strict Word8 arrays of bytes, held in a ForeignPtr, and can be passed
+%% between C and Haskell with little effort."
+%
+\bytestring is an appealing target for evaluating
+\toolname, as refinement types are an ideal way to 
+statically ensure the correctness of the delicate 
+pointer manipulations, errors in which lie below 
+the scope of dynamic protection.
+
+The library spans $8$ files (modules) totaling about 3600 lines.
+We used \toolname to verify the library by giving precise 
+types describing the sizes of internal pointers and bytestrings. 
+These types are used in a modular fashion to verify the 
+implementation of functional correctness properties of 
+higher-level API functions which are built using 
+lower-level internal operations. 
+Next, we show the key invariants and how
+\toolname reasons precisely about pointer
+arithmetic and higher-order codes.
+
+\spara{Key Invariants}
+A (strict) @ByteString@ is a triple of a @pay@load pointer, 
+an @off@set into the memory buffer referred to by the pointer 
+(at which the string actually ``begins") and a @len@gth 
+corresponding to the number of bytes in the string, which is 
+the size of the buffer \emph{after} the @off@set, that
+corresponds to the string.
+%
+We define a measure for the \emph{size} of 
+a @ForeignPtr@'s buffer, and use it to define 
+the key invariants as a refined datatype 
+%
+\begin{code}
+measure fplen  :: ForeignPtr a -> Int
+data ByteString = PS
+ { pay :: ForeignPtr Word8
+ , off :: {v:Nat | v       <= (fplen pay)}
+ , len :: {v:Nat | off + v <= (fplen pay)} }
+\end{code}
+%
+The definition states that 
+the offset is a @Nat@ no bigger than the size of 
+the @payload@'s buffer, and that
+the sum of the @off@set and non-negative @len@gth
+is no more than the size of the payload buffer.
+Finally, we encode a @ByteString@'s size as a measure.
+%
+\begin{code}
+measure bLen   :: ByteString -> Int
+bLen (PS p o l) = l
+\end{code}
+
+\spara{Specifications}
+We define a type alias for a @ByteString@ whose length is the same
+as that of another, and use the alias to type the API 
+function @copy@, which clones @ByteString@s.
+
+\begin{code}
+type ByteStringEq B 
+  = {v:ByteString | (bLen v) = (bLen B)}
+copy :: b:ByteString -> ByteStringEq b 
+copy (PS fp off len) 
+  = unsafeCreate len $ \p -> 
+      withForeignPtr fp $ \f ->
+        memcpy len p (f `plusPtr` off) 
+\end{code}
+
+\spara{Pointer Arithmetic}
+The simple body of @copy@ abstracts a fair bit of internal work. 
+@memcpy sz dst src@, implemented in \C and accessed via the FFI is a potentially
+dangerous, low-level operation, that copies @sz@ bytes starting
+\emph{from} an address @src@ \emph{into} an address @dst@. 
+Crucially, for safety, the regions referred to be @src@ and @dst@ 
+must be larger than @sz@. We capture this requirement by defining
+a type alias @PtrGE a N@ denoting GHC pointers that refer to a region
+bigger than @N@ bytes, and then specifying that the destination
+and source buffers for @memcpy@ are large enough.
+
+\begin{code}
+type PtrN a N = {v:Ptr a| N <= (plen v)}
+memcpy :: sz:CSize -> dst:PtrN a siz 
+                   -> src:PtrN a siz 
+                   -> IO () 
+\end{code}
+
+The actual output for @copy@ is created and filled in using the 
+internal function @unsafeCreate@ which is a wrapper around %@create@.
+
+% -- | Create ByteString of size @l@ and use
+% --   action @f@ to fill it's contents.
+\begin{code}
+create :: l:Nat -> f:(PtrN Word8 l -> IO ())
+       -> IO (ByteStringN l)
+create l f = do
+    fp <- mallocByteString l
+    withForeignPtr fp $ \p -> f p
+    return $! PS fp 0 l
+\end{code}
+
+% We include the comment to illustrate how the 
+% refinement type captures the natural language 
+% requirement in a machine checkable manner.
+%
+The type of @f@ specifies that the action
+will only be invoked on a pointer of length at least 
+@l@, which is verified by propagating the types of
+@mallocByteString@ and @withForeignPtr@. 
+%
+The fact that the action is only invoked on such pointers 
+is used to ensure that the value @p@ in the body of @copy@ 
+is of size @l@. This, and the @ByteString@ 
+invariant that the size of the payload @fp@ 
+exceeds the sum of @off@ and @len@, ensures 
+that the call to @memcpy@ is safe.
+
+\spara{Higher Order Loops} 
+@mapAccumR@ combines a @map@ and a @foldr@ over a @ByteString@. 
+The function uses non-trivial recursion, and demonstrates 
+the utility of abstract-interpretation based inference. 
+%
+\begin{code}
+mapAccumR f z b 
+  = unSP $ loopDown (mapAccumEFL f) z b
+\end{code}
+%
+To enable fusion \cite{streamfusion} 
+@loopDown@ uses a higher order @loopWrapper@ 
+to iterate over the buffer with a @doDownLoop@ action:
+%
+\begin{code}
+doDownLoop f acc0 src dest len 
+  = loop len (len-1) (len-1) acc0
+  where
+   loop (w::Int) s d acc
+     | s < 0 
+     = return (acc :*: d+1 :*: len - (d+1))
+     | otherwise       
+     = do x <- peekByteOff src s
+          case f acc x of
+            (acc' :*: NothingS) -> 
+                 loop (w-1) (s-1) d acc'
+            (acc' :*: JustS x') -> 
+                 pokeByteOff dest d x'
+              >> loop (w-1) (s-1) (d-1) acc'
+\end{code}
+
+The above function iterates across the @src@ and @dst@ 
+pointers from the right (by repeatedly decrementing the 
+offsets @s@ and @d@ starting at the high @len@ down to @-1@). 
+Low-level reads and writes are carried out using the 
+potentially dangerous @peekByteOff@ and @pokeByteOff@ 
+respectively. To ensure safety, we type these low level 
+operations with refinements stating that they are only 
+invoked with valid offsets @VO@ into the input buffer @p@.
+
+\begin{code}
+type VO P    = {v:Nat | v < plen P}
+peekByteOff :: p:Ptr b -> VO p -> IO a
+pokeByteOff :: p:Ptr b -> VO p -> a -> IO ()
+\end{code}
+
+The function @doDownLoop@ is an internal function.
+Via abstract interpretation~\cite{LiquidPLDI08}, 
+\toolname infers that
+%
+(1)~@len@ is less than the sizes of @src@ and @dest@,
+(2)~@f@ (here, @mapAccumEFL@) always returns a @JustS@, so
+(3)~source and destination offsets satisfy $\mathtt{0 \leq s, d < {len}}$,
+(4)~the generated @IO@ action returns a triple @(acc :*: 0 :*: len)@,
+%
+thereby proving the safety of the accesses in @loop@ \emph{and}
+verifying that @loopDown@ and the API function @mapAccumR@ 
+return a \bytestring whose size equals its input's.
+ 
+To prove \emph{termination}, we add a \emph{witness} @w@.
+Though @s@ decreases at each call, it is \emph{not} a @Nat@ 
+as it reaches @-1@. 
+The system infers that @w@ decreases and \emph{is} a @Nat@
+as it equals @s+1@, thus proving termination.
+
+\spara{Nested Data}
+Finally, consider @group@, which
+splits a string like @"aart"@ into the list
+@["aa","r","t"]@, \ie a list of
+(a)~non-empty @ByteString@s whose 
+(b)~total length equals that of the input. 
+To specify these requirements, we define a measure for 
+the total length of strings in a list and use it to
+write an alias for a list of \emph{non-empty} strings
+whose total length equals that of another string:
+
+\begin{code}
+measure bLens :: [ByteString] -> Int 
+bLens ([])     = 0
+bLens (x:xs)   = bLen x + bLens xs
+
+type ByteStringNE 
+  = {v:ByteString | bLen v > 0}
+type ByteStringsEq B
+  = {v:[ByteStringNE] | bLens v = bLen b}
+\end{code}
+%
+\toolname uses the above to verify that
+%
+\begin{code}
+group :: b:ByteString -> ByteStringsEq b
+group xs
+ | null xs   = []
+ | otherwise = let x        = unsafeHead xs
+                   xs'      = unsafeTail xs
+                   (ys, zs) = spanByte x xs' 
+               in (y `cons` ys) : group zs
+\end{code}
+%
+The example illustrates why refinements are critical for
+proving termination. \toolname determines that @unsafeTail@ 
+returns a \emph{smaller} @ByteString@ than its input, and that
+each element returned by @spanByte@ is no bigger than the 
+input, concluding that @zs@ is smaller than @xs@, and hence
+checking the body under the termination-weakened environment.
+
+To see why the output type holds, let's look at @spanByte@,
+which splits strings into a pair:
+%
+\begin{code}
+spanByte c ps@(PS x s l) 
+  = inlinePerformIO $ withForeignPtr x $
+        \p -> go l (p `plusPtr` s) 0
+  where
+    go (w::Int) p i 
+      | i >= l    = return (ps, empty)
+      | otherwise = do
+          c' <- peekByteOff p i
+          if c /= c'
+            then let b1 = unsafeTake i ps
+                     b2 = unsafeDrop i ps
+                 in  return (b1, b2)
+            else go (w-1) p (i+1)
+\end{code}
+%
+Via inference, \toolname verifies the safety of 
+the pointer accesses, and determines that the 
+sum of the lengths of the output pair of 
+@ByteString@s equals that of the input @ps@.
+Termination follows by inferring that the sum of 
+the witness @w@ and @i@ equals @l@.
+

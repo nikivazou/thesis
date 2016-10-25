@@ -1,0 +1,642 @@
+\renewcommand\rimpl{\rsubbase}
+\renewcommand{\rtdimp}{\rsubbased}
+%
+\section{Algorithmic Typing: \declang}\label{sec:typing}
+
+\input{modifications}
+
+%%% \NV{Can we combine Fig 5 and 6?  Otherwise r::=p in Fig 5 looks really odd.
+%%% Fig 5: since predicates include terms, is ther any merit in having both p and u?  Then can't =, > be ordinray infix ops?
+%%% [12:58:21 PM] Simon Peyton Jones: Fig 5, can we say:
+%%% Constants ::= ...as Fig 3 ...
+%%% Values ::= as fig 3
+%%% }
+%%% \NV{Fig 6:p,u ::= ....}
+%%% \NV{Remove D from u, }
+%%% \NV{We use p for boolean-valued terms, which we also call predicates
+%%% }
+While \undeclang is sound, it cannot be \emph{implemented} 
+thanks to the undecidable denotational containment rule \rsubbase
+(Figure~\ref{fig:typing}).
+%
+Next, we go from \undeclang to \declang, a core calculus 
+with sound, SMT-based algorithmic type-checking in four 
+steps.
+%
+First, we show how to restrict the language of 
+refinements to an SMT-decidable sub-language 
+\logiclang~(\Sref{sec:typing:logic}).
+%
+Second, we \emph{stratify} the types to specify 
+whether their inhabitants may diverge, must reduce
+to values, or must reduce to finite values~(\Sref{sec:typing:stratify}).
+%
+Third, we show how to \emph{enforce} the stratification
+by encoding recursion using special fixpoint combinator 
+constants (\Sref{sec:typing:termination}).
+%
+Finally, we show how to use \logiclang and the 
+stratification to approximate the undecidable \rsubbase
+with a decidable verification condition \rsubbased, thereby 
+obtaining the algorithmic system \declang~(\Sref{sec:typing:vc}).
+
+
+\subsection{Refinement Logic: \logiclang}\label{sec:typing:logic}
+
+Figure~\ref{fig:declang:syntax} summarizes the syntax of \declang.
+Refinements $r$ are now predicates $p$, drawn from 
+\logiclang, the decidable logic of equality, 
+uninterpreted functions and linear arithmetic
+~\cite{Nelson81}.
+%
+Predicates $p$ include linear arithmetic constraints,
+function application where function symbols correspond
+to measures (as described in \Sref{sec:measures}), and 
+boolean combinations of sub-predicates.
+
+
+%% \NV{DONE: remove Measures \& Axioms}
+%%\mypara{Measures \& Axioms} 
+%%The only function symbols in \logiclang correspond to 
+%%\emph{measures} (as described in \Sref{sec:measures}), 
+%%which are inductively defined functions.
+%%%%Each measure definition is a sequence of equations,
+%%%%one per data constructor, where the body of each 
+%%%%equation is a term in \logiclang.
+%%%
+%%In the metatheory, we can characterize measures using axioms translated from the measure definition.
+%%%
+%%For example, @emp@ from \Sref{sec:overview} yields axioms:
+%%%
+%%\begin{align*}
+%%%%  \forall x.      & x = \dnull        \Rightarrow (\leisNull\ x) \\
+%%%%  \forall x,y,ys. & x = \dcons\ y\ ys \Rightarrow \lnot (\leisNull\ x) 
+%%  (\ttemp\ \dnull) &&
+%%  \forall x,xs. \lnot (\ttemp\ (\dcons\ x\ xs))
+%%\end{align*}
+%%\SPJ{What on earth does this (above) mean?}
+
+\mypara{Well-Formedness} 
+For a predicate to be well-formed it should be boolean and
+arithmetic operators 
+should be applied to integer terms, measures should be applied 
+to appropriate arguments 
+(\ie \eisNull\ is applied to \tintlist),
+and equality or inequality to basic 
+(integer or boolean) terms.
+%
+Furthermore, we require that refinements, and thus measures,
+always evaluate to a value.
+%
+We capture these requirements by assigning appropriate types 
+to operators and measure functions, after which we require that
+each refinement $r$ has type $\FinTy{\tbool}$ (rule \rwbased in
+Figure~\ref{fig:declang:typing}).
+
+\mypara{Assignments}
+Figure~\ref{fig:declang:syntax} defines the elements $d$
+of the domain \dom 
+of integers, booleans, and data constructors that wrap
+elements from \dom.
+%
+The domain \dom also contains a constant $c_w$
+for each value $w$ of \undeclang that does 
+not otherwise belong in \dom (\eg functions or other primitives).
+%
+An \emph{assignment} $\sigma$ is a map from variables 
+to $\dom$.
+
+%% \NV{DONE:Can we just drop the measure + axioms step?}
+\mypara{Satisfiability \& Validity}
+We interpret boolean predicates in the logic over the domain 
+\dom.
+%
+We write \lmodels{\sigma}{p} %(resp. \umodels{\sigma}{p}) 
+if $\sigma$ is a model of $p$.
+%% where the interpretations of 
+%%measures respect the measure axioms (resp. measures are 
+%%uninterpreted).
+%
+We omit the formal definition for space.
+%
+A predicate $p$ is \emph{satisfiable}  %(resp. \emph{u-satisfiable}) 
+if there \emph{exists} $\lmodels{\sigma}{p}$. %(resp. $\umodels{\sigma}{p}$).
+%
+A predicate $p$ is \emph{valid} %(resp. \emph{u-valid}) 
+if \emph{for all} assignments $\lmodels{\sigma}{p}$. % (resp. \umodels{\sigma}{p}).
+%
+%Note that if $p$ is u-valid then $p$ is trivially valid.
+
+
+%\begin{lemma}\label{ref:valid} If $p$ is u-valid then $p$ is valid.
+%\end{lemma}
+
+\mypara{Connecting Evaluation and Logic}
+To prove soundness, we need to formally connect the
+notion of logical models with the evaluation of a 
+refinement to \etrue.
+%
+We do this in several steps, briefly outlined for brevity.
+%
+First, we introduce a primitive \emph{bottom expression} 
+\ebot that can have \emph{any} \Div type, but does not evaluate.
+%%(\NV{only values can be applied to primitive constants, 
+%%so $c\ \ebot$ will just not evaluate.}
+%%\ie yields \ebot when applied to any primitive constant).
+%
+Second, we define \emph{lifted values} \botv 
+(Figure~\ref{fig:declang:syntax}), which are values that
+contain \ebot.
+%
+Third, we define \emph{lifted substitutions} 
+$\botsto$, which are mappings from variables to 
+lifted values.
+%
+Finally, we show how to \emph{embed} a lifted substitution 
+\botsto into a \emph{set of} assignments \embed{\botsto} 
+where, intuitively speaking, each \ebot is replaced by
+some arbitrarily chosen element of \dom.
+%
+%Equipped with the above notions, we prove the following which
+%connects evaluation and logical satisfaction.
+Now, we can connect evaluation and logical satisfaction:
+%
+\begin{theorem}\label{thm:equiv}
+If \dechastype{\emptyset}{\botsto(p)}{\FinTy{\tbool}}, then
+$$\evals{\botsto(p)}{\etrue}\ 
+\mbox{iff}\ \ 
+\forall \sigma \in \embed{\botsto}. \lmodels{\sigma}{p}$$
+\end{theorem}
+
+\mypara{Restricting Refinements to Predicates}
+Our goal is to restrict \rimpl so that only predicates 
+from the decidable logic \logiclang (not arbitrary expressions)
+appear in implications \isimplied{\Env}{\p_1}{\p_2}.
+%
+Towards this goal, as shown in Figures~\ref{fig:declang:syntax}
+and~\ref{fig:declang:typing}, 
+we restrict the syntax and well-formedness of types to contain
+only predicates,
+%
+and we convert the program to ANF after which we can 
+restrict the application rule \rtappd to applications 
+to variables, which ensures that refinements remain 
+within the logic after substitution~\cite{LiquidPLDI08}.
+%
+Recall, that this is not enough to ensure that refinements do converge, 
+as under lazy evaluation,
+even binders can refer to potentially divergent values.
+
+%% \NV{This is not enough, as variables are still diverging, 
+%% we need termination analysis}
+%%\mypara{Step 2: Preserving Restriction via ANF Translation}
+%%%
+%%Fortunately, there are several ways to ensure that 
+%%synthesized types\SPJ{What "synthesised types"?} remain within the refinement logic.
+%%%
+%%We can use existentials, as suggested by~\cite{Knowles09}, 
+%%or, more simply, we can convert the program to 
+%%\emph{Adminstrative Normal Form} (ANF)~\cite{Flanagan93},\SPJ{At this point I don't know what problem converting to ANF solves, or how ANF solves it.}
+%%after which all applications are to variables, 
+%%which ensures the intermediate refinements 
+%%created by substitutions, remain in the 
+%%restricted logic~\cite{LiquidPLDI08}.
+%%%
+%%For simplicity, we take the latter route, and assume that the 
+%%program is in ANF. Of course, while eager evaluation preserves 
+%%ANF, lazy evaluation does not. 
+%%%
+%%However, this is not an issue since we prove 
+%%preservation (and progress) using the declarative 
+%%system~\ref{thm:undec-sound}, and need only prove 
+%%the soundness of the VC for the \emph{initial} 
+%%ANF program~\ref{thm:vc-sound}.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Stratified Types}\label{sec:typing:stratify}
+
+The typing rules for \declang are given in Figure~\ref{fig:declang:typing}.
+Instead of \emph{explicitly} reasoning about divergence or 
+strictness in the refinement logic, which leads to significant
+theoretical and practical problems, as discussed in \Sref{sec:conclusion}, 
+we choose to reason \emph{implicitly} about divergence within the type system.
+%
+Thus, the second critical step in our path to \declang is the 
+stratification of types into those inhabited by potentially
+diverging terms, terms that only reduce to values, and 
+terms which reduce to finite values.
+%
+Furthermore, the stratification crucially allows us to prove 
+Theorem~\ref{thm:equiv}, which requires that refinements do 
+not diverge (\eg by computing the length of an infinite list)
+by ensuring that inductively defined measures are only applied 
+to finite values.
+%
+Next, we describe how we stratify types with labels, and 
+then type the various constants, in particular the fixpoint 
+combinators, to enforce stratification.
+
+\mypara{Labels}
+We specify stratification using two \emph{labels} for types.
+%
+The label \trivial\ (resp. \finite) is assigned to types given 
+to expressions that reduce (using $\beta$-reduction as defined in Figure~\ref{fig:operational})  
+to a value $w$ (resp. \emph{finite} value,
+\ie an element of the inductively defined \dom).
+%
+Formally,
+%
+\begin{align}
+  \mbox{\emphbf{\Wnf types}} \quad 
+\interp{\tref{\vv}{\Base}{\trivial}{r}} \defeq & 
+    \interp{\tref{\vv}{\Base}{}{r}} \cap \{ e \mid \evals{e}{w} \}
+    \label{eq:trivial} \\
+  \mbox{\emphbf{\Fin types}} \quad 
+\interp{\tref{\vv}{\Base}{\finite}{r}} \defeq & 
+    \interp{\tref{\vv}{\Base}{}{r}} \cap \{ e \mid \evals{e}{d} \} 
+    \label{eq:finite} 
+\end{align}
+%
+Unlabelled types are assigned to expressions that may diverge.
+%
+Note that for any $\Base$ and refinement $r$ we have
+$$
+\interp{\tref{\vv}{\Base}{\finite}{r}} \subseteq
+\interp{\tref{\vv}{\Base}{\trivial}{r}} \subseteq
+\interp{\tref{\vv}{\Base}{}{r}}
+$$ 
+%
+The first two sets are \emph{equal} for $\tint$ and $\tbool$, 
+and \emph{unequal} for (lazily) constructed data types $T$. 
+%
+We need not stratify function types (\ie they are \Div types)
+as binders with function types do not appear inside the VC, and 
+are not applied to measures.
+
+\mypara{Enforcing Stratification}\label{sec:typing:termination}
+%
+We enforce stratification in two steps.
+%
+First, the $\rtcased$ rule uses the operational semantics of case-of to 
+type-check each case in an environment where the scrutinee
+$x$ is assumed to have a \Wnf type. 
+%
+All the other rules, not mentioned in Figure~\ref{fig:declang:typing},
+remain the same as in Figure~\ref{fig:typing}.
+%
+Second, we create stratified variants for the primitive constants 
+and \emph{separate} fixpoint combinator constants for 
+(arbitary, potentially non-terminating) recursion (\efix{}) 
+and bounded recursion (\etfix{}).
+
+\mypara{Stratified Primitives}
+First, we restrict the primitive operators whose output 
+types are refined with logical operators, so they are only 
+invoked on finite arguments (so that the corresponding 
+refinements are guaranteed to not diverge).
+%
+\begin{align*}
+  \constty{\mathtt{\n}} \defeq & \tlref{\vv}{\tint}{\finite}{\vv = \n} \\
+  \constty{\mathtt{=}} \defeq & \tfun{x}
+                                     {\tbase^\finite}
+                                     {\tfun{y}
+                                           {\tbase^\finite}
+                                           {\tlref{\vv}{\tbool}{\finite}{\vv \Leftrightarrow \x = \y}}} \\
+  \constty{\mathtt{+}} \defeq & \tfun{x}
+                                     {\tint^\finite}
+                                     {\tfun{y}
+                                           {\tint^\finite}
+                                           {\tlref{\vv}{\tint}{\finite}{\vv = \x + \y}}}\\
+  \constty{\mathtt{\land}} \defeq & \tfun{x}
+                                         {\tbool^\finite}
+                                         {\tfun{y}
+                                               {\tbool^\finite}
+                                               {\tlref{\vv}{\tbool}{\finite}{\vv \Leftrightarrow \x \land \y}}}
+\end{align*}
+%
+It is easy to prove that the above primitives respect 
+their stratification labels, \ie belong in the denotations
+of their types. 
+
+Note that the above types are restricted in that they can only be applied to finite arguments.
+%
+In future work, we could address this issue with unrefined versions of primitive types
+that soundly allow operation on arbitrary arguments.
+%
+For example, with the current type for $\mathtt{+}$, addition of potentially 
+diverging expressions is rejected.
+%
+Thus, we could define an unrefined signature 
+\begin{align*}
+  \constty{\mathtt{+}} \defeq & \tfun{x}
+                                     {\tint}
+                                     {\tfun{y}
+                                           {\tint}
+                                           {\tint}}
+\end{align*}
+and allow the two types of $\mathtt{+}$ to co-exist (as an intersection type),
+where the type checker would choose the precise refined type 
+if and only if both of $\mathtt{+}$'s arguments are finite.
+
+\mypara{Diverging Fixpoints ($\efix{\typ}$)}
+Next, note that the only place where divergence enters the picture is 
+through the fixpoint combinators used to encode recursion. 
+%
+For any function or basic type $\typ \defeq \typ_1 \rightarrow \ldots \rightarrow \typ_n$,
+we define the \emph{result} to be the type $\typ_n$.
+
+For each $\typ$ whose result is a \Div type, 
+there is a \emph{diverging fixpoint} combinator
+$\efix{\typ}$, such that
+%
+\begin{align*}
+  \ceval{\efix{\typ}}{f} \defeq & f\ (\efix{\tau}\ f) \\
+  \constty{\efix{\typ}}   \defeq & (\typ \rightarrow \typ) \rightarrow \typ
+\end{align*}
+%
+\ie, $\efix{\typ}$ yields recursive functions of type $\typ$.
+Of course, $\efix{\typ}$ belongs in the denotation of
+its type~\cite{PLC} \emph{only if} the result type is 
+a \Div type (and \emph{not} when the result is a 
+\Wnf or \Fin type). 
+%
+Thus, we restrict diverging fixpoints to functions with \Div result types.
+
+\mypara{Indexed Fixpoints ($\tfixn{\typ}{n}$)}
+For each type $\typ$ whose result is a \Fin 
+type, we have a family of \emph{indexed} 
+fixpoints combinators $\tfixn{\typ}{n}$: 
+%
+\begin{align*}
+  \ceval{\tfixn{\typ}{n}}{f} \defeq & {\efun{m}{}{f\ m\ (\tfixn{\typ}{m}\ f)}}\\
+%% (n:nat → τ_n → τ) → τ_n
+\constty{\tfixn{\typ}{n}} \defeq & 
+  \tfunbasic{(\tfun{n}
+                   {\FinTy{\tnat}}
+                   {\tfunbasic{\decr{\typ}{n}}{\typ}})}
+            {\decr{\typ}{n}} \\
+\mbox{where,}\ \decr{\typ}{n} \defeq & \tfunbasic{\tref{v}{\tnat}{\finite}{v < n}}{\typ}
+\end{align*}
+%
+$\decr{\typ}{n}$ is a \emph{weakened} version of $\typ$ 
+that can only be invoked on inputs \emph{smaller} than $n$.
+%
+Thus, we enforce termination by requiring that $\tfixn{\typ}{n}$ is 
+\emph{only} called with $m$ that are \emph{strictly smaller than} $n$. 
+% 
+As the indices are well-founded $\tnat$s, evaluation will terminate. 
+  
+\mypara{Terminating Fixpoints ($\etfix{\typ}$)}
+Finally, we use the indexed combinators to define the 
+\emph{terminating} fixpoint combinator $\etfix{\typ}$ as:
+\begin{align*}
+  \ceval{\etfix{\typ}}{f} \defeq & {\efun{n}{}{f\ n\ (\tfixn{\typ}{n}\ f)}}\\
+%% (n:nat → τ_n → τ) → m:nat⇓ → τ
+\constty{\etfix{\typ}} \defeq & 
+  \tfunbasic{(\tfun{n}
+                   {\FinTy{\tnat}}
+                   {\tfunbasic{\decr{\typ}{n}}{\typ}})}
+            {\tfunbasic{\FinTy{\tnat}}{\typ}}
+\end{align*}
+%
+Thus, the top-level call to the recursive function
+requires a $\FinTy{\tnat}$ parameter $n$ that acts
+as a \emph{starting} index, after which, all ``recursive''
+calls are to combinators with \emph{smaller} indices, 
+ensuring termination.
+
+\mypara{Example: Factorial} 
+Consider the factorial function:
+$$\efac \defeq 
+\efun{n}{}{\efun{f}{}{
+	\ecaseinstance{\_}{(n = 0)}{
+		 \begin{array}{l}
+			 \ealt{\etrue}{1}\\ 
+			 \ealt{\_}{n \times f (n-1)}	
+		\end{array}
+	}
+}}$$
+Let $\typ \defeq {\FinTy{\tnat}}$. 
+We prove termination by typing 
+\begin{align*}
+  \emptyset \vdash_D \etfix{\typ}\ \efac : &\ \tfunbasic{\FinTy{\tnat}}{\typ} \\
+\intertext{To understand \emph{why}, note that $\tfixn{\typ}{n}$ is 
+only called with arguments strictly smaller than $n$ 
+}
+% fix fac n 
+\etfix{\typ}\ \efac\ n 
+%   = fixn fac n
+% \stepsym^* & \ \tfixn{\typ}{n}\ \efac\ n\\
+%   = fac n (fixn fac)
+\stepsym^* & \ \efac\ n\ (\tfixn{\typ}{n}\ \efac)\\
+%   = n * (fixn fac (n-1))
+\stepsym^* & \ n \times (\tfixn{\typ}{n}\ \efac\ (n-1))\\
+%   = n * (fac (n-1) (fix_n-1 fac))
+\stepsym^* & \ n \times (\efac\ (n-1)\ (\tfixn{\typ}{n-1}\ \efac))\\
+%   = n * (n-1) * (fix_n-1 fac (n-2))
+\stepsym^* & \ n \times n-1 \times (\tfixn{\typ}{n-1}\ \efac\ (n-2))\\
+%   = n * (n-1) * (fac (n-2) (fix_n-2 fac))
+%   = n * (n-1) * (n-2) * (fix_n-2 fac (n-3))
+%   = n * (n-1) * ... * (fix_1 fac 0)
+\stepsym^* & \ n \times n-1 \times \ldots \times (\tfixn{\typ}{1}\ \efac\ 0)\\
+\stepsym^* & \ n \times n-1 \times \ldots \times (\efac\ 0\ (\tfixn{\typ}{0}\ \efac))\\
+%   = n * (n-1) * ... * 1
+\stepsym^* & \ n \times n-1 \times \ldots \times 1
+\end{align*}
+
+\mypara{Soundness of Stratification}
+To formally \emph{prove} that stratification is soundly 
+enforced, it suffices to prove that the Denotation 
+Lemma~\ref{lem:denotation} holds for \declang.
+%
+This, in turn, boils down to proving that each 
+(stratified) constant belongs in its type's denotation, 
+\ie each $c \in \interp{\constty{c}}$
+or that the Lemma~\ref{lemma:constants} holds for \declang.
+%
+The crucial part of the above is proving that 
+the indexed and terminating fixpoints inhabit 
+their types' denotations.
+%
+
+\begin{theorem}{[Fixpoint Typing]} 
+\begin{itemize}
+  \item $\efix{\typ} \in \interp{\constty{\efix{\typ}}}$, 
+  \item $\forall n. \etfixn{\typ}{f}{n} \in \interp{\constty{\etfixn{\typ}{f}{n}}}$,
+  \item $\etfix{\typ} \in \interp{\constty{\etfix{\typ}}}$.
+\end{itemize}
+\end{theorem}
+
+With the above we can prove soundness of Stratification as a corollary 
+Denotation Lemma~\ref{lem:denotation}, given the interpretations of 
+the stratified types. 
+%
+\begin{corollary}{[Soundness of Stratification]}\label{cor:stratification} 
+\begin{enumerate}
+  \item If $\dechastype{\emptyset}{e}{\FinTy{\typ}}$, then  evaluation of $e$ is finite.
+  \item If $\dechastype{\emptyset}{e}{\WnfTy{\typ}}$, then  $e$ reduces to WHNF.
+  \item\label{col:ref} If $\dechastype{\emptyset}{e}{\ttreft{\vv}{\typ}{\p}}$, then \p cannot diverge.
+\end{enumerate}
+\end{corollary}
+
+Finally, as a direct implication the well-formedness rule \rwbased 
+we conclude \ref{col:ref}, \ie that refinements cannot diverge.
+
+\subsection{Verification With Stratified Types}\label{sec:typing:vc}
+
+We can put the pieces together to obtain an algorithmic implication 
+rule \rtdimp instead of the undecidable \rimpl (from Figure~\ref{fig:typing}).
+%
+Intuitively, each closing substitution $\sto$ will correspond to 
+a set of logical assignments $\embed{\sto}$. 
+%
+Thus, we will translate $\Env$ into logical
+formula $\embed{\Env}$ and 
+denotation inclusion into logical implication 
+such that:
+%
+\begin{itemize}
+\item $\sto \in \interp{\Env}$ iff all $\sigma \in \embed{\sto}$ 
+     satisfy $\embed{\Env}$, and 
+%%\item $\evals{\sto(p_i)}{\etrue}$ iff each $\sigma \in \embed{\sto}$ 
+%%     satisfies $p_i$, and
+\item ${\sto}{\ttreft{\vv}{\mathit{B}}{\p_1}}\subseteq {\sto}{\ttreft{\vv}{\mathit{B}}{\p_2}}$ 
+		iff all $\sigma \in \embed{\sto}$ satisfy $p_1 \Rightarrow p_2$.
+\end{itemize} %%NV each -> all to fit in 1 line after b -> B
+
+%%Thus, we will translate $\Env$, $p_1$, and $p_2$ into logical
+%%formulas $\embed{\Env}$, $\embed{p_1}$, and $\embed{p_2}$ such 
+%%that:
+%%%
+%%\begin{itemize}
+%%\item $\evals{\sto(p_i)}{\etrue}$ iff each $\sigma \in \embed{\sto}$ 
+%%     satisfies $\embed{p_i}$, and
+%%\item $\sto \in \interp{\Env}$ iff each $\sigma \in \embed{\sto}$ 
+%%     satisfies $\embed{\Env}$.
+%%\end{itemize}
+
+\mypara{Translating Refinements \& Environments}
+To translate environments into logical formulas, recall that $\sto \in \interp{\Env}$
+iff for each $\tbind{x}{\typ} \in \Env$, we have 
+$\sto(x) \in \interp{\thetasub{\sto}{\typ}}$. Thus, 
+%
+\begin{align*}
+\embed{\tbind{x_1}{\typ_1},\ldots,\tbind{x_n}{\typ_n}} \defeq &
+  \embed{\tbind{x_1}{\typ_1}} \wedge \ldots \wedge \embed{\tbind{x_n}{\typ_n}}\\
+\intertext{How should we translate a single binding? Since a binding denotes}
+\interp{\tref{x}{\tbase}{}{p}} \defeq &
+  \{ e \mid \mbox{if } \evals{e}{w}\ \mbox{then}\ \evals{\SUBST{p}{x}{w}}{\etrue} \}\\
+\intertext{a direct translation would require a logical value 
+  predicate $\isvalue{x}$, which we could use to obtain the logical 
+  translation}
+\embed{\tref{x}{\tbase}{}{p}} \defeq & \lnot \isvalue{x} \vee p
+\end{align*}
+%
+This translation poses several theoretical and 
+practical problems that preclude the use of existing 
+SMT solvers (as detailed in \Sref{sec:conclusion}). 
+However, our stratification guarantees 
+(cf. (\ref{eq:trivial}), (\ref{eq:finite}))
+that labeled types reduces to values, and 
+so we can simply conservatively translate 
+the \Div and labeled (\Wnf, \Fin) bindings as:
+$$\embed{\tref{x}{\tbase}{}{p}}\ \defeq\ \etrue \qquad  \embed{\tref{x}{\tbase}{l}{p}}\ \defeq\ p$$
+
+
+\mypara{Soundness} We prove soundness by showing that
+the decidable implication \rtdimp approximates 
+the undecidable \rimpl. 
+
+\begin{theorem}{}\label{thm:approximation} If \decissubref{\Env}{p_1}{p_2} is
+  valid then 
+  $$\undecissubtype{\Env}{\ttreft{\vv}{\Base}{\p_1}}{\ttreft{\vv}{\Base}{\p_2}}$$
+\end{theorem}
+
+%% \begin{theorem}{[Approximation]}\label{thm:approximation} Let $\VC \defeq \VCOND{\Env}{p_1}{p_2}$.
+%%   \begin{itemize}
+%%     \item If \VC is u-valid then \VC is valid, 
+%%     %\item If \VC is valid then \isimplied{\Env}{p_1}{p_2}, 
+%%     \item If \decissubref{\Env}{p_1}{p_2} then \isimplied{\Env}{p_1}{p_2}.
+%%   \end{itemize}
+%% \end{theorem}
+
+To prove the above, let ${\VC \defeq \decissubref{\Env}{p_1}{p_2}}$. 
+We prove that if the \VC is valid then 
+\undecissubtype{\Env}{\ttreft{\vv}{\base}{\p_1}}{\ttreft{\vv}{\base}{\p_2}}.
+%%
+%%First, note that
+%%if $\VC$ is u-valid then it is valid as the addition of axioms preserves
+%%validity. Next, we prove that if the \VC is valid then 
+%%\undechastype{\Env}{\ttreft{\vv}{\base}{\p_1}}{\ttreft{\vv}{\base}{\p_2}}.
+%
+This fact relies crucially on a notion of \emph{tracking evaluation} 
+which allows us to reduce a closing substitution $\sto$ to a lifted substitution 
+$\botsto$, written $\trackevals{\sto}{\botsto}$, after which we prove:
+
+\begin{lemma}{[Lifting]} 
+$\evals{\sto(e)}{c}$ iff $\exists \trackevals{\sto}{\botsto}$ s.t. $\evals{\botsto(e)}{c}$.
+\end{lemma}
+
+We combine the Lifting Lemma and the equivalence Theorem~\ref{thm:equiv} 
+to prove that the validity of the \VC demonstrates 
+the denotational containment
+$\forall \sto\in \interp{\Env}. 
+  		 \interp{\thetasub{\sto}{\ttreft{\vv}{\miBase}{\p_1}}} 
+  		\subseteq   \interp{\thetasub{\sto}{\ttreft{\vv}{\miBase}{\p_2}}}$.
+%
+The soundness of algorithmic typing follows from
+Theorems~\ref{thm:approximation} and~\ref{thm:safety}:
+
+\begin{theorem} {[Soundness of \declang]} 
+\begin{itemize}
+\item\textbf{Approximation:} If \dechastype{\emptyset}{e}{\typ} then
+  \undechastype{\emptyset}{e}{\typ}.
+\item\textbf{Crash-Freedom:} If \dechastype{\emptyset}{e}{\typ} 
+        then $\evals{e\not}{\ecrash}$.
+\end{itemize}
+\end{theorem}
+
+To prove approximation we need to prove that Lemma~\ref{lemma:constants} holds for
+each constant, and thus it holds for data 
+constructors.
+In the metatheory we assume a stronger notion 
+of validity that respects the measure axioms. 
+%
+%\RJ{CHECK}
+However, since our implementation does not use axioms and instead, 
+without loss of soundness or precision, treats measures as uninterpreted 
+during SMT validity checking, we omit further discussion of axioms 
+for clarity.
+
+
+%% \NV{DONE: remove Uninterpreted Validity Checking}
+%%\mypara{Uninterpreted Validity Checking}
+%%We reduce the undecidable implication 
+%%to checking u-validity of the \VC, \ie, validity 
+%%where measures are uninterpreted.
+%%%
+%%This trivially implies validity of the \VC.
+%%%
+%%Recall that we use u-validity instead of validity to ensure 
+%%predictable and efficient checking, as then the 
+%%\VC belongs to \logiclang.
+%%%
+%%The elimination of the measure axioms is crucial 
+%%for efficient and practical verification. 
+%%%
+%%% As demonstrated by our evaluation (\Sref{sec:evaluation}),
+%%The absence of the axioms does not lead to loss 
+%%of precision in practice; the semantics of the 
+%%axioms are encoded in the refinement types of 
+%%the data constructors, and hence already \emph{instantiated} 
+%%inside (the environment and) the VC during type checking.
+%%
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End: 

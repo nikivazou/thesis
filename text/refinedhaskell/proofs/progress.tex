@@ -1,0 +1,54 @@
+Assume \hastype{\emptyset}{e}{\tau}.
+We will prove the Lemma by induction on the derivation tree.
+\begin{itemize}
+\item Case \rtvar cannot occur, as $\Gamma = \emptyset$
+\item Case \rtbot is trivial, 
+		as $\lnot \botomless{e}$.
+\item Cases \rtconst and \rtfun are trivial, 
+		as $e = v$.
+\item Case \rtsub. Assume \hastype{\emptyset}{e}{\tau}.
+By inversion
+$$	\hastype{\emptyset}{e}{\tau'}$$
+By IH 
+either $e \equiv v$ or there exists an botomless $e'$ such that \eval{e}{e'}.
+\item Case \rtapp. Assume $$\hastype{\emptyset}{e}{\tau}\ (1)$$
+where $e\equiv\eapp{e_1}{e_2}$ and $\tau\equiv\tau'\sub{x}{e_2}$.
+By inversion
+$$
+	\hastype{\emptyset}{e_1}{(\tfun{x}{\tau_{x}}{\tau})}\ (2)\qquad
+	\hastype{\emptyset}{e_2}{\tau_{x}}\ (3)
+$$
+
+We split cases on the structure of $e$.
+\begin{itemize}
+\item $e\equiv \eapp{c}{v_2}$.
+Then, $e'\equiv\interp{c}(v_2)$ which is botomless by Definition of constants.
+
+\item $e\equiv \eapp{c}{e_2}$ where $e_2$ is not a value, 
+By IH on $(3)$ \eval{e_2}{e_2'} and  $e' \equiv \eapp{e_1}{e_2'}$
+
+\item $e \equiv \eapp{\efun{x}{e_x}}{e_2}$.
+Then, $e' \equiv e_x\sub{x}{e_2}$, which does not contain bottom.
+
+\item $e \equiv \eapp{e_1}{e_2}$, where $e_1 \neq v$.
+Then, by IH on $(2)$ \eval{e_1}{e_1'} and 
+$e'\equiv\eapp{e_1'}{e_2}$.
+\end{itemize}
+
+\item Case \rtlet. Assume \hastype{\emptyset}{e}{\tau}, where 
+$e \equiv \elet{x}{e_x}{e_0}$, then $e'\equiv e_0\sub{x}{e_x}$ which is botomless.
+
+\item Case \rtcase. Assume \hastype{\emptyset}{e}{\tau}, where
+$e \equiv \ecase{e_T}{D_{T_i}}{\overline{y}}{e_i}{x}$.
+By inversion, 
+$$
+	\hastype{\Gamma}{e}{\tref{v}{T}{e_T}}\ (1)
+$$
+We split cases on the structure of $e_T$
+\begin{itemize}
+\item If $e_T$ is a value, then by $(1)$ it is of the form $e_T \equiv D_{T_i} \overline{e}$,
+so $e' \equiv e_i \sub{x}{e_T}\overline{\sub{y}{e}} $
+\item Otherwise, by IH there exists $e'_T$ such that \evals{e_T}{e'_T}, 
+so $e' \equiv \ecase{e'_T}{D_{T_i}}{\overline{y}}{e_i}{x}$.
+\end{itemize}
+\end{itemize}

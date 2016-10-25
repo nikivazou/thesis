@@ -1,0 +1,431 @@
+\section{Algorithmic Typing: \declang}
+
+Soundness of \declang trivially reduces to soundness of implication checking.
+Here we give the detailed proof of the Approximation Theorem:
+\begin{theorem}{[Approximation]}\label{thm:approximation} 
+  If \decissubref{\Env}{p_1}{p_2} then \isimplied{\Env}{p_1}{p_2}.
+\end{theorem}
+\begin{proof}
+To prove the above, let ${\VC \defeq \VCOND{\Env}{p_1}{p_2}}$. First, note that
+if $\VC$ is u-valid then it is valid as the addition of axioms preserves
+validity. Next, we prove that if the \VC is valid then \isimplied{\Env}{p_1}{p_2}.
+%
+We fix a $\theta$ for which 
+$ \theta \in \interp{\Gamma}$ and 
+$\evals{\thetasub{\theta}{q_1}}{\etrue}$
+%
+It suffices to prove that 
+$\evals{\thetasub{\theta}{q_2}}{\etrue}$.
+
+For all $(x_i, \tlref{x_i}{B}{\trivial}{p_i}) \in \Gamma$
+there exists $(x_i, e_i) \in \theta$ and
+\begin{align*}
+	e_i \in \interp{\tref{x_i}{B}{\trivial}{p_i}}
+&\Leftrightarrow
+	e_i \in \interp{\tref{v}{B}{}{p_i}}
+	\land
+	\exists v. \evals{e_i}{v_i}  \\
+&\Leftrightarrow
+	\exists v. \evals{e_i}{v} \Rightarrow 
+	\evals{\thetasub{\theta}{p_i\sub{x_i}{v_i}}}{\etrue}
+	\land
+	\exists v. \evals{e_i}{v_i}  \\
+&\Leftrightarrow
+	\evals{\thetasub{\theta}{p_i}}{\etrue}\\
+\end{align*}
+
+Thus we have that 
+$\evals{\theta\ (\bigwedge p_i \land q_1)}{\etrue}$.
+%
+By Lemma~\ref{lemma:teval}
+$\tevals{\theta}{(\bigwedge p_i \land q_1)}{\theta'}{\etrue}$.
+%
+Let $\rho = \mkbot{\theta'}$;
+thus, $\trackevals{\theta}{\rho}$.
+By Lemma~\ref{lemma:proofs:lifting}
+$\evals{\thetasub{\rho}{\bigwedge p_i \land q_1}}{\etrue}$.
+%
+Moreover, by the construction of $\rho$, 
+\hastype{\emptyset}{\thetasub{\rho}{\bigwedge p_i \land q_1}}{\tbool}.
+Thus, by Equivalence Theorem~\ref{thm:equiv}
+$\forall \sigma \in \embed{\rho}. 
+\lmodels{\sigma}{\bigwedge p_i \land q_1}$.
+%
+By which and validity of $VC$
+$\forall \sigma \in \embed{\rho}. 
+\lmodels{\sigma}{q_2}$.
+%
+Using the other direction of Equivalence Theorem~\ref{thm:equiv}
+$\evals{\rho\ q_2}{\etrue}$.
+%
+Finally, using the other direction of Lemma~\ref{lemma:proofs:lifting}
+$\eval{\thetasub{\theta}{q_2}}{\etrue}$.
+\end{proof}
+
+\renewcommand\botsto{\ensuremath{\theta^\ebot}}
+To conclude the proof we prove Equivalence Theorem.
+Let \botsto be a substitution from variables to \textit{lifted values}.
+We define the embedding of the substitution \embed{\botsto}
+that maps \ebot to arbitrary elements of the logical domain:
+
+
+\begin{definition}
+$$
+\instance{\rho}=
+	\{(x_1, \botv_1), \dots, (x_n, \botv_n) \mid \botv_i \in \instance{\rho(x_i)}  \}
+$$
+\begin{align*}
+\instance{\ebot}& = \dom &
+\instance{D\ \overline{v}} &= 
+	\{ D\ \overline{v} \mid v_i \in \instance{v} \} \\ 
+\instance{n} &= \{n\} &
+\instance{v} &= \{c_v\}, \text{otherwise}
+\end{align*}
+\end{definition}
+
+Then we prove that
+given a lifted substitution a predicate goes to \etrue
+if and only if for any embedding the
+predicate holds.
+
+\begin{theorem}{[Equivalence]}\label{thm:equiv}
+If \hastype{\emptyset}{\botsto(p)}{\tbool}, then
+\begin{itemize}
+\item $\evals{\botsto(p)}{\etrue}\ \mbox{iff}\ 
+	\forall \sigma \in \embed{\botsto}. \lmodels{\sigma}{p}$.
+\item $\evals{\botsto(p)}{\efalse}\ 
+	\mbox{iff}\ 
+	\forall \sigma \in \embed{\botsto}. \lmodels{\sigma\not}{p}$.
+\end{itemize}
+\end{theorem}
+\begin{proof}
+\newcommand\sigmamodel{\ensuremath{\sigma}}
+\newcommand\interpI{\ensuremath{\mathcal{I}}}
+\newcommand\interpIEq[3]{\ensuremath{\interpI_{\sigmamodel}(#2) = #3}}
+\newcommand\interpIGEq[3]{\ensuremath{\interpI_{\sigmamodel}(#2) \sqsupseteq #3}}
+\newcommand\interpINGEq[3]{\ensuremath{\interpI_{\sigmamodel}(#2) \not\sqsupseteq #3}}
+\newcommand\interpINEq[3]{\ensuremath{\interpI_{\sigmamodel}(#2) \not = #3}}
+\newcommand\interpIENGEq[4]{\ensuremath{\interpI_{\sigmamodel}(#2) = {#3}\not \sqsupseteq #4}}
+
+To begin with we define a comparison between lifted values and 
+elements of the logical domain:
+\begin{definition}
+\begin{align*}
+\ebot &\sqsubset d & d &\sqsubseteq d & v &\sqsubseteq c_v
+\end{align*}
+\end{definition}
+
+and a function $\interpI_\sigmamodel (t)$
+that given a model $\sigmamodel$ and an (open) logical term $t$ returns an element in the logic:
+
+\begin{definition}{[Interpretation]}
+$$\interpI_{\sigmamodel} :: t \rightarrow d $$
+%
+\begin{align*}
+\interpIEq{\sigmamodel}{n&}{n} & 
+\interpIEq{\sigmamodel}{f\ \overline{t}&}{f_D\ (\overline{\interpI_{\sigmamodel}{t}})}\\
+& & \interpIEq{\sigmamodel}{D\ \overline{t}&}{D\ \overline{\interpI_{\sigmamodel}{t}}}\\
+\interpIEq{\sigmamodel}{x&}{\sigmamodel(x)}& \interpIEq{\sigmamodel}{t_1 \oplus t_2 &}{\interpI_{\sigmamodel}{t_2}\oplus_D \interpI_{\sigmamodel}{t_2}}\\
+\end{align*}
+\end{definition}
+
+We relate the evaluation of logical terms with their interpretation
+into the logic:
+%
+\begin{lemma}
+If \hastype{\Gamma}{\thetasub{\botsto}{t}}{\tau}, then
+$	\evals{\thetasub{\botsto}{t}}{\botv} 
+	\Leftrightarrow 
+	\forall\sigma\in \instance{\rho}.\interpIGEq{\sigma}{t}{\botv}$  
+\end{lemma}
+\begin{proof}
+By induction on the structure of $t$.
+\begin{itemize}
+\item $t \equiv n$: \evals{\rho\ n}{n} and 
+	  $\forall\sigmamodel \in \instance{\rho}\interpIEq{\sigmamodel}{n}{n}$
+\item $t \equiv x$:
+		\evals{\thetasub{\rho}{x}}{\rho(x)} and 
+		$\forall\sigmamodel \in \instance{\rho}. 
+		\interpIEq{\sigmamodel}{x}{\sigmamodel(x)} \sqsupseteq \rho(x)$
+\item $t \equiv f\ \overline{t}$:
+
+	$$
+		\evals{\rho\ (f\ \overline{t})}{\botv} \Leftrightarrow
+		\evals{f\ \overline{\rho\ t}}{\botv} \Leftrightarrow	
+	$$
+	$$	
+		\exists \botv_i. \evals{\thetasub{\rho}{t_i}}{\botv_i} \text{ and } \evals{f ({\overline{\botv}})}{\botv} \Leftrightarrow	
+	$$
+	$$	
+		\exists\botv_i\forall\sigmamodel \in \instance{\rho}.\interpIGEq{\instance{\rho}}{t_i}{\botv_i} \text{ and } 		
+		\forall d_i\sqsupseteq\botv_i. f_D(\overline{d}) \sqsupseteq \botv \xLeftrightarrow{(*)}	
+	$$
+	$$	
+		\forall\sigmamodel \in \instance{\rho}.\exists d_i\interpIEq{\sigmamodel}{t_i}{d_i} \text{ and } 		
+		f_D(\overline{d}) \sqsupseteq \botv \Leftrightarrow	
+	$$
+	$$	
+		\forall\sigmamodel \in \instance{\rho}.
+		f_D(\overline{\interpI_{\sigmamodel}(t_i)}) \sqsupseteq \botv \Leftrightarrow	
+	$$
+	$$	
+		\forall\sigmamodel \in \instance{\rho}.\interpIGEq{\sigmamodel}{f\ \overline{t}}{\botv} 
+	$$
+
+$(*)$ We can show that for each $f_D$ and $\botv$ 
+	$$	
+		\exists\botv_i\forall d_i. d_i\sqsupseteq\botv_i \Leftrightarrow f_D(\overline{d}) \sqsupseteq \botv 
+	$$
+ie, $\botv_i$ contains the least information required by $f_D$
+to produce a result less than \botv.
+Now, say $$ \exists\sigmamodel \in \instance{\rho}\forall d_i.\interpIENGEq{\sigmamodel}{t_i}{d_i}{\botv_i} $$
+Then, by definition of $\botv_i$,
+$f_D(\overline{d}) \not\sqsupseteq \botv $, which is a contradiction.
+\item $t \equiv D\ \overline{t}$: 
+	$$
+		\evals{\rho\ (D\ \overline{t})}{D\ \overline{\botv}} \Leftrightarrow
+		\evals{\rho\ t_i}{\botv_i} \Leftrightarrow
+	$$
+	$$
+		\forall\sigmamodel \in \instance{\rho}.\interpIGEq{\sigmamodel}{t_i}{\botv_i} \Leftrightarrow
+		\forall\sigmamodel \in \instance{\rho}.\interpIGEq{\sigmamodel}{D\ \overline{t}}{D\ \overline{\botv}} 
+	$$
+\item $t \equiv t_1 \oplus t_2 $
+	$$
+		\evals{\rho\ (t_1 \oplus t_2)}{d} \Leftrightarrow
+		\evals{(\rho\ t_1) \oplus (\rho\ t_2)}{d} \Leftrightarrow	
+	$$
+	$$
+		\exists d_1.\evals{\rho\ t_1}{d_1} \text{ and }  \evals{\oplus_{d_1} (\rho\ t_2)}{d} \Leftrightarrow
+	$$
+	$$	
+		\exists d_1, d_2.\evals{\rho\ t_1}{d_1} \text{ and }  \evals{\rho\ t_2}{d_2} \text{ and } d_1 \oplus_D d_2 = d \Leftrightarrow	
+	$$
+	$$	
+		\exists d_1, d_2.\forall\sigmamodel \in \instance{\rho}.\interpIEq{\sigmamodel}{t_1}{d_1} \text{ and }  
+		\forall\sigmamodel \in \instance{\rho}.\interpIEq{\sigmamodel}{t_2}{d_2} \text{ and } d_1 \oplus_D d_2 = d \xLeftrightarrow{(*)}	
+	$$
+	$$	
+		\forall\sigmamodel \in \instance{\rho}.
+		\exists d_1, d_2.\interpIEq{\sigmamodel}{t_1}{d_1} \text{ and }  
+		\interpIEq{\sigmamodel}{t_2}{d_2} \text{ and } d_1 \oplus_D d_2 = d \Leftrightarrow	
+	$$
+	$$	
+		\forall\sigmamodel \in \instance{\rho}.\interpIEq{\sigmamodel}{t_1 \oplus t_2}{d} 
+	$$
+$(*)$ For $i = 1 , 2$, fix two instantiations
+$\sigmamodel_1, \sigmamodel_2 \in \instance{\rho}$. 
+Assume that $d_{i_{\sigmamodel_1}} \not = d_{i_{\sigmamodel_2}}$.
+Then $\lnot \forall \sigmamodel \in \instance{\rho} \interpIEq{\sigmamodel}{t_i}{d} \Rightarrow \evals{\rho\ t_i \not}{d} \Rightarrow \lnot \hastype{\Gamma}{t_i}{b^\finite} \Rightarrow \lnot \hastype{\Gamma}{p}{\tbool}$.
+\end{itemize}
+\end{proof}
+
+We use the above Lemma to prove the Theorem by induction on the structure of $p$.
+\begin{itemize}
+\item $ p \equiv \etrue$:
+\begin{itemize}
+\item \eval{\rho\ \etrue}{\etrue} and $\forall\forall\sigmamodel \in  \instance{\rho}. \sigmamodel \models \etrue$
+\item \eval{\rho\ \etrue\not}{\efalse} and $\exists \forall\sigmamodel \in  \instance{\rho}. \sigmamodel \models \etrue$
+\end{itemize}
+
+\item $ p \equiv \efalse$:
+\begin{itemize}
+\item $\eval{\rho\ \efalse \not}{\etrue}$ and $\exists \sigmamodel \in \instance{\rho}. \sigmamodel \not \models \efalse$
+\item $\eval{\rho\ \efalse}{\efalse}$ and $\forall \sigmamodel \in \instance{\rho}.\sigmamodel \not \models \efalse$
+\end{itemize}
+\item $ p \equiv \lnot q$:
+\begin{itemize}
+\item
+$
+	\evals{\rho\ (\lnot q)}{\etrue} \Leftrightarrow
+	\evals{\lnot (\rho\ q)}{\etrue} \Leftrightarrow
+	\evals{\rho\ q}{\efalse} 		\Leftrightarrow
+	\forall \sigmamodel \in \instance{\rho}. \sigmamodel \not \models q	 \Leftrightarrow
+	\forall \sigmamodel \in \instance{\rho}. \sigmamodel \models \lnot q \Leftrightarrow
+	\forall \sigmamodel \in \instance{\rho}. \sigmamodel \models p
+$
+\item
+$
+	\evals{\rho\ (\lnot q)}{\efalse} \Leftrightarrow
+	\evals{\lnot (\rho\ q)}{\efalse} \Leftrightarrow
+	\evals{\rho\ q}{\etrue} 		\Leftrightarrow
+	\forall \sigmamodel\in\instance{\rho}. \sigmamodel \models q	 \Leftrightarrow
+	\forall \sigmamodel\in\instance{\rho}. \sigmamodel \not \models \lnot q \Leftrightarrow
+	\forall \sigmamodel\in\instance{\rho}. \sigmamodel \not \models p
+$
+\end{itemize}
+
+\item $ p \equiv p_1 \land p_2$:
+\begin{itemize}
+\item
+$
+	\evals{\rho\ (p_1 \land p_2)}{\etrue} \Leftrightarrow
+$
+$	
+	\evals{(\rho\ p_1) \land (\rho\ p_2) }{\etrue} \Leftrightarrow
+$
+$	\evals{\rho\ p_1}{\etrue} \text{ and } \evals{\rho\ p_2}{\etrue} \Leftrightarrow
+$\\
+$
+	{\forall\sigmamodel\in\instance{\rho}. \sigmamodel\models p_1} \text{ and } 
+	{\forall\sigmamodel\in\instance{\rho}. \sigmamodel\models p_2} \Leftrightarrow
+$\\
+$	
+	{\forall\sigmamodel\in\instance{\rho}. \instance{\rho}\models p_1 \land p_2}  \Leftrightarrow
+	\forall\sigmamodel\in\instance{\rho}. \instance{\rho}  \models p		 		
+$
+\item
+$
+	\evals{\rho\ (p_1 \land p_2)}{\efalse} \Leftrightarrow
+	\evals{(\rho\ p_1) \land (\rho\ p_2) }{\efalse} \Leftrightarrow
+	\left\{
+	\begin{array}{c}
+		\evals{\rho\ p_1}{\efalse} \\
+		 \text{OR}\\
+		\evals{\rho\ p_2}{\efalse} \\
+	\end{array}
+	\right.
+	\Leftrightarrow
+	\left.
+	\begin{array}{c}
+		{\forall\sigmamodel\in\instance{\rho}. \sigmamodel\not\models p_1} \\
+		 \text{OR}\\
+		{\forall\sigmamodel\in\instance{\rho}. \sigmamodel\not\models p_2} \\
+	\end{array}
+	\right\}
+$\\
+$	
+	  \Leftrightarrow
+	{\forall\sigmamodel\in\instance{\rho}. \sigmamodel\not\models p_1 \land p_2}  \Leftrightarrow
+	\forall\sigmamodel\in\instance{\rho}. \sigmamodel \not\models p		 		
+$
+\end{itemize}
+
+\item $p \equiv t_1 = t_2$:
+\begin{itemize}
+\item
+$
+\begin{array}{lclclcl}
+	&&\evals{\rho\ (t_1 = t_2)}{\etrue} 
+	\\&\Leftrightarrow&
+	\evals{(\rho\ t_1) = (\rho\ t_2)}{\etrue} &&\\
+	&\Leftrightarrow&
+	\exists d_1, d_2.\evals{\rho\ t_1}{d_1} &\text{and}& \evals{=_{d_1} (\rho\ t_2)}{\etrue} &\\
+	&\Leftrightarrow&
+	\exists d_1, d_2.\evals{\rho\ t_1}{d_1} &\text{and}& \evals{\rho\ t_2}{d_2} \\
+	&&&\text{and}& d_1 =_D d_2\\
+	&\Leftrightarrow&
+	\exists d_1, d_2\forall\sigmamodel\in\instance{\rho}.\interpIEq{\sigmamodel}{t_1}{d_1} &\text{and}& 
+	\forall\sigmamodel\in\instance{\rho}.\interpIEq{\sigmamodel}{t_2}{d_2} \\&&&\text{and}& d_1 =_D d_2\\
+	&\xLeftrightarrow{(*)}&
+	\forall\sigmamodel\in\instance{\rho}\exists d_1, d_2.\interpIEq{\sigmamodel}{t_1}{d_1} &\text{and}& 
+	\interpIEq{\sigmamodel}{t_2}{d_2} \\&&&\text{and}& d_1 =_D d_2\\
+	&\Leftrightarrow&
+	\forall\sigmamodel\in \instance{\rho}. \sigmamodel \models t_1 = t_2  &&\\
+\end{array}
+$
+
+\item
+$
+\begin{array}{lclclcl}
+	&&\evals{\rho\ (t_1 = t_2)}{\efalse} \\&\Leftrightarrow&
+	\evals{(\rho\ t_1) = (\rho\ t_2)}{\efalse} &&\\
+	&\Leftrightarrow&
+	\exists d_1, d_2.\evals{\rho\ t_1}{d_1} &\text{and}& \evals{=_{d_1} (\rho\ t_2)}{\efalse} &\\
+	&\Leftrightarrow&
+	\exists d_1, d_2.\evals{\rho\ t_1}{d_1} &\text{and}& \evals{\rho\ t_2}{d_2} \\&&&\text{and}& d_1 \not=_D d_2\\
+	&\Leftrightarrow&
+	\exists d_1, d_2\forall\sigmamodel\in\instance{\rho}.\interpIEq{\sigmamodel}{t_1}{d_1} &\text{and}& 
+	\forall\sigmamodel\in\instance{\rho}.\interpIEq{\sigmamodel}{t_2}{d_2} \\&&&\text{and}& d_1 \not =_D d_2\\
+	&\xLeftrightarrow{(*)}&
+	\forall\sigmamodel\in\instance{\rho}\exists d_1, d_2.\interpIEq{\sigmamodel}{t_1}{d_1} &\text{and}& 
+	\interpIEq{\sigmamodel}{t_2}{d_2} \\&&&\text{and}& d_1 \not =_D d_2\\
+	&\Leftrightarrow&
+	\forall\sigmamodel\in \instance{\rho}. \sigmamodel \not \models t_1 = t_2  &&\\
+\end{array}
+$
+\end{itemize}
+$(*)$ For $i = 1 , 2$, fix two instantiations
+$\sigmamodel_1, \sigmamodel_2\in\instance{\rho}$. 
+Assume that $d_{i_{\sigmamodel_1}} \not = d_{i_{\sigmamodel_2}}$.
+Then $\lnot \forall \sigmamodel\in\instance{\rho} \interpIEq{\sigmamodel}{t_i}{d} \Rightarrow \evals{\rho\ t_i \not}{d} \Rightarrow \lnot \hastype{\Gamma}{t_i}{b^\finite} \Rightarrow \lnot \hastype{\Gamma}{p}{\tbool}$
+
+\item $p \equiv t_1 < t_2$:
+\begin{itemize}
+\item
+$
+\begin{array}{lclclcl}
+	&&\evals{\rho\ (t_1 < t_2)}{\etrue} \\&\Leftrightarrow&
+	\evals{(\rho\ t_1) < (\rho\ t_2)}{\etrue} &&\\
+	&\Leftrightarrow&
+	\exists d_1.\evals{\rho\ t_1}{d_1} &\text{and}& \evals{<_{d_1} (\rho\ t_2)}{\etrue} &\\
+	&\Leftrightarrow&
+	\exists d_1, d_2.\evals{\rho\ t_1}{d_1} &\text{and}& \evals{\rho\ t_2}{d_2} \\&&&\text{and}& d_1 <_D d_2\\
+	&\Leftrightarrow&
+	\exists d_1, d_2.\forall\instance{\rho}.\interpIEq{\instance{\rho}}{t_1}{d_1} &\text{and}& 
+	\forall\sigmamodel\in\instance{\rho}.\interpIEq{\sigmamodel}{t_2}{d_2} 
+	\\&&&\text{and}& d_1 <_D d_2\\
+	&\Leftrightarrow&
+	\exists d_1, d_2.\forall\sigmamodel\in\instance{\rho}.
+	\interpIEq{\sigmamodel}{t_1}{d_1} &\text{and}& 
+	\interpIEq{\sigmamodel}{t_2}{d_2} \\&&&\text{and}& d_1 <_D d_2\\
+	&\xLeftrightarrow{(*)}&
+	\forall\sigmamodel\in\instance{\rho}\exists d_1, d_2.
+	\interpIEq{\sigmamodel}{t_1}{d_1}&\text{and}&\interpIEq{\sigmamodel}{t_2}{d_2} \\&&&\text{and}& d_1 <_D d_2\\
+	&\Leftrightarrow&
+	\forall \sigmamodel\in\instance{\rho}. \sigmamodel \models t_1 < t_2  &&\\
+\end{array}
+$
+\item
+$
+\begin{array}{lclclcl}
+	&&\evals{\rho\ (t_1 < t_2)}{\efalse} \\&\Leftrightarrow&
+	\evals{(\rho\ t_1) < (\rho\ t_2)}{\efalse} &&\\
+	&\Leftrightarrow&
+	\exists d_1.\evals{\rho\ t_1}{d_1} &\text{and}& \evals{<_{d_1} (\rho\ t_2)}{\efalse} &\\
+	&\Leftrightarrow&
+	\exists d_1, d_2.\evals{\rho\ t_1}{d_1} &\text{and}& \evals{\rho\ t_2}{d_2} \\&&&\text{and}& d_1 \not <_D d_2\\
+	&\Leftrightarrow&
+	\exists d_1, d_2\forall\sigmamodel\in\instance{\rho}.\interpIEq{\sigmamodel}{t_1}{d_1} &\text{and}& 
+	\forall\sigmamodel\in\instance{\rho}.\interpIEq{\sigmamodel}{t_2}{d_2} \\&&&\text{and}& d_1 \not <_D d_2\\
+	&\Leftrightarrow&
+	\exists d_1, d_2\forall\sigmamodel\in\instance{\rho}.\interpIEq{\sigmamodel}{t_1}{d_1} &\text{and}& 
+	\interpIEq{\sigmamodel}{t_2}{d_2} \\&&&\text{and}& d_1 \not <_D d_2\\
+	&\xLeftrightarrow{(*)}&
+	\forall\sigmamodel\in\instance{\rho}\exists d_1, d_2.
+	\interpIEq{\sigmamodel}{t_1}{d_1} &\text{and}& 
+	\interpIEq{\sigmamodel}{t_2}{d_2} \\&&&\text{and}& d_1 \not <_D d_2\\
+	&\Leftrightarrow&
+	\forall\sigmamodel\in \instance{\rho}. \sigmamodel\not\models t_1 < t_2  &&\\
+\end{array}
+$
+\end{itemize}
+$(*)$ For $i = 1 , 2$, fix two instantiations
+$\sigmamodel_1, \sigmamodel_2 \in \instance{\rho}$. 
+Assume that $d_{i_{\sigmamodel_1}} \not = d_{i_{\sigmamodel_2}}$.
+Then $\lnot \forall\sigmamodel\in \instance{\rho} \interpIEq{\sigmamodel}{t_i}{d} \Rightarrow \evals{\rho\ t_i \not}{d} \Rightarrow \lnot \hastype{\Gamma}{t_i}{b^\finite} \Rightarrow \lnot \hastype{\Gamma}{p}{\tbool}$
+
+
+\item $p \equiv t$:
+\begin{itemize}
+\item
+$
+\begin{array}{lclclcl}
+	\evals{\rho\ t}{\etrue} &\Leftrightarrow&
+	\forall\sigmamodel\in\instance{\rho}.\interpIEq{\sigmamodel}{t}{\etrue}
+	\\&\Leftrightarrow&
+	\forall\sigmamodel\in \instance{\rho}. \sigmamodel \models t\\
+\end{array}
+$
+\item
+$
+\begin{array}{lclclcl}
+	\evals{\rho\ t}{\efalse} &\Leftrightarrow&
+	\forall\sigmamodel\in\instance{\rho}.\interpIEq{\sigmamodel}{t}{\efalse}
+	\\&\Leftrightarrow&
+	\forall\sigmamodel\in\instance{\rho}. \sigmamodel \not \models t\\
+\end{array}
+$
+\end{itemize}
+\end{itemize}
+\end{proof}

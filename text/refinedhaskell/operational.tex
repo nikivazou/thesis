@@ -1,0 +1,30 @@
+\begin{figure}
+$$
+\begin{array}{rrcl}
+\emphbf{Contexts} \quad 
+  & C
+  & ::= 
+  &   	 \bullet 
+  \spmid \eapp{C}{e} 
+  \spmid \eapp{c}{C} 
+  \spmid D\ \overline{e}\ C\ \overline{e}\\
+  &&\spmid &
+  \ecase{C}{D}{\overline{y}}{e}{x}
+  \\[0.05in] 
+\end{array}
+$$
+%
+\hfill\mbox{\eval{e}{e}}
+$$
+\begin{array}{rcl}
+\eval{C[e]&}{&C[e']} \qquad \text{if}\ \eval{e}{e'} \\
+	\eval{\eapp{c}{v}&}{& \ceval{c}{v}}\\
+\eval{\eapp{(\efun{x}{\tau_x}{e})}{e_x}&}{&e\sub{x}{e_x}}\\
+	\eval{\elet{x}{e_x}{e}&}{&e\sub{x}{e_x}} \\
+	\eval{\ecase{D_j\ \overline{e}}{D_i}{\overline{y_i}}{e_i}{x}&}
+	{&e_j\sub{x}{D_j\ \overline{e}}\sub{\overline{y_j}}{\overline{e}}} \\
+\end{array}
+$$
+\label{fig:operational}
+\caption{Dynamic Symantics of \declang}
+\end{figure}

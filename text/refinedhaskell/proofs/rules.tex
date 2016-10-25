@@ -1,0 +1,144 @@
+\renewcommand\restrictdecidable[2]{#2}
+\newcommand\addtechnical[2]{#2}
+\begin{figure}[t!]
+\judgementHead{Well-Formed Types}{\iswellformed{\Gamma}{\tau}}
+$$
+\inference{
+	\hastype{\Gamma, v\colon B}{
+	\restrictdecidable{p}{e}}{\tbool}
+}{
+	\iswellformed{\Gamma}{\tref{v}{B}{}{\restrictdecidable{p}{e}}}
+}[\rwbase]
+$$
+$$
+\inference{
+	\iswellformed{\Gamma}{\tau_x} &&
+	\iswellformed{\Gamma, x \colon \tau_x}{\tau}
+}{
+	\iswellformed{\Gamma}{\tfunref{x}{\tau_x}{\tau}{v}{e}}
+}[\rwfun]
+$$
+\judgementHead{Well-Formed Environments}{\iswellformed{}{\Gamma}}
+$$
+\inference{
+}{
+	\iswellformed{}{\emptyset}
+}
+\qquad
+\inference{
+	\iswellformed{\Gamma}{\tau_x} &&
+	\iswellformed{}{\Gamma}
+}{
+	\iswellformed{}{\gbind{x}{\tau_x}, \Gamma}
+}
+$$
+
+\judgementHead{Subtyping}{\issubtype{\Gamma}{\tau_1}{\tau_2}}
+
+$$
+\inference{
+	\isimplied{\Gamma, v:b}{\restrictdecidable{p_1}{e_1}}{\restrictdecidable{p_2}{e_2}}
+}{
+	\issubtype{\Gamma}
+		{\tref{v}{b}{}{\restrictdecidable{p_1}{e_1}}}
+		{\tref{v}{b}{}{\restrictdecidable{p_2}{e_2}}}
+}[\rsubbase]
+$$
+$$
+\inference{
+	\issubtype{\Gamma}{\tau'_x}{\tau_x} &&
+	\issubtype{\Gamma, x \colon \tau'_x}{\tau}{\tau'}
+}{
+	\issubtype{\Gamma}{\tfunref{x}{\tau_x}{\tau}{v}{e_1}}{\tfunref{x}{\tau'_x}{\tau'}{v}{e_2}}
+}[\rsubfun]
+$$
+\judgementHead{Implication}{\isimplied{\Gamma}{e_1}{e_2}}
+\restrictdecidable{
+$$
+\inference{
+	\interp{\Gamma} \Rightarrow \interp{p_1} \Rightarrow \interp{p_2}
+}{
+	\isimplied{\Gamma}{p_1}{p_2}
+}[\rimpl]
+$$}{$$
+\inference{
+  \forall \theta. \theta \in \interp{\Gamma} 
+  \Rightarrow \evals{\thetasub{\sto}{e_1}}{\etrue} 
+  \Rightarrow \evals{\thetasub{\sto}{e_2}}{\etrue}
+}{
+	\isimplied{\Gamma}{e_1}{e_2}
+}[\rimpl]
+$$}
+
+\judgementHead{Typing}{\hastype{\Gamma}{e}{\tau}}
+\addtechnical{}{
+$$\inference{
+}{
+	\hastype{\Gamma}{\ebot}{\tref{v}{B}{}{e}}
+}[\rtbot]$$
+}
+$$
+\inference{
+	(x,\tau) \in \Gamma 
+}{
+	\hastype{\Gamma}{x}{\tau}
+}[\rtvar]
+\qquad
+\inference{
+}{
+	\hastype{\Gamma}{c}{\constty{c}}
+}[\rtconst]
+$$
+$$
+\inference{
+	\hastype{\Gamma}{e}{\tau'} &&
+	\issubtype{\Gamma}{\tau'}{\tau} &&
+	\iswellformed{\Gamma}{\tau} &&
+}{
+	\hastype{\Gamma}{e}{\tau}
+}[\rtsub]
+$$
+$$
+\inference{
+	\hastype{\Gamma, x\colon\tau_x}{e}{\tau} &&
+	\iswellformed{\Gamma}{\tau_x}
+}{
+	\hastype{\Gamma}{\efun{x}{\tau_x}{e}}{(\tfun{x}{\tau_x}{\tau})}
+}[\rtfun]
+$$
+$$
+\inference{
+	\hastype{\Gamma}{e_1}{(\tfunref{x}{\tau_{x}}{\tau}{v}{e_v})} &&
+	\hastype{\Gamma}{\restrictdecidable{y}{e_2}}{\tau_{x}}
+}{
+	\hastype{\Gamma}{\eapp{e_1}{\restrictdecidable{y}{e_2}}}{\tau\sub{x}{\restrictdecidable{y}{e_2}}}
+}[\rtapp]
+$$
+$$
+\inference{
+	\hastype{\Gamma}{e_x}{\tau_{x}} &&
+	\hastype{\Gamma,x\colon\tau_x}{e}{\tau} &&
+	\iswellformed{\Gamma}{\tau}
+}{
+	\hastype{\Gamma}{\elet{x}{e_x}{e}}{\tau}
+}[\rtlet]
+$$
+$$\inference{
+	l \not \in \{\finite, \trivial\} \Rightarrow \tau \ \text{is}\ \Div &&
+	\hastype{\Gamma}{e}{\tref{v}{T}{l}{e_T}} &&
+	 \iswellformed{\Gamma}{\tau}\\
+	\forall i. 0 < i \leq \arity{T}. (\\
+		\constty{D^i_T} = \tfun{y_1}{\tau_1}{\dots\rightarrow\tfun{y_n}{\tau_n}{\tref{v}{T}{}{e_{T_i}}}} \\
+		\hastype{\Gamma,  
+				\overline{y_j\colon \tau_j},
+				x\colon\tlref{v}{T}{\restrictdecidable{\trivial}
+				{\addtechnical{}{\ltrivial}}
+				}{e_T \land e_{T_i}}}{e_i}{\tau}	
+	)\\
+}{
+	\hastype{\Gamma}{\ecase{e}{D^i_T}{\overline{y_j}}{e_i}{x}}{\tau}
+}[\rtcase]$$
+\caption{Type-checking for \undeclang}
+\label{fig:proofs:typing}
+\end{figure}
+

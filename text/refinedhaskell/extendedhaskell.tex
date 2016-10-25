@@ -1,0 +1,92 @@
+\section{Implementation: \toolname}
+Here we give some more examples on how we can use \toolname.
+We start by proving termination on mutual recursive functions, 
+using lexicographical ordering. 
+%
+Then we describe how we proved functional correctness on 
+two commonly used functions, namely \texttt{ByteString}
+and \texttt{Text}.
+
+\subsection{Proving Termination}
+
+   Next, consider the Ackermann function.
+   %
+   \begin{code}
+     ack m n 
+       | m == 0    = n + 1
+       | n == 0    = ack (m-1) 1 
+       | otherwise = ack (m-1) (ack m (n-1))
+   \end{code}
+   %
+   There exists no integer termination metric that decreases at each recursive call.
+   %
+   However @ack@ terminates because at each call \emph{either}
+   @m@ decreases \emph{or} @m@ remains the same and @n@ decreases. 
+   %
+   In other words, the pair @(m,n)@ strictly decreases according to
+   \emph{lexicographic} ordering. 
+   %
+   To capture this requirement we extend termination metric
+   from an integer to a list of integers
+   and at each recursive call we check that this list is
+   lexicographically decreasing.
+   %
+   In the case of
+   @ack@ this list will simply be the parameters @m@
+   and @n@:
+   %
+   \begin{code}
+     ack :: m:Nat -> n:Nat -> Nat / [m,n]
+   \end{code}
+   %
+   Thus, \toolname uses lexicographic ordering on 
+   a list of natural numbers to prove termination.
+   %
+   Termination metrics could be generalized to 
+   any \emph{well-found} metric.
+   
+   \spara{Mutual Recursion}
+   %
+   Equipped with termination metrics
+   \toolname instantiates a powerful
+   termination checker that like~\citep{XiTerminationLICS01}
+   proves termination even for mutual recursive functions.
+   %
+   Consider the mutual recursive functions @isEven@ and @isOdd@
+   \begin{code}
+   {-@ isEven :: n:Nat -> Bool / [n, 0] @-}
+   {-@ isOdd  :: n:Nat -> Bool / [n, 1] @-}
+   
+   isEven 0 = True
+   isEven n = isOdd $ n-1
+   
+   isOdd n  = not $ isEven n 
+   \end{code}
+   Each call terminates as either @isEven@
+   calls @isOdd@ with a decreasing argument, 
+   or the argument remains the same, and @isOdd@
+   calls @isEven@ that should then decrease the argument.
+   % 
+   We capture this reasoning using two lexicographic pairs:
+   each function has its own metric, 
+   and when @isEven@ calls @isOdd@
+   the metric of the caller $(n, 0)$
+   should be greater that callee's metric
+   $(n-1, 1)$.
+   %
+   Similarly, at @isEven@'s call-site 
+   \toolname verifies that	
+   $(n, 1) > (n, 0)$.
+   %
+   For example, the call @isEven m@
+   will fire the decreasing metric sequence
+   $(m, 0) > (m-1, 1) > (m-1, 0) > (m-2, 1) > \dots$
+   that ultimate terminates for \textit{any}
+   natural number $m$.
+
+
+\subsection{Bytestring}\label{sec:bytestring}
+\input{bytestring}
+
+\subsection{Text}\label{sec:text}
+\input{text}

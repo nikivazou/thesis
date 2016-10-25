@@ -1,0 +1,160 @@
+Helping Lemmata:
+\begin{lemma}\label{lemma:wftypes}
+If \hastype{\Gamma}{e}{\tau} and \iswellformed{}{\Gamma} then \iswellformed{\Gamma}{\tau}.
+\end{lemma}
+\begin{proofsketch}
+By case split on the derivation \iswellformed{\Gamma}{\tau}
+\end{proofsketch}
+\begin{lemma}\label{lemma:eval}
+If \eval{e}{e'} then
+	\issubtype{\emptyset}{\tau\sub{x}{e'}}{\tau\sub{x}{e}}
+\end{lemma}
+\begin{proofsketch}
+By case split on the derivation \issubtype{\Gamma}{\tau\sub{x}{e'}}{\tau\sub{x}{e}}
+\end{proofsketch}
+
+Assume \botomless{e} and \hastype{\emptyset}{e}{\tau} and \eval{e}{e'}. 
+We will prove the lemma by induction on the derivation tree. 
+\begin{itemize}
+\item Cases \rtvar, \rtconst, \rtfun and \rtbot trivially hold
+       as there is no $e'$ for which \eval{e}{e'}. 
+
+\item Case \rtsub. Assume \hastype{\emptyset}{e}{\tau}.
+By inversion
+$$	\hastype{\emptyset}{e}{\tau'} \ (1) \qquad
+	\issubtype{\emptyset}{\tau'}{\tau}\ (2) \qquad
+	\iswellformed{\emptyset}{\tau}\ (3)
+$$
+
+By IH on $(1)$
+$$	\hastype{\emptyset}{e'}{\tau'} $$
+By which, $(2), (3)$ and \rtsub
+$$	\hastype{\emptyset}{e'}{\tau}$$
+
+\item Case \rtlet. Assume \hastype{\emptyset}{e}{\tau}, 
+where $e \equiv \elet{x}{e_x}{e_0}$. Then 
+ $e' \equiv e_0\sub{x}{e_x}$.
+By inversion
+$$
+	\hastype{\emptyset}{e_x}{\tau_{x}} \ (1) \qquad
+	\hastype{x\colon\tau_x}{e_0}{\tau} \ (2) \qquad
+	\iswellformed{\emptyset}{\tau} \ (3)
+$$
+
+By $(1)$, $(2)$ and Lemma \ref{lemma:substitution}, 
+$$\hastype{\emptyset}{e'}{\tau\sub{x}{e_x}} \ (4)$$
+By $(3)$ $x$ does not appear free in $\tau$, so, $\tau\sub{x}{e_x} \equiv \tau$ and
+$$\hastype{\emptyset}{e'}{\tau}$$
+
+\item Case \rtapp. Assume
+$$	\hastype{\emptyset}{e}{\tau}\ (1)$$
+where $e \equiv \eapp{e_1}{e_2}$, and
+	  $\tau\equiv\tau'\sub{x}{e_2}$
+
+By inversion
+$$	
+	\hastype{\emptyset}{e_1}{(\tfun{x}{\tau_{x}}{\tau'})}\ (2) \qquad
+	\hastype{\emptyset}{e_2}{\tau_{x}}\ (3)
+$$
+
+We split cases on the structure of $e$.
+\begin{itemize}
+\item $e\equiv \eapp{c}{v_2}$.
+Then, $e'\equiv\interp{c}(v_2)$.
+By Definition \ref{def:constants},
+$$\hastype{\emptyset}{e'}{\tau}$$
+
+\item $e\equiv \eapp{c}{e_2}$ where $e_2$ is botomless and not a value, 
+Then, by (3) and Lemma~\ref{lemma:progress},
+\eval{e_2}{e_2'}, and $e' \equiv \eapp{e_1}{e_2'}$.
+%
+By IH on $(3)$
+$$	\hastype{\emptyset}{e_2'}{\tau_{x}}$$
+By which, $(2)$ and rule \rtapp we get
+$$\hastype{\emptyset}{e'}{\tau'\sub{x}{e_2'}}\ (4)$$
+By Lemma \ref{lemma:eval}
+$$
+	\issubtype{\emptyset}{\tau'\sub{x}{e_2'}}{\tau'\sub{x}{e_2}}\ (5)
+$$
+By $(1)$ and Lemma \ref{lemma:wftypes}, since \iswellformed{}{\emptyset}
+$$
+	\iswellformed{\emptyset}{\tau'\sub{x}{e_2}}\ (6)
+$$
+By $(4), (5), (6)$ and rule \rtsub
+$$	\hastype{\emptyset}{e'}{\tau}$$
+
+\item $e \equiv \eapp{\efun{x}{e_x}}{e_2}$.
+Then, $e' \equiv e_x\sub{x}{e_2}$.
+
+By inversion on $(2)$
+$$
+	\hastype{x\colon\tau_x}{e_x}{\tau'}
+$$
+By which, $(3)$ and Lemma \ref{lemma:substitution} (since \iswellformed{}{x\colon\tau_x})
+$$\hastype{\emptyset}{e'}{\tau'}$$
+
+\item $e \equiv \eapp{e_1}{e_2}$, where $e_1$ is botomless and not a value.
+Then, by $(2)$ and Lemma \ref{lemma:progress}, \eval{e_1}{e_1'} and 
+$e'\equiv\eapp{e_1'}{e_2}$
+By IH on $(2)$
+$$	\hastype{\emptyset}{e_1'}{(\tfun{x}{\tau_{x}}{\tau'})}
+$$
+By which, $(3)$ and rule \rtapp we get
+$$	\hastype{\emptyset}{e'}{\tau}$$
+\end{itemize}
+\item Case \rtcase, assume $\hastype{\emptyset}{e}{\tau}$, 
+where $e \equiv \ecase{e_0}{D_i}{\overline{y}}{e}{x}$.
+By inversion
+$$	\hastype{\emptyset}{e_T}{\tref{v}{T}{l}{e_T}}\ (1) $$
+$$	 \iswellformed{\emptyset}{\tau}\ (2)$$
+$$	\forall i, 0 < i \leq \arity{T}. (
+		\constty{D^i_T} = \tfun{x_1}{\tau_1}{\dots\tfun{x_n}{\tau_n}{\tref{v}{T}{l}{e_{T_i}}}}\ (3)
+$$
+$$		\theta = \overline{\sub{x_i}{y_i}}\ (4) \qquad
+		\hastype{x\colon\tlref{v}{T}{}{e_t \land e_{T_i}}, 
+						\overline{y_i\colon \theta\ \tau_i}}{e_i}{\tau}\ (5)	
+	)
+$$
+We split cases on the structure of $e_T$.
+\begin{itemize}
+\item Assume that $e_T \equiv D^i_T\ \overline{e}$,
+then $e' \equiv e_i \sub{x}{e} \overline{\sub{y_i}{e_i}}$.
+
+By $(5)$
+$$
+		\hastype{\overline{y_i\colon \theta\ \tau_i}, 
+		x\colon\tlref{v}{T}{l}{e_t \land \theta\ e_{T_i}}}{e_i}{\tau}\	
+$$
+
+By inversion on $(1)$ 
+\hastype{\emptyset}{e_j}{\tau_j\overline{\sub{x}{e}}} 
+and
+\hastype{\emptyset}{D^i_T\ \overline{e}}{\tref{v}{T}{}{e_{T_i}}\overline{\sub{x}{e}}}. 
+So,
+\hastype{\emptyset}{e_j}{\tau_j\overline{\sub{x}{y}\sub{y}{e}}} 
+and
+\hastype{\emptyset}{D^i_T\ \overline{e}}{\tref{v}{T}{}{e_{T_i}}\overline{\sub{x}{y}\sub{y}{e}}}. 
+And,
+\shastype{\emptyset}{e_j}{\tau_j\overline{\sub{x}{y}\sub{y}{e}}} 
+and
+\shastype{\emptyset}{D^i_T\ \overline{e}}{\tref{v}{T}{}{e_{T_i}}\overline{\sub{x}{y}\sub{y}{e}}}. 
+
+Finally, by Definition~\ref{def:constants}
+\shastype{\emptyset}{D^i_T\ \overline{e}}{\tref{v}{T}{}{e_{T_i} \land e_t}\overline{\sub{x}{y}\sub{y}{e}}}. 
+
+Then, by Lemma \ref{lemma:substitution}
+
+\hastype{\emptyset}{e'}{\tau \overline{\sub{y_i}{e_i}}\sub{x}{e}}.
+
+Finally, by $(2)$, $\tau \overline{\sub{y_i}{e_i}}\sub{x}{e} \equiv \tau$, so
+$$
+\hastype{\emptyset}{e'}{\tau}.
+$$
+
+\item Otherwise, by $(1)$ and Lemma \ref{lemma:progress} \eval{e_0}{e'_0}.
+So $e' \equiv \ecase{e'_0}{D_i}{\overline{y}}{e}{x}$.
+By IH \hastype{\emptyset}{e'_0}{\tref{v}{T}{}{e_T}}, 
+by which and $(1) - (6)$ $$\hastype{\emptyset}{e'}{\tau}$$
+\end{itemize}
+
+\end{itemize}

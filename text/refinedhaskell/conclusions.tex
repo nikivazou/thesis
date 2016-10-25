@@ -1,0 +1,358 @@
+\section{Conclusions \& Future Work}\label{sec:conclusion}
+
+Our goal is to use the recent advances in SMT solving to 
+build automated refinement type-based verifiers for 
+Haskell.
+%
+In this paper, we have made the following advances 
+towards the goal. 
+%
+First, we demonstrated how the classical technique
+for generating VCs from refinement subtyping queries
+is unsound under lazy evaluation.
+%
+Second, we have presented a solution that addresses 
+the unsoundness by stratifying types into those that 
+are inhabited by terms that may diverge, those that must reduce 
+to Haskell values, and those that must reduce to finite values, 
+and have shown how refinement types may themselves 
+be used to soundly verify the stratification. 
+%
+Third, we have developed an implementation of our 
+technique in \toolname and have evaluated the tool 
+on a large corpus comprising 10KLOC of widely used 
+Haskell libraries. Our experiments empirically 
+demonstrate the practical effectiveness of our
+approach: using refinement types, we were able 
+to prove 96\% of recursive functions as 
+terminating, and to crucially use this information 
+to prove a variety of functional correctness properties.
+
+\mypara{Limitations}
+While our approach is demonstrably effective 
+\emph{in practice}, it relies critically on 
+proving termination, which, while independently 
+useful, is not wholly satisfying 
+\emph{in theory}, as adding divergence shouldn't 
+\emph{break} a safety proof.
+%to quote~\cite{McMillanPersonal}: 
+%\emph{``adding divergence shouldn't break your safety proofs.''}
+%
+%In our approach, we can prove a program safe, 
+Our system can prove a program safe, 
+but if the program is modified by making 
+some functions non-deterministically diverge,
+then, since we rely on termination, we
+may no longer be able to prove safety.
+%
+Thus, in future work, it would be valuable to 
+explore \emph{other} ways to reconcile laziness 
+and refinement typing. We outline some routes 
+and the challenging obstacles along them.
+
+
+%% \mypara{1. Reject Inconsistent Environements}
+%% We may be tempted to point the finger of blame at the
+%% ``inconsistency'' itself. Unfortunately, this would be 
+%% misguided -- inconsistencies are not a bug but a crucial 
+%% feature of refinement type systems. 
+%% %
+%% They enable, among other things, \emph{path sensitivity} by
+%% incorporating information from run-time tests (guards) and 
+%% hence let us verify that expressions that throw catastrophic
+%% exceptions (\eg @error e@) are indeed unreachable dead code 
+%% and will not fail at run-time.
+%% 
+%% \mypara{2. CPS Transformation}
+%% We might use a CPS transformation~\cite{PlotkinTCS75,WadlerICFP03} 
+%% to convert the program into call-by-value.
+%% We confess to be somewhat wary of the prospect of translating 
+%% inferred types and errors \emph{back} to the source level after 
+%% such a transformation.
+%% Previous experience shows that the ability to map types and 
+%% errors to source is critical for usability.
+
+%% \mypara{3. Strictness Analysis}
+%% We may want some form of \emph{strictness} or 
+%% \emph{dependency analysis}~\cite{Mycroft80} to statically 
+%% predict which binders must be evaluated, and only use
+%% refinements for those binders in the environment. 
+%% This route is problematic for many reasons. 
+%% %
+%% First, we aim to prove fine-grained functional correctness 
+%% properties of programs. In addition to the well known limitations
+%% of strictness analysis~\cite{HaskellWiki}, it 
+%% is unclear how to develop an analysis that is sensitive
+%% to the precise semantic (``path'') conditions under which 
+%% the evaluation of different binders will be forced.
+%% %
+%% Second, and more importantly, it is often useful to add
+%% \emph{ghost} values into the program for the sole purpose 
+%% of making refinement types \emph{complete}~\cite{TerauchiPOPL13}. 
+%% By construction, these values are not used by the program, 
+%% and would be thrown away by a strictness analysis, thereby
+%% precluding verification.
+
+\mypara{A. Convert Lazy To Eager Evaluation}
+%
+One alternative might be to translate the program from lazy to eager evaluation,
+for example, to replace every (thunk) $e$ with an abstraction $\efun{()}{}{e}$,
+and every use of a lazy value $x$ with an application $x\ ()$. 
+After this, we could simply assume eager evaluation, and so the usual refinement
+type systems could be used to verify Haskell. Alas, no. 
+While sound, this translation
+doesn't solve the problem
+of reasoning about divergence. 
+%%While this translation
+%%does soundly reject the @explode@ example, 
+%%it doesn't solve the problem
+%%of reasoning about divergence. 
+A dependent function type
+${\tfun{x}{\tint}{\tlref{\vv}{\tint}{}{\vv>\x}}}$
+would be transformed to
+${\tfun{x}{(\tfunbasic{()}{\tint})}
+          {\tlref{\vv}{\tint}{}{\vv > \x\ ()}}}$
+%
+%%%\begin{code}
+%%%  f :: x:Int -> {v:Int | v > x}
+%%%\end{code}
+%%%%
+%%%would be transformed to
+%%%%
+%%%\begin{code}
+%%%  f :: x:(() -> Int) -> {v:Int | v > x ()}
+%%%\end{code}
+%
+The transformed type is problematic as it uses 
+arbitrary function applications in the refinement logic!
+%
+The type is only sensible if $x\ ()$ provably reduces to a value, 
+bringing us back to square one.
+
+%%% This is highly problematic, because now we have function 
+%%% applications in the logic! Now it seems that "x" is a 
+%%% pretty harmless function but not really, because we're 
+%%% essentially back in the same world where we have to be 
+%%% *sure* that "x ()" actually reduces to a value! 
+%%% 
+%%% That is to say, essentially, this is the same as the 
+%%% "direct" approach of, 
+%%% 
+%%%    x:Int -> {y | (isvalue x) => y > x}
+%%% 
+%%% 
+%%% That is, the simple refinement in the original CBN is converted to 
+%%% 
+%%% 
+%%% %
+%%% Unfortunately, this doesn't 
+%%% 
+%%% that require CBV evaluation
+%%% 
+%%%   That use call by name and a strict language.  Now all the old techniques should work. 
+%%% 
+%%% convert the program from lazy to ea
+%% We might use a CPS transformation~\cite{PlotkinTCS75,WadlerICFP03} 
+%% to convert the program into call-by-value.
+%% We confess to be somewhat wary of the prospect of translating 
+%% inferred types and errors \emph{back} to the source level after 
+%% such a transformation.
+%% Previous experience shows that the ability to map types and 
+%% errors to source is critical for usability.
+
+\mypara{B. Explicit Reasoning about Divergence}
+%
+Another alternative is to enrich the refinement logic
+% It is not really clear that it is THE only 
+% Thus, the only other alternative is to enrich the refinement logic
+with a \emph{value predicate} $\isvalue{x}$ that is true when 
+``$x$ is a value'' and use the SMT solver to 
+\emph{explicitly} reason about divergence.
+%
+(Note that $\isvalue{x}$ is equivalent to introducing a 
+$\ebot$ constant denoting divergence, and 
+writing $(x \not =\ \ebot)$.)
+%
+Unfortunately, this $\isvalue{x}$ predicate takes the VCs 
+outside the scope of the standard efficiently decidable logics 
+supported by SMT solvers.
+%
+%%To see why, 
+%%the subtyping query (\ref{sub:good}) 
+%%from @good@ in \S~\ref{sec:overview}
+%%will reduce to the below VC
+%%with explicit $\isvalue{x}$ predicates:
+To see why, recall 
+the subtyping query %(\ref{sub:good}) 
+from @good@ in \Sref{sec:overview}. 
+With explicit value predicates, 
+this subtyping reduces to the VC:
+%
+\begin{align}
+\begin{array}{l}
+{(\isvalue{x} \Rightarrow x \geq 0)}\\ 
+{(\isvalue{y} \Rightarrow y \geq 0)} 
+\end{array} 
+\Rightarrow
+{(v = y+1)}   \Rightarrow {(v > 0)}\label{vc:good:explicit}
+\end{align}
+%
+To prove the above valid, we require the knowledge 
+that $(v = y+1)$ implies that $y$ is a value, \ie that 
+$\isvalue{y}$ holds.
+%
+This fact, while obvious to a \emph{human} reader, is 
+outside the decidable theories of linear arithmetic
+of the existing SMT solvers.
+%
+Thus, existing solvers would be unable to prove (\ref{vc:good:explicit}) 
+valid, causing us to reject @good@.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\mypara{Possible Fix: Explicit Reasoning With Axioms?}
+%
+One possible fix for the above would be to specify a collection of
+\emph{axioms} that characterize how the value predicate behaves with 
+respect to the other theory operators. 
+%
+For example, we might specify axioms like: 
+%
+\begin{align*}
+\forall x,y,z. (x = y + z)\ &\Rightarrow\ (\isvalue{x} \wedge \isvalue{y} \wedge \isvalue{z})\\
+% \forall x,y,z. (x = y - z)\ &\Rightarrow\ (\isvalue{x} \wedge \isvalue{y} \wedge \isvalue{z})\\\
+\forall x,y. (x < y )\ &\Rightarrow\ (\isvalue{x} \wedge \isvalue{y})
+% &\mathit{etc.}
+\end{align*}
+%
+\etc. However, this is a non-solution for several reasons. 
+First, it is not clear what a complete set of axioms is.
+Second, there is the well known loss of predictable checking
+that arises when using axioms, as one must rely on various 
+brittle, syntactic matching and instantiation heuristics~\cite{simplifyj}. 
+%
+It is unclear how well these heuristics will work with the
+sophisticated linear programming-based algorithms used to 
+decide arithmetic theories. 
+%
+Thus, proper support for value predicates could require 
+significant changes to existing decision procedures, 
+making it impossible to use existing SMT solvers.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\mypara{Possible Fix: Explicit Reasoning With Types?}
+%
+Another possible fix would be to encode the behavior of the
+value predicates within the refinement types for different 
+operators, after which the predicate itself could be treated 
+as an \emph{uninterpreted function} in the refinement 
+logic~\cite{bradleybook}. For instance, we could type 
+the primitives:
+%
+\begin{code}
+ (+) :: x:Int -> y:Int
+     -> {v | v  =  x + y && Val x && Val y}
+ (<) :: x:Int -> y:Int 
+     -> {v | v <=> x < y && Val x && Val y}
+\end{code}
+%
+While this approach requires \emph{no} changes to the SMT 
+machinery, it makes specifications complex and verbose. 
+%
+%% (and not unlike having to sprinkle explicit ``non-null'' 
+%% checks all over pointer manipulating programs!)
+%
+We cannot just add the value predicates to the primitives' 
+specifications. Consider 
+%
+\begin{code}
+ choose b x y = if b then x+1 else y+2
+\end{code}
+%
+To reason about the output of @choose@ we must type it as:
+%
+\begin{code}
+ choose :: Bool -> x:Int -> y:Int
+        -> {v|(v > x && Val x)||(v > y && Val y)}  
+\end{code}
+%
+Thus, the value predicates will pervasively clutter all 
+signatures with strictness information, making the system 
+unpleasant to use.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\mypara{Divergence Requires 3-Valued Logic}
+Finally, for either ``fix'', the value predicate poses a 
+model-theoretic problem: 
+what is the meaning of $\isvalue{x}$? 
+%what meaning do we give $\isvalue{x}$? 
+%
+One sensible approach is to extend the universe with a family of 
+\emph{distinct} $\bot$ constants, such that $\isvalue{\bot}$ is false.
+%
+These constants lead inevitably into a three-valued logic 
+(in order to give meaning to formulas like $\bot = \bot$).
+%
+Thus, even if we were to find a way to reason with the value 
+predicate via axioms or types, we would have to ensure that 
+we properly handled the 3-valued logic within 
+existing 2-valued SMT solvers.
+
+\mypara{Future Work}
+Thus, in future work it would be worthwhile to address the above 
+technical and usability problems to enable explicit reasoning with 
+the value predicate.
+%
+This explicit system would be \emph{more expressive} than our 
+stratified approach, \eg would let us check 
+%
+%\begin{code}
+  @let x = collatz 10 in 12 `div` x+1@
+%\end{code}
+%
+by encoding strictness inside the logic. Nevertheless, we suspect
+such a verifier would use stratification to eliminate the value
+predicate in the common case.
+%
+At any rate, until these hurdles are crossed, we can take comfort in
+stratified refinement types and can just \emph{eagerly}
+use termination to prove safety for \emph{lazy} languages.
+
+%% If we could address the above problems
+%% Thus, at this point, even though the natural route is to reason explicitly
+%% with value predicates, as they would address the theoretical
+%% robustness-to-divergence limitation described above, 
+%% it is unclear how the above problems can be solved, 
+%% and we believe they may be promising directions for 
+%% future work.
+%
+%
+%
+%% Thus, at this point, even though the natural route is to reason explicitly
+%% with value predicates, as they would address the theoretical
+%% robustness-to-divergence limitation described above, 
+%% it is unclear how the above problems can be solved, 
+%% and we believe they may be promising directions for 
+%% future work.
+%% 
+%% %
+%% Of course, that does not mean they are unsolvable, just 
+%% that the presence of value predicates means we cannot 
+%% use \emph{existing}, off-the-shelf SMT solvers to 
+%% achieve our goal of a sound and predictable 
+%% refinement type checker for Haskell.
+
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End: 

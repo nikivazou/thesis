@@ -1,0 +1,327 @@
+\section{Related Work}\label{sec:related}
+
+Next we situate our work with closely related lines of research.
+
+\spara{Dependent Types} are the basis of many verifiers, 
+or more generally, proof assistants.
+%
+In this setting arbitrary terms may appear inside types,
+so to prevent logical inconsistencies, and enable
+the checking of type equivalence, all terms must
+terminate.
+%
+``Full'' dependently typed systems like Coq~\cite{coq-book}, 
+Agda~\cite{norell07}, and Idris~\cite{Brady13} typically use 
+\emph{structural} checks where recursion is allowed on 
+sub-terms of ADTs to ensure that \emph{all} terms terminate.
+%
+We differ in that, since the refinement logic is
+restricted, we do not require that all functions terminate,
+and hence, we can prove properties of possibly diverging 
+functions like @collatz@ as well as lazy functions like @repeat@.
+%
+Recent languages like Aura~\citep{AURA} and Zombie~\citep{Zombie}
+allow general recursion, but constrain the logic to a terminating 
+sublanguage, as we do, to avoid reasoning 
+about divergence in the logic.
+%
+In contrast to us, the above systems crucially assume 
+\emph{call-by-value} semantics to ensure that binders are bound
+to values, \ie cannot diverge.
+
+
+
+
+%% MiniAgda~\cite{miniagda} is a recent 
+%% variant that uses sized types to enable 
+%% non-structural termination proofs.
+%% %
+%% ``Light" dependently typed languages like 
+%% Omega~\cite{Sheard06}.
+%
+   Haskell itself can be used to \emph{fake} ``lightweight'' dependent 
+   types~\citep{ChakravartyKJ05,JonesVWW06,Weirich12}.
+   In this style, the invariants are expressed in 
+   a restricted~\citep{Jia10} total 
+   index language and relationships (\eg $x<y$ and $y<z$) 
+   are combined (\eg $x<z$) by explicitly constructing
+   a term denoting the consequent from terms 
+   denoting the antecedents.
+   %
+   On the plus side this ``constructive'' approach
+   ensures soundness. 
+   It is impossible to witness inconsistencies, 
+   as doing so triggers diverging computations.
+   %
+   However, it is not easy to use restricted indices
+   with explicitly constructed relations to verify 
+   complex properties~\citep{hasochism}.
+
+%% like @Map@, @Text@ and @ByteString@. \RJ{CHECK}
+%% NEW In this style, relationships are expressed by
+%% NEW explicit constructed GADT values.
+%% NEW which does not admit inconsistencies of the kind that
+%% NEW show up with more expressive refinement 
+%% NEW logics of the kind we are working with.
+
+%%% % more GADTS ~\cite{Cheney02, GRDC03, SchrijversJSV09}, 
+%%% allow non-terminating computations but do 
+%%% not allow terms inside types. 
+%%% %
+%%% Instead, they use a separate, structurally
+%%% terminating index language, and use singleton 
+%%% types to connect indices to computation.
+%%% %
+%%% \RJ{CHECK: Does index/logic prevent inconsistency?}
+
+\spara{Refinement Types} are a form of dependent types where 
+invariants are encoded via a combination of types and predicates
+from a restricted \emph{SMT-decidable} 
+logic~\cite{Rushby98,pfenningxi98,Dunfield07,GordonTOPLAS2011}. 
+%
+The restriction makes it safe to support arbitrary recursion, 
+which has hitherto never been a problem for refinement types.
+%
+However, we show that this is because all the above systems 
+implicitly assume that all free variables are bound to values, 
+which is only guaranteed under CBV and, as we have seen, leads 
+to unsoundness under lazy evaluation.
+
+%% Refinement types offer a highly automated means of
+%% verification and have been applied to check
+%% a variety of program properties, including
+%% %
+%% functional correctness of data structures~\cite{Dunfield07,LiquidPLDI09}, 
+%% security protocols~\cite{GordonTOPLAS2011,Bhargavan13} 
+%% and compilers~\cite{SwamyPOPL13}.
+%
+%% The language of refinements is restricted to ensure consistency.
+%% however, program variables (binders), or their
+%% singleton representatives~\cite{pfenningxi98}, 
+%% \emph{are} crucially allowed in the refinements. 
+%% As discussed in \S~\ref{sec:overview} this 
+%% is sound under \emph{call-by-value} evaluation, 
+%% but under Haskell's semantics any innocent
+%% binder can be potentially diverging, causing 
+%% unsoundness.
+%
+%% Finally, our implementation is based on 
+%% \toolname~\cite{vazou13}, which was unsound 
+%% as it assumed CBV evaluation.
+
+%%%% HEREHEREHEREHEREHERE
+
+\spara{Tracking Divergent Computations}
+The notion of type stratification to track potentially 
+diverging computations dates to at least~\citep{ConstableS87} 
+which uses $\bar{\typ}$ to encode diverging terms, and types 
+$\efix{}$ as $(\bar{\typ}\rightarrow\bar{\typ}) \rightarrow \bar{\typ}$).
+%
+More recently, \cite{Capretta05} tracks diverging 
+computations within a \emph{partiality monad}.
+%
+Unlike the above, we use refinements to 
+obtain terminating fixpoints (\etfix{}), which let us prove 
+the vast majority (of sub-expressions) in real world libraries 
+as non-diverging, avoiding the restructuring that would
+be required by the partiality monad.
+
+\spara{Termination Analyses}
+Various authors have proposed techniques to verify termination 
+of recursive functions, either using the ``size-change principle'' 
+\cite{JonesB04,Sereni05}, or by annotating types with size indices 
+and verifying that the arguments of recursive calls have smaller 
+indices~\cite{HughesParetoSabry96,BartheTermination}.
+%
+Our use of refinements to encode terminating fixpoints is most 
+closely related to~\cite{XiTerminationLICS01}, but this work 
+also crucially assumes CBV semantics for soundness.
+
+AProVE~\cite{Giesl11} implements a powerful, fully-automatic
+termination analysis for Haskell based on term-rewriting.
+%
+While we could use an external analysis like AProVE,
+we have found that encoding the termination proof via 
+refinements provided advantages that are crucial in 
+large, real-world code bases. Specifically, refinements
+let us
+%
+(1) prove termination over a subset 
+    (not all) of inputs; many functions (\eg @fac@) 
+    terminate only on @Nat@ inputs and not all @Int@s,
+%
+(2) encode pre-conditions, 
+    post-conditions, and auxiliary invariants that 
+    are essential for proving termination, (\eg @gcd@),
+%
+(3) easily specify non-standard 
+    decreasing metrics and prove termination, (\eg @range@).
+%
+In each case, the code could be (significantly) 
+\emph{rewritten} to be amenable to AProVE but this defeats
+the purpose of an automatic checker.
+%
+Finally, none of the above analyses have been empirically
+evaluated on large and complex real-world libraries.
+
+
+% Could use APROVE, but didn't
+% 1. refinements let us reason about /partial functions/
+% 2. refinements let us reason about /auxiliary invariants/
+% 3. refinements let us specify witness expressions for termination
+
+% Given the existence of such standalone termination provers, one might
+% ask why we chose to prove termination ourselves. While certainly
+%% We could use one such existing termination analysis; however, we found that
+%% encoding the termination proof via refinements provided a synergy that
+%% would have been impossible with an external oracle. 
+%% %
+%% Specifically, we
+%% found that 
+%% (1) refinements let us prove termination of \emph{partial functions},
+%% (2) refinements let us reason about \emph{auxiliary invariants}, and 
+%% (3) refinements let us express termination metrics that require 
+%%     a \emph{witness} without editing the actual code.
+
+% Given our the structure of our proof, with the Termination Oracle
+% Hypothesis, one might ask why we chose not to use an existing
+% termination prover for Haskell to discharge the termination
+% requirement. 
+% While certainly possible, we found that encoding the
+% termination proof via refinements provided a synergy that would have
+% been impossible with an external tool like AProVe. Consider the
+% following program:
+% %
+% \begin{code}
+%   -- countDown :: Nat -> Int
+%   countDown 0 = 0
+%   countDown n = countDown (n - 1)
+% \end{code}
+% %
+% We include the type as a comment to show the intended usage. A
+% TRS-based oracle will (correctly) say that @countDown@ may not
+% terminate, it could be called with a \emph{negative} input! Suppose,
+% however, that @countDown@ is only called with @Nat@s. \toolname will
+% then \emph{infer} the commented-out type, which will allow it to prove
+% that @countDown@ does, in fact, terminate on all \emph{provided}
+% inputs. The distinction between terminating on all possible vs.\ all
+% actual inputs is crucial for us since we are only concerned with
+% termination insofar as it allows us to prove safety properties.
+
+\spara{Static Contract Checkers} 
+like ESCJava~\cite{ESCJava} are a classical way of verifying 
+correctness through assertions and pre- and post-conditions. 
+%
+Side-effects like modifications of global variables are a 
+well known issue for static checkers for imperative languages;
+the standard approach is to use an effect analysis to determine
+the ``modifies clause'' \ie the set of globals modified by a procedure.
+%
+Similarly, one can view our approach as implicitly computing 
+the non-termination effects.
+%
+%% One can view Refinement Types as a type-based 
+%% generalization of this approach. 
+%
+%% Classical contract checkers check ``partial''
+%% (as opposed to ``total'') correctness (\ie safety) 
+%% for \emph{eager}, typically first-order, languages
+%% and need not worry about termination.
+%% %
+%% We have shown that in the lazy setting, even 
+%% ``partial'' correctness requires proving ``total''
+%% correctness!
+%
+\cite{XuPOPL09} describes a static contract checker for 
+Haskell that uses symbolic execution to unroll procedures
+upto some fixed depth, yielding weaker ``bounded'' soundness
+guarantees.
+% 
+%% The (checker's) termination requires that recursive 
+%% procedures only be unrolled up to some fixed depth.
+%% While this approach removes inconsistencies, it yields 
+%% weaker, ``bounded'' soundness guarantees.
+%
+Similarly, Zeno~\cite{ZENO} is an automatic Haskell 
+prover that combines unrolling with heuristics for rewriting
+and proof-search. 
+Based on rewriting, it is sound but 
+``Zeno might loop forever'' when faced with 
+non-termination.
+%
+Finally, the Halo~\cite{halo} contract checker encodes 
+Haskell programs into first-order logic by directly 
+modeling the code's denotational semantics,
+again, requiring heuristics for instantiating axioms 
+describing functions' behavior. Halo's translation of Haskell
+programs directly encodes constructors as uninterpreted functions,
+axiomatized to be injective (as the denotational semantics requires).
+This heavyweight encoding is more precise than predicate abstraction 
+but leads to model-theoretic problems (outlined in the Halo paper) and 
+affects the efficiency of the encoding when scaling to larger programs 
+(see also \ref{sec:conclusion}, paragraph B) in the lack of specialized 
+decisions procedures.
+%
+Unlike any of the above, our type-based approach does 
+not rely on heuristics for unrolling recursive procedures, 
+or instantiating axioms. 
+%
+Instead we are based on decidable SMT validity 
+checking and abstract interpretation~\cite{LiquidPLDI08} 
+which makes the tool predictable and the overall workflow
+scale to the verification of large, real-world
+code bases.
+
+
+
+
+%%% Our notion of refinement types comes from 
+%%% Liquid Types~\cite{LiquidPLDI08} that provide not only 
+%%% decidable type checking, but also type inference,
+%%% to verify partial correctness of programs.
+%%% %
+%%% In the original work, Liquid Types were used 
+%%% for \textsc{Ocaml}, thus assume eager evaluation, 
+%%% \ie, if an argument to an expression or a let binder
+%%% diverges, the whole expression diverges and the program
+%%% trivially satisfies any property.
+
+
+%% RJ %% Conversely, as stated in~\cite{Jia10}, 
+%% RJ %%   ``others, such as DML\cite{XiPfenning99}, ATS\cite{Chen05}"
+%% RJ %%     Omega\cite{Sheard06}, or Haskell, 
+%% RJ %%   allow nonterminating computation, but do not allow those terms 
+%% RJ %% to appear in types. 
+%% RJ %% Instead, they identify a terminating index 
+%% RJ %% language and use singleton types to connect indices to computation.''
+
+%% RJ %% Dependent types have been used under a ``lazy'' environment.
+%% RJ %% Haskell-like, dependently-typed languages, such as
+%% RJ %% Omega~\cite{Sheard06}, Idris~\cite{Brady13}, and
+%% RJ %% {$\lambda_\rightarrow$}~\cite{LohMS10}
+%% RJ %% support lazy arguments but
+%% RJ %% are compiled with eager evaluation.
+%% RJ %% %
+%% RJ %% Haskell itself can be considered a dependently-typed language,
+%% RJ %% as type level computation is allowed via 
+%% RJ %% Type Families~\cite{McBride01},
+%% RJ %% Singleton Types\cite{Weirich12}, 
+%% RJ %% Generalized Algebraic  Datatypes (GADTs)~\cite{JonesVWW06, SchrijversJSV09}, 
+%% RJ %% % more GADS ~\cite{Cheney02, GRDC03},
+%% RJ %% and type-level functions~\cite{ChakravartyKJ05}.
+%% RJ %% %
+%% RJ %% All of these features provide support for type-level computation
+%% RJ %% while prohibiting diverging terms to appear inside types.
+
+%\emph{Lightweight Dependent-type Programming}
+%	``the programmer
+%	has to do as little work as possible to demonstrate that a program satisﬁes the
+%	required invariants''.
+% http://okmij.org/ftp/Computation/lightweight-dependent-typing.html
+
+
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End: 

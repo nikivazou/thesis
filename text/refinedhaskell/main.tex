@@ -1,0 +1,170 @@
+%\documentclass{llncs}
+\documentclass{sigplanconf}
+%%% \usepackage[top=1.5cm,bottom=1.5cm,left=2.3cm,right=2cm]{geometry}
+
+\pagestyle{plain}
+\usepackage{times}
+%\usepackage[nocompress]{cite} % AR: comment this out if you wish hyperrefs 
+\usepackage{hyperref}
+
+\usepackage{amsmath,amssymb, latexsym}
+
+\usepackage{amsmath}
+\usepackage{amsthm}
+
+\usepackage{comment}
+\usepackage{flushend}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+\newtheorem{theorem}{Theorem}
+\newtheorem*{theorem*}{Theorem}
+\newtheorem{definition}{Definition}
+\newtheorem*{lemma*}{Lemma}
+
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{mathtools}
+\usepackage{commands}
+\usepackage{liquidHaskell}
+\usepackage[inference]{semantic}
+
+\usepackage{enumerate}
+%\def\url{}
+\usepackage{xspace}
+\usepackage{epsfig}
+\usepackage{booktabs}
+\usepackage{listings}
+\usepackage{comment}
+\usepackage{ifthen}
+
+\newcommand{\isTechReport}{false} % true or false
+\newcommand\includeProof[1]{%
+  \ifthenelse{\equal{\isTechReport}{true}}
+    {{#1}}
+    {\ignorespaces}
+\xspace}
+\newcommand\includeBytestring[1]{}
+
+%%%%%\usepackage{fancyvrb}
+%%%%%\DefineVerbatimEnvironment{code}{Verbatim}{fontsize=\small}
+%%%%%\DefineVerbatimEnvironment{example}{Verbatim}{fontsize=\small}
+%%%%%\newcommand{\ignore}[1]{}
+
+% command to end a proof or definition:
+%\def\qed{\rule{0.4em}{1.4ex}}
+\def\qed{\hfill$\Box$}
+
+% space at the beginning of an environment:
+\def\@envspa{\hspace{0.3em}}
+\def\@sa{\hspace{-0.2em}}
+\def\@sb{\hspace{0.5em}}
+\def\@sc{\hspace{-0.1em}}
+
+\def\sk{\smallskip}		% space before and after theorems
+
+\newtheorem{notation}{Notation}{\itshape}{}
+\newtheorem{invariant}{Invariant}
+\newtheorem*{hypothesis}{Hypothesis}
+\newtheorem{technical}{}
+\usepackage{thmtools}
+
+\declaretheoremstyle[%
+  spaceabove=-6pt,%
+  spacebelow=6pt,%
+  headfont=\normalfont\itshape,%
+  postheadspace=1em,%
+  qed=\qedsymbol,%
+  headpunct={}
+]{mystyle} 
+\declaretheorem[name={Proof Sketch:},style=mystyle,unnumbered,
+]{proofsketch}
+
+
+%\newcommand{\proofsketch}{\noindent {\bf Proof Sketch: }}
+%\newcommand{\qed}{\hfill\rule{2mm}{2mm}}
+\newcommand\proofsketchend{\hfill\ensuremath{\qedhere}}
+\newcommand\liquidtech{
+	\href{http://goto.ucsd.edu/~rjhala/liquid/liquid_types_techrep.pdf}
+		 {liquid types technical report}
+}
+
+\input{haskellListings}
+\begin{document}
+
+\title{
+	\ifthenelse{\equal{\isTechReport}{true}}
+    {{Technical Report:}}
+    {}
+    Refinement Types For Haskell
+    \thanks{This work was supported by NSF grants 
+      CNS-0964702, CNS-1223850, CCF-1218344, CCF-1018672,
+      and a generous gift from Microsoft Research.
+    }
+  } 
+\newcommand\showproof[1]{\texttt{proved}}
+\newcommand\showproofsketch[1]{#1}%{\texttt{proof sketch}}
+\newcommand\showprooftodo[1]{\texttt{TODO}}
+
+
+
+\authorinfo{Niki Vazou \and Eric L. Seidel \and Ranjit Jhala}{UC San Diego}{}
+\authorinfo{Dimitrios Vytiniotis \and Simon Peyton-Jones}{Microsoft Research}{}
+
+\maketitle
+
+%%\NV{Fonts:
+%%SPJ:I would prefer to use math-italic for all non-terminals
+%%Particular terminal symbols like Int, Bool, and keywords like 'measure' can be typewriter font
+%%Types can be \tau instead of t}
+
+
+\conferenceinfo{ICFP~'14}{September 1--6, 2014, Gothenburg, Sweden} 
+\copyrightyear{2014} 
+\copyrightdata{978-1-4503-2873-9/14/09} 
+%% \doi{nnnnnnn.nnnnnnn} 
+
+
+\input{abstract}
+\input{intro}
+\input{overview}
+\input{measures}
+\input{language}
+\input{typing}
+\input{haskell}
+\input{evaluation}
+\input{related}
+\input{conclusions}
+
+\subsection*{Acknowledgements}
+We thank 
+Kenneth Knowles, 
+Kenneth L. McMillan, 
+Andrey Rybalchenko, 
+Philip Wadler, 
+and the reviewers for their 
+excellent suggestions and feedback about 
+earlier versions of this paper.
+
+{
+\bibliographystyle{plain}
+\bibliography{sw}
+}
+
+\ifthenelse{\equal{\isTechReport}{true}}
+{
+\appendix
+\input{proofs/undeclang}
+\input{proofs/tracking}
+\input{proofs/constants}
+\input{proofs/algorithmic}
+\input{extendedhaskell}
+}
+{}
+
+\end{document}
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End: 

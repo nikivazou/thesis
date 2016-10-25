@@ -1,0 +1,135 @@
+\section{Introduction}\label{sec:intro}
+
+% Refinement types are unsound under Haskell's lazy semantics.
+%
+Refinement types encode invariants
+by composing types with SMT-decidable refinement 
+predicates~\cite{Rushby98,pfenningxi98},
+generalizing Floyd-Hoare Logic 
+(\eg EscJava~\cite{ESCJava})
+for functional languages.
+%
+For example
+%
+\begin{code}
+   type Pos = {v:Int | v >  0}
+   type Nat = {v:Int | v >= 0}
+\end{code}
+%
+are the basic type @Int@ refined with logical predicates 
+that state that ``the values'' @v@ described by the type 
+are respectively strictly positive and non-negative.
+%
+We encode \emph{pre-} and \emph{post-}conditions (contracts) using 
+refined function types like 
+%
+\begin{code}
+   div :: n:Nat -> d:Pos -> {v:Nat | v <= n}
+\end{code}
+%
+which states that the function @div@ \emph{requires} inputs that are 
+respectively non-negative and positive, and \emph{ensures} that the 
+output is less than the first input @n@.
+If a program containing @div@ statically type-checks, we can rest assured that
+executing the program will not lead to any unpleasant divide-by-zero errors.
+%
+By combining types and SMT based validity checking,
+refinement types have automated the verification of 
+programs with recursive datatypes, higher-order 
+functions, and polymorphism.
+%
+Several groups have used refinements to statically 
+verify properties ranging from simple array safety~\cite{pfenningxi98,LiquidPLDI08}
+to functional correctness of data structures~\cite{LiquidPLDI09}, 
+security protocols~\cite{GordonTOPLAS2011},  
+and compiler correctness~\cite{fstar}.
+
+Given the remarkable effectiveness of the technique, 
+we embarked on the project of developing a refinement 
+type based verifier for  Haskell.
+The previous systems were all developed for eager, 
+\emph{call-by-value} languages, but we presumed that
+the order of evaluation would surely prove irrelevant, 
+and that the soundness guarantees would translate 
+to Haskell's lazy, \emph{call-by-need} regime.
+
+We were wrong.
+% To our surprise, we were totally wrong. 
+%
+Our first contribution is to show that standard refinement 
+systems crucially rely on a property of eager languages:
+%
+when analyzing any term, one can assume that \emph{all} the
+free variables appearing in the term are bound to \emph{values}.
+This property lets us check each term in an environment where 
+the free variables are logically constrained according to 
+their refinements.
+%
+Unfortunately, this property does not hold for lazy evaluation, 
+where free variables can be lazily substituted with arbitrary 
+(potentially diverging) expressions, which breaks 
+soundness (\Sref{sec:overview}).
+
+The two natural paths towards soundness are blocked by challenging problems.
+%
+The first path is to \emph{conservatively ignore} free variables 
+except those that are guaranteed to be values \eg by pattern 
+matching, @seq@ or strictness annotations.  
+While sound, this leads to a drastic loss of precision. 
+%
+The second path is to \emph{explicitly} reason about divergence 
+within the refinement logic. This would be sound and 
+precise -- however it is far from obvious to us how 
+to re-use and extend existing SMT machinery for 
+this purpose. (\Sref{sec:conclusion})
+
+%% DV: I reworded slightly. 
+%% While sound and precise, we do not this route 
+%% makes the refinement logic three-valued, making it 
+%% impossible to use existing SMT machinery (\Sref{sec:conclusion}).
+
+Our second contribution is a novel approach that
+enables sound and precise checking with existing 
+SMT solvers, using a \emph{stratified} type system that 
+labels binders as potentially diverging or not 
+(\Sref{sec:typing}).
+%
+While previous stratified systems~\cite{ConstableS87}
+would suffice for soundness, we show how to recover 
+precision by using refinement types to develop a 
+notion of \emph{terminating fixpoint} combinators 
+that allows the type system to automatically 
+verify that a wide variety of recursive functions 
+actually terminate (\Sref{sec:haskell}).
+
+Our third contribution is an extensive empirical
+evaluation of our approach on more than $10,000$ 
+lines of widely used complex Haskell libraries.
+We have implemented our approach in \toolname, 
+an SMT based verifier for Haskell. 
+%
+\toolname is able to prove 96\% of 
+all recursive functions terminating, requiring a modest 
+1.7 lines of termination annotations per 100 lines 
+of code, thereby enabling the sound, precise, 
+and automated verification of functional 
+correctness properties of real-world Haskell code 
+(\Sref{sec:evaluation}).
+
+%%% MOVE TO RELATED
+%%% ES: In other words, eager semantics embed an 
+%%% ES: implicit reasoning about divergence.
+%%% ES: %
+%%% ES: To restore soundness under lazy evaluation
+%%% ES: we use refinement types themselves to explicitly reason about divergence
+%%% ES: and annotate our types with labels carrying termination proofs.
+%%% ES: %
+%%% ES: We contrast our approach, which \emph{allows} diverging computations,
+%%% ES: but \emph{tracks} them as Haskell tracks side-effects, with
+%%% ES: total functional programming, \eg in the dependently-typed setting,
+%%% ES: where all computations are \emph{forced} to terminate.
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End: 

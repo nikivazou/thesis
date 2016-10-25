@@ -1,0 +1,48 @@
+%\newcommand\teval[4]{\evalt{#1}{#2}{#3}{#4}}
+\renewcommand\evalt[4]{{\teval{#1}{#3}{#2}{#4}}}
+
+\begin{figure*}
+\hfill\mbox{\evalt{\sigma}{\sigma}{e}{e}}
+$$
+\begin{array}{ll}
+	%% CONTEXT
+	\evalt{\sigma}{\sigma'}{\eapp{e_1}{e_2}}{\eapp{e_1'}{e_2}} 
+	& \text{if}\ 
+	\evalt{\sigma}{\sigma'}{e_1}{e_1'}\\
+	%
+	\evalt{\sigma}{\sigma'}{\eapp{c}{e}}{\eapp{c}{e'}} 
+	& \text{if}\ 
+	\evalt{\sigma}{\sigma'}{e}{e'}\\
+	%
+	\evalt{\sigma}{\sigma'}{\ecase{e}{D_i}{\overline{y_i}}{e_i}{x}}{\ecase{e'}{D_i}{\overline{y_i}}{e_i}{x}}
+	&\text{if}\ \evalt{\sigma}{\sigma'}{e}{e'} \\
+	%
+	\evalt{\sigma}{\sigma'}
+		{D\ \overline{e_i}\ e\ \overline{e_j}}
+		{D\ \overline{e_i}\ e'\ \overline{e_j}}
+	&\text{if}\ \evalt{\sigma}{\sigma'}{e}{e'} \\
+	%
+	%% EVALUATION
+	\evalt{\sigma}{\sigma}{\eapp{c}{v}}{\ceval{c}{v}} &\\
+	\evalt{\sigma}{\sigma}{\eapp{\efun{x}{}{e}}{e_x}}{e\sub{x}{e_x}} &\\
+	\evalt{\sigma}{\sigma}{\elet{x}{e_x}{e}}{e\sub{x}{e_x}}& \\
+	\evalt{\sigma}{\sigma}{\ecase{D_j\ \overline{e}}{D_i}{\overline{y_i}}{e_i}{x}}{e_j\sub{x}{D_j\ 			\overline{e}}\sub{\overline{y_j}}{\overline{e}}} \\
+	%% TRACKING
+\teval{(x,e_x)\sigma}{x}{(x,e'_x)\sigma'}{x} &\text{if}\ \teval{\sigma}{e_x}{\sigma'}{e'_x}\\
+	\teval{(y,e_y)\sigma}{x}{(y,e_y)\sigma'}{e_x}
+  &\text{if}\
+	\teval{\sigma}{x}{\sigma'}{e_x}\\
+	\teval{(x,v)\sigma}{x}{(x,v)\sigma}{v}
+  &\text{if}\
+  v \not = D\ \overline{e}\\
+	\teval{(x,D\ \overline{y})\sigma}{x}{(x,D\ \overline{y})\sigma}{D\ \overline{y}}
+  &\\
+	\teval{(x,D\ \overline{e})\sigma}{x}{(x,D\ \overline{y})\overline{(y_i, e_i)}\sigma}{D\ \overline{y}}
+  &\text{if}\
+	\text{fresh}\ \overline{y_i}
+  \\
+\end{array}
+$$
+\caption{Tracking Substitutions}
+\label{fig:proofs:tracking}
+\end{figure*}

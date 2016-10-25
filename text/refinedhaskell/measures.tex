@@ -1,0 +1,246 @@
+\newcommand\hnull{\ensuremath{\text{[]}}\xspace}
+
+\subsection{Measures: From Integers to Data Types}\label{sec:measures}
+
+\begin{figure}
+\hrule width 0.48\textwidth \vspace{0.05in}
+$$
+\begin{array}{rcl}
+\multicolumn{3}{l}{\emphbf{Definition}}               \\
+  \mathit{def} & ::=  &  \mathtt{measure} \ f :: \tau \\
+               &      &  \quad eq_1 \ldots eq_n       \\[0.05in]
+
+\multicolumn{3}{l}{\emphbf{Equation}}                 \\ 
+  \mathit{eq}  & ::=  &   f\ (D\ \overline{x}) = r    \\[0.15in] 
+
+\multicolumn{3}{l}{\emphbf{Equation to Type}}         \\[0.05in]
+\quad \embed{f\ (D\ \overline{x}) = r} & \defeq & D :: \overline{\tbind{x}{\tau}} \rightarrow \tref{\mathtt{v}}{\tau}{}{f\ \mathtt{v} = r}
+\end{array}
+$$
+\caption{Syntax of Measures}
+\label{fig:measures}
+\end{figure}
+
+
+%% \begin{figure}
+%% \hrule width 0.48\textwidth \vspace{0.05in}
+%% $$
+%% \begin{array}{rrcl}
+%% \emphbf{Definition} \quad 
+%%   & def & ::=&  \mathtt{measure} \ f :: \tau \\
+%%   &     &    &  \quad eq_1 \ldots eq_n
+%%   \\[0.05in]
+%% 
+%% \emphbf{Equation} \quad 
+%%   & eq & ::=&   f\ (D\ \overline{x}) = r 
+%%   \\[0.05in] 
+%% 
+%% \emphbf{Equation-Type} &&& \\[0.05in]
+%% \multicolumn{2}{r}{\embed{f\ (D\ \overline{x}) = r}} & \defeq & 
+%%     D :: \overline{\tbind{x}{\tau}} \rightarrow \tref{\mathtt{v}}{\tau}{}{f\ \mathtt{v} = r}
+%% 
+%% %% \emphbf{Equation to Type} &&&
+%% %%   \\[0.05in]
+%% %% \multicolumn{4}{c}{ \embed{f\ (D\ \overline{x}) = r} =
+%% %%  D :: \overline{\tbind{x}{\tau}} \rightarrow \tref{\mathtt{v}}{\tau}{}{f\ \mathtt{v} = r}
+%% %% }
+%% \end{array}
+%% $$
+%% \caption{Syntax of measures}
+%% \label{fig:measures}
+%% \end{figure}
+
+So far, all our examples have used only integer and boolean expressions in refinements.
+To describe properties of algebraic data types, we use \emph{measures},
+introduced in prior work on Liquid Types~\cite{LiquidPLDI09}.
+%% Next, we define \emph{measures}~\cite{LiquidPLDI09} (also called logical functions~\cite{fstar})
+%% that capture properties of data expressions.
+Measures are inductively defined functions that can be used in refinements, and
+provide an efficient way to axiomatize properties of data types.
+%
+For example, @emp@ determines whether a list is empty:
+%
+\begin{code}
+  measure emp  :: [Int] -> Bool
+    emp []     = true
+    emp (x:xs) = false
+\end{code}
+The syntax for measures deliberately looks like Haskell, but it is \emph{far} more
+restricted, and should really be considered as a separate language.
+A measure has exactly one argument, and is defined by a list of equations,
+each of which has a simple pattern on the left hand side (see Figure~\ref{fig:measures}).
+The right-hand side of the equation is a refinement expression $r$.
+Measure definitions are typechecked in the usual way; we omit the typing rules which are standard.
+(Our metatheory does not support type polymorphism,
+so in this paper we simply reason about lists of integers;
+however, our implementation supports polymorphism.)
+
+\paragraph{Denotational semantics}
+The denotational semantics of types in \hlang in \Sref{sec:den-sem} is readily extended to
+support measures.  In \hlang a refinement $r$ is an arbitrary expression, and
+calls to a measure are evaluated in the usual way by pattern matching.
+For example, with the above definition of @emp@ it is straightforward to show that
+\begin{align}
+  \mathtt{[1, 2, 3]} \dcolon \tref{\mathtt{v}}{[\tint]}{}{\mathtt{not}\ (\mathtt{emp}\ \mathtt{v})} \label{type:len}
+\end{align}
+as the refinement @not (emp ([1, 2, 3]))@ evaluates to $\tttrue$.
+
+\mypara{Measures as Axioms}
+How can we reason about invocations of measures in the decidable logic of VCs?
+A natural approach is to treat a measure like @emp@ as an uninterpreted function,
+and add logical axioms that capture its behaviour. This looks easy: each equation 
+of the measure definition corresponds to an axiom, thus:
+%
+\begin{align*}
+\ttemp\ \hnull &= \tttrue\\
+\forall \ttx, \ttxs.\, \ttemp\ (\ttx:\ttxs) &= \ttfalse
+\end{align*}
+%
+Under these axioms the judgement~\ref{type:len} is indeed valid. 
+% % Measures as data constructor refinements
+
+\mypara{Measures as Refinements in Types of Data Constructors}
+Axiomatizing measures is \emph{precise}; that is, 
+the axioms exactly capture the meaning of measures.
+Alas, axioms render SMT solvers \emph{inefficient}, and render the VC mechanism \emph{unpredictable}, 
+as one must rely on various brittle syntactic matching and instantiation heuristics~\cite{simplifyj}.
+
+Instead, we use a different approach that is \emph{both} precise \emph{and} efficient.
+The key idea is this: \emph{instead of translating each measure equation into an axiom, 
+we translate each equation into a refined type for the corresponding data constructor}~\citep{LiquidPLDI09}.
+This translation is given in Figure~\ref{fig:measures}.
+For example, the definition of the measure @emp@ yields the following refined types for the list data constructors:
+$$
+\begin{array}{lcl}
+\hnull  & :: & \ttreft{v}{[\tint]}{emp\ v = true}\\
+{:}  & :: & \tfun{\ttx}{\tint}{\tfun{\ttxs}{[\tint]}{\ttreft{v}{[\tint]}{emp\ v = false}}}
+\end{array}
+$$
+These types ensure that:
+%
+~(1) each time a list value is \emph{constructed}, 
+its type carries the appropriate emptiness information. 
+Thus our system is able to statically decide that 
+(\ref{type:len}) is valid, and,
+~(2) each time a list value is \emph{matched}, 
+the appropriate emptiness information is used to 
+improve precision of pattern matching, as we see next.
+
+\mypara{Using Measures}
+\label{sec:pattern-match}
+As an example, we use the measure @emp@ to 
+provide an appropriate type for the @head@ function:
+%
+\begin{code}
+  head    :: {v:[Int] | not (emp v)} -> Int 
+  head xs = case xs of
+              (x:_) -> x
+              []    -> error "yikes"  
+
+  error   :: {v:String | false} -> a
+  error   = undefined
+\end{code}
+%
+@head@ is safe as its input type stipulates that it will only 
+be called with lists that are \emph{not} @[]@, and so
+@error "..."@ is dead code.
+%
+The call to @error@ generates the subtyping query
+%
+\begin{align*}
+	\begin{array}{l}
+   \tbind{\ttxs}{\tref{\ttxs}{[\tint]}{\trivial}{\lnot (\ttemp\ \ttxs)}}\\
+   \tbind{\ttb}{\tttref{\ttb}{[\tint]}{\trivial}{(\ttemp\ \ttxs)= true}} 	
+	\end{array} & \vdash \subtref{\tttrue}{\ttfalse} 
+\end{align*}
+%
+The match-binder $\ttb$ holds the result of the 
+match~\cite{SulzmannCJD07}. In the \texttt{[]} case,
+we assign it the refinement of the type of \texttt{[]} 
+which is $(\ttemp\ \ttxs) = \tttrue$. %~\cite{LiquidPLDI09}.
+%
+Since the call is done inside a @case-of@ expressions 
+both @xs@ and @b@ are guaranteed to be in WHNF,
+thus they have \Wnf types. 
+  
+The verifier \emph{accepts} the program as the above subtyping reduces to the valid VC
+\begin{align*}
+\lnot (\ttemp\ \ttxs) \wedge ((\ttemp\ \ttxs)= \tttrue) \Rightarrow\ & \tttrue \Rightarrow\ \ttfalse
+\end{align*}
+%
+%%The above method also applies to terms that have been @seq@-ed or have strictness 
+%%annotations.
+%
+Consequently, our system can naturally support idiomatic 
+Haskell, \eg taking the @head@ of an infinite list:
+%
+\begin{code}
+  ex x     = head (repeat x)
+  
+  repeat   :: Int -> {v:[Int] | not (emp v)}
+  repeat y = y : repeat y
+\end{code}
+%
+%% We verify the signature for @repeat@ as the only returned value 
+%% is a cons-ed list for which @emp@ is $\ttfalse$.
+%% %
+%% Note that as the return has a \Div-type, \toolname would soundly 
+%% reject the signature 
+%% %
+%% \begin{code}
+%%   repeat   :: a -> {v:[a] | false}
+%% \end{code}
+
+
+\mypara{Multiple Measures}
+If a type has multiple measures, we simply refine each data constructor's type
+with the \emph{conjunction} of the refinements from each measure.
+%
+For example, consider a measure that computes the length of a list:
+\begin{code}
+  measure len  :: [Int] -> Int
+    len ([])   = 0
+    len (x:xs) = 1 + len xs
+\end{code}
+%
+Using the translation of Figure~\ref{fig:measures},
+we extract the following types for list's data constructors.
+$$
+\begin{array}{lcl}
+\text{[]}  & :: & \ttreft{v}{[\tint]}{len\ v = 0}\\
+{:}  & :: & \tfun{\ttx}{\tint}{\tfun{\ttxs}{[\tint]}{\ttreft{v}{[\tint]}{len\ v = 1 + (len\ xs)}}}\\[0.05in]
+\multicolumn{3}{l}{
+\text{The final types for list data constructors will be the 
+conjunction of}}\\
+\multicolumn{3}{l}{
+\text{the refinements from $\mathtt{len}$ and $\mathtt{emp}$:}
+}\\[0.05in]
+\text{[]}  & :: & \ttreft{v}{[\tint]}{emp\ v = true \land len\ v = 0}\\
+{:}  & :: & \tfun{\ttx}{\tint}{\tfun{\ttxs}{[\tint]}\\ &&
+{\ttreft{v}{[\tint]}{emp\ v = false \land len\ v = 1 + (len\ xs)}}}
+\end{array}
+$$
+
+
+
+
+%
+\begin{comment}
+* uninterpreted functions approximated haskell functions, 
+for soundness we need to evaluate them
+
+* measure definitions => types of data contructors
+Measure definitions are not used in any other way
+Otherwise they are simply uninterpretd functions
+
+* Many measures => conjunction.
+
+* State that you can use measures that lack definitions; they are uninterpreted functions
+
+* give measure syntax definition
+
+* measure evaluation is haskell evaluation
+
+* eqivalently use axioms, but what we do is more efficient, see HALO
+see related work discussion about why this is not an option and HALO was Bad
+\end{comment}

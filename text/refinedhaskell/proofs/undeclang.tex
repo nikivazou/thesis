@@ -1,0 +1,261 @@
+\section{Declarative Typing: \undeclang}
+
+\subsection{Definitions}
+To simplify the metatheory we extend \undeclang so that
+\begin{itemize}
+\item Supports stratified types, and
+\item explicitly contains \ebot, a primitive that has any type, but does not evaluate. 
+\end{itemize}
+
+
+\begin{figure}
+$$
+\begin{array}{rrcl}
+
+\emphbf{Constants} \quad 
+  & c & ::=    & 0,1,-1,\ldots \spmid \etrue, \efalse \\
+  &   & \spmid & +,-,\ldots \spmid =, <, \ldots \spmid \ecrash 
+  \\[0.05in]
+
+\emphbf{Values} \quad 
+  & v & ::= &  c \spmid \efun{x}{\typ}{e} \spmid \edapp{D}{e}
+  \\[0.05in] 
+
+\emphbf{Expressions} \quad 
+  & e & ::=    & \ebot \spmid v \spmid x \spmid \eapp{e}{e} \spmid \elet{x}{e}{e} \\ 
+  &   & \spmid & \ecase{e}{D}{\overline{x}}{e}{x} \\[0.05in] 
+
+\emphbf{Basic Types} \quad 
+  & \tbase & ::= & \tint \spmid \tbool \spmid T \\[0.05in] 
+
+\emphbf{Label} \quad 
+  & l
+  & ::= 
+  & \trivial \spmid \finite 
+  \\[0.05in] 
+  
+\emphbf{Types} \quad 
+  & \typ & ::= & \tlref{v}{\tbase}{}{e} \spmid \tlref{v}{\tbase}{l}{e} \spmid
+  				 \tfunref{x}{\typ}{\typ}{v}{e} \\ 
+\end{array}
+$$
+
+\hrule width 0.48\textwidth
+
+$$
+\begin{array}{rrcl}
+\emphbf{Contexts} \quad 
+  & C
+  & ::= 
+  &   	 \bullet 
+  \spmid \eapp{C}{e} 
+  \spmid \eapp{c}{C} 
+  \spmid D\ \overline{e}\ C\ \overline{e}\\
+  &&\spmid &
+  \ecase{C}{D}{\overline{y}}{e}{x}
+  \\[0.05in] 
+\end{array}
+$$
+
+\caption{\undeclang: Syntax}
+\label{fig:undeclang}
+\label{fig:operational}
+\end{figure}
+
+Then, we define the function \erase{\bullet} that erases the refinements in types and environments:
+\begin{align*}
+\erase{\tlref{v}{B}{l}{e}}&=B^{l} &
+\erase{\emptyset}&=\emptyset\\
+\erase{\tfunref{x}{\tau_x}{\tau}{v}{e}}&= \erase{\tau_x} \rightarrow \erase{\tau} &
+\erase{x\colon\tau, \Gamma}&= x\colon\erase{\tau},\erase{\Gamma}
+\end{align*}
+
+and variable substitution on types:
+\begin{align*}
+(\tref{v}{B}{l}{e})\sub{y}{e_y} &=\tref{v}{B}{l}{e\sub{y}{e_y}}\\
+(\tfunref{x}{\tau_x}{\tau}{v}{e})\sub{y}{e_y} &=
+	\tfunref{x}{(\tau_x\sub{y}{e_y})}{(\tau\sub{y}{e_y})}{v}{e\sub{y}{e_y}}\\
+\end{align*}
+
+
+We extend the typing rules with another rule that types \ebot with
+\textbf{any} type getting the rules as defined in Figure~\ref{fig:proofs:typing}.
+%
+\input{proofs/rules}
+%
+
+We define the denotations of types by combining the denotations 
+of stratified types:
+\begin{definition}{[Type Denotations]}
+\begin{align*}
+\interp{\tref{x}{\tbase}{}{p}} \defeq & 
+    \{e \mid  \hastypebase{\emptyset}{e}{\tbase},
+              \mbox{ if } \evals{e}{v} 
+              \mbox{ then } \evals{\SUBST{p}{x}{v}}{\etrue} \}\\
+\interp{\tlref{v}{\tbase}{\trivial}{p}} \defeq & 
+    \interp{\tlref{v}{\tbase}{}{p}} \cap \{ e \mid \evals{e}{v} \}\\
+\interp{\tlref{v}{\tbase}{\finite}{p}} \defeq & 
+    \interp{\tlref{v}{\tbase}{\trivial}{p}} \cap \{ e \mid \evals{e}{d} \} \\
+\interp{\tfun{x}{\typ_x}{\typ}} \defeq & 
+    \{e \mid  \hastypebase{\emptyset}{e}{\erase{\tfunbasic{\typ_x}{\typ}}}, 
+              \forall e_x \in \interp{\typ_x}.\ \eapp{e}{e_x} \in \interp{\typ\sub{x}{e_x}}
+    \}
+\end{align*}
+\end{definition}
+
+Finally, we define the constraints that should be satisfied by constants:
+%
+\begin{definition}{[Constants]}\label{def:constants}
+For every basic type $T$ there are exactly  $n = \arity{T}$ 
+data contractors with result type $T$, namely 
+$\{D_T^i | 0 < i \leq n \}$.
+
+\CRASH is an untyped constant.
+%
+For each constant $c \neq \CRASH$
+\newcommand\pcond[1]{\ensuremath{}}
+\newcommand\const{\ensuremath{c}}
+\begin{enumerate}
+\item \hastype{\emptyset}{c}{\constty{\const}} and \iswellformed{}{\constty{c}}
+%
+\item If $\constty{c} = \tfun{x}{\tau_x}{\tau}$, then for each $v$, 
+	$\ceval{\const}{v}$ is defined and 
+	if \hastype{\emptyset}{v}{\tau_x} then
+	\shastype{}{\interp{c}(v)}{\tau\sub{x}{v}},
+	otherwise  $\interp{c}(v) = \CRASH$.
+%	
+\item If $\constty{c} = \tref{v}{B}{l}{e}$, 
+	then 
+	$c \in \interp{\constty{c}}$ and 
+	$\forall c', c' \neq c. c' \not \in \interp{\constty{c}}$ 
+%
+\item If $\constty{D_T^i} = \tfun{x_1}{\tau_1}{\dots\tfun{x_n}{\tau_n}{\tau}}$, 
+then $\tau_i$ are unrefined and for every $e_i$ with $0 < i \leq n$,
+such that \hastype{\emptyset}{e_i}{\tau_i}, 
+$D_T^i\ \overline{e_i}\in \interp{\tau\sub{x_i}{e_i}}$.
+\end{enumerate}
+\end{definition}
+
+
+\subsection{Denotational Typing}
+We define denotational typing as follows:
+\begin{align*}
+\shastype{\Gamma}{e}{\tau} & \doteq
+	\forall \theta . \theta\in\interp{\Gamma}\Rightarrow \theta\ e \in \interp{\theta \ \tau}\\
+\sissubtype{\Gamma}{\tau_1}{\tau_2} & \doteq 
+	\forall \theta . \theta\in\interp{\Gamma}\Rightarrow \interp{\theta\ \tau_1} \subseteq \interp{\theta\ \tau_2}
+\end{align*}
+
+And prove that syntactic typing implies denotational typing, 
+\ie a general version of Lemma~\ref{lem:denotation} of the paper.
+
+
+
+\begin{lemma}{[Denotation Typing]}\label{lem:proofs:denotation}
+\begin{enumerate}
+\item If \issubtype{\Gamma}{\tau_1}{\tau_2} then \sissubtype{\Gamma}{\tau_1}{\tau_2}. 
+\item If \hastype{\Gamma}{e}{\tau} then \shastype{\Gamma}{e}{\tau}.
+\end{enumerate}
+\end{lemma} 
+\begin{proof}
+Helping Lemma:
+\begin{lemma}\label{lemma:closesem}
+If \evals{e}{e'} then $e' \in \interp{\tau}$ \textit{iff} $e \in \interp{\tau}$.
+\end{lemma}
+\begin{proofsketch}
+Since the validity of $e \in \interp{\tau}$ depends on the evaluated $e$, 
+the if direction is evident.
+The only if direction follows from the deterministic operational semantics.
+\end{proofsketch}
+
+\input{proofs/denotation}
+\end{proof}
+
+We define \iswellformed{}{\Gamma}
+as \iswellformed{}{\emptyset} and if \iswellformed{\Gamma}{\tau} then \iswellformed{}{\Gamma, x:\tau}.
+Now, using Lemma~\ref{lem:proofs:denotation} we prove substitution Lemma:
+\begin{lemma}{[Substitution]}\label{lemma:substitution}
+If \hastype{\Gamma}{e_x}{\tau_x} and \iswellformed{}{\Gamma, x\colon\tau_x ,\Gamma'}, then 
+\begin{enumerate}
+\item If 
+	\issubtype{\Gamma, x\colon\tau_x, \Gamma'}{\tau_1}{\tau_2}
+	then
+	\issubtype{\Gamma, \sub{x}{e_x}\Gamma'}{\sub{x}{e_x}\tau_1}{\sub{x}{e_x}\tau_2}.
+\item If 
+	\hastype{\Gamma, x\colon\tau_x, \Gamma'}{e}{\tau}
+	then
+	\hastype{\Gamma, \sub{x}{e_x}\Gamma'}{\sub{x}{e_x}e}{\sub{x}{e_x}\tau}.
+\item If 
+	\iswellformed{\Gamma, x\colon\tau_x, \Gamma'}{\tau}
+	then
+	\iswellformed{\Gamma, \sub{x}{e_x}\Gamma'}{\sub{x}{e_x}\tau}.
+\end{enumerate}
+\end{lemma}
+\begin{proof}
+\input{proofs/substitution}
+\end{proof}
+
+
+\subsection{Soundness}
+Figure~\ref{fig:proofs:botomless} defines a \botomless{\bullet} predicate on expressions:
+
+%\def\figone{%
+\begin{figure*}[t!]
+$$
+\botomless{c} \qquad\botomless{x} \qquad \lnot \botomless{\ebot}
+$$
+$$
+\botomless{D\ \overline{e_i}} \Leftrightarrow \bigwedge\botomless{e_i} \qquad
+\botomless {\efun{x}{}{e}} \Leftrightarrow \botomless{e}
+$$
+$$
+\botomless {e_1 \ e_2} \Leftrightarrow \botomless{e_1} \land \botomless{e_2} 
+$$
+$$
+\botomless {\elet{x}{e_1}{e_2}} \Leftrightarrow \botomless{e_1} \land \botomless{e_2}
+$$
+$$
+\botomless {\ecase{e}{D_i}{\overline{x}}{e_i}{x}} \Leftrightarrow \botomless{e} \land \bigwedge\botomless{e_i}
+$$
+\caption{\botomless{e}}
+\label{fig:proofs:botomless}
+\end{figure*}
+%\global\let\figone\relax}
+We prove Preservation and Progress only on expressions that do not contain \ebot:
+%
+\begin{lemma}[Preservation]\label{lemma:preservation}
+If \hastype{\emptyset}{e}{\tau}, \botomless{e} and \eval{e}{e'} then \hastype{\emptyset}{e'}{\tau}.
+\end{lemma}
+\begin{proof}
+\input{proofs/preservation}
+\end{proof}
+\begin{lemma}[Progress]\label{lemma:progress}
+If \hastype{\emptyset}{e}{\tau}, \botomless{e} and $e \neq v$ 
+then there exists an $e'$ such that \botomless{e'} and \eval{e}{e'}.
+\end{lemma}
+\begin{proof}
+\input{proofs/progress}
+\end{proof}
+
+We combine the above to prove 
+\textit{Soundness of \undeclang}, \ie Theorem~\ref{thm:safety} in the paper:
+%
+\begin{theorem}{[Soundness of \undeclang]}\label{thm:proofs:safety}
+If \hastype{\emptyset}{e}{\tau} and \botomless{e}, then 
+\begin{itemize}
+\item\textbf{Type-Preservation:} If 
+       $\evals{e}{v}$ then $\hastypet{\emptyset}{v}{\typ}$.
+\item\textbf{Crash-Freedom:} $\evals{e\not}{\ecrash}$.
+\end{itemize}
+\end{theorem}
+\begin{proof}
+1. 
+Since \botomless{e} there exists by Lemma \ref{lemma:progress} a bottomless evaluation sequence 
+$$
+e \equiv e_0 \eval{}{} e_1 \eval{}{} \dots \eval{}{} \dots e_n \equiv v
+$$
+The Theorem is proven by $n$ applications of Preservation Lemma.
+
+2. If $\evals{e}{\CRASH}$, then by Preservation \hastype{\emptyset}{\CRASH}{\tau}
+which cannot happen, as \CRASH by definition is an untyped constant.
+\end{proof}

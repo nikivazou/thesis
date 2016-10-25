@@ -1,0 +1,200 @@
+The standard Haskell string type is implemented as a list of
+characters, which makes it easy to reason about but is bad for
+performance. For serious text-processing Haskellers switch to 
+the \libtext library, which uses byte arrays and stream fusion to
+guarantee performance while providing the high-level API.
+
+In our evaluation of \toolname on \libtext~\cite{text}, 
+we focused on two types of properties: 
+(1) the safety of array index and write operations, and 
+(2) the functional correctness of the top-level API.
+%
+These are both made more interesting by the fact that 
+\libtext internally encodes characters using UTF-16, 
+in which characters are stored in either two or four bytes.
+%
+While we have verified exact functional correctness size 
+properties for the top-level API, we focus here on the 
+low-level functions and interaction with unicode.
+
+\paragraph{Arrays and Texts}
+A @Text@ consists of an (immutable) @arr@ay of 16-bit words,
+an @off@set into the array, and a @len@gth describing the 
+number of @Word16@s in the @Text@.  
+The @Array@ is created and filled using uses a 
+\emph{mutable} @MArray@. 
+All write operations in \libtext are performed on @MArray@s 
+in the @ST@ Monad, but they are \emph{frozen} into @Array@s 
+before being used by the @Text@ constructor.
+%
+We write a measure denoting the size of an @MArray@ and use
+it to type the write and freeze operations
+%
+\begin{code}
+measure malen       :: MArray s -> Int
+predicate EqLen A MA = alen A = malen MA
+predicate Ok I A     = 0 <= I < malen A
+type VO A            = {v:Int| Ok v A} 
+
+unsafeWrite  :: m:MArray s
+             -> VO m -> Word16 -> ST s ()
+unsafeFreeze :: m:MArray s
+             -> ST s {v:Array | EqLen v m}
+\end{code}
+
+\paragraph{Reasoning about Unicode}
+The function @writeChar@ -- originally
+@Data.Text.UnsafeChar.unsafeWrite@ --
+writes a @Char@ into an @MArray@.
+\libtext uses UTF-16 to represent characters internally,
+meaning that every @Char@ will be encoded using two or 
+four bytes (one or two @Word16@s).
+%
+\begin{code}
+writeChar marr i c
+    | n < 0x10000 = do
+        unsafeWrite marr i (fromIntegral n)
+        return 1
+    | otherwise = do
+        unsafeWrite marr i lo
+        unsafeWrite marr (i+1) hi
+        return 2
+    where n = ord c
+          m = n - 0x10000
+          lo = fromIntegral
+             $ (m `shiftR` 10) + 0xD800
+          hi = fromIntegral
+             $ (m .&. 0x3FF) + 0xDC00
+\end{code}
+%
+The UTF encoding makes the specification of the function 
+rather interesting.
+Due to the encoding of @Char@s we cannot just require 
+@i@ to be less than the length of @marr@; if @i@ were 
+@malen marr - 1@ and @c@ required two @Word16@s, we 
+would perform an out-of-bounds write. 
+%
+To account for this subtlety, we define a @Room@ predicate
+to ensure that the encoding of @c@ is taken into account.
+%
+\begin{code}
+measure ord         :: Char -> Int
+predicate OkN I A N  = N <= 2 & Ok (I+N-1) A
+predicate Room I A C = if ord C <  0x10000
+                       then OkN I A 1
+                       else OkN I A 2
+\end{code}
+%
+@Room i marr c@ can be read as 
+``if @c@ is encoded using one @Word16@, 
+  then @i@ must be less than @malen marr - 1@, 
+  otherwise @i@ must be less than @malen marr - 2@.'' 
+%
+Equipped with the above, we define two useful aliases for the specification
+%
+\begin{code}
+type OkSiz I A = {v:Nat  | OkN  I A v}
+type OkChr I A = {v:Char | Room I A v}
+writeChar     :: marr:MArray s
+              -> i:Nat
+              -> OkChr i marr
+              -> ST s (OkSiz i marr)
+\end{code}
+
+
+\paragraph{Bug}
+The burden of proving write safety lies with 
+clients of @writeChar@. Using \toolname we found an error in 
+one client, @mapAccumL@, which combines
+a map and a fold over a @Stream@, and 
+stores the result of the map in a @Text@.
+%
+\begin{code}
+mapAccumL f z0 (Stream next0 s0 len) =
+  (nz, Text na 0 nl)
+ where
+  mlen = upperBound 4 len
+  (na,(nz,nl)) = runST $ do
+       (marr,x) <- (new mlen >>= \arr ->
+                    outer arr mlen z0 s0 0)
+       arr      <- unsafeFreeze marr
+       return (arr,x)
+  outer arr top = loop
+   where
+    loop !z !s !i =
+      case next0 s of
+        Done          -> return (arr, (z,i))
+        Skip s'       -> loop z s' i
+        Yield x s'
+          | j >= top  -> do
+            let top' = (top + 1) `shiftL` 1
+            arr' <- new top'
+            copyM arr' 0 arr 0 top
+            outer arr' top' z s i
+          | otherwise -> do
+            let (z',c) = f z x
+            d <- writeChar arr i c
+            loop z' s' (i+d)
+          where j | ord x < 0x10000 = i
+                  | otherwise       = i + 1
+\end{code}
+%
+Let's focus on the @Yield x s'@ case.
+%
+We first compute the maximum index @j@ to 
+which we will write and determine the safety of a write. 
+%
+If it is safe to write to @j@ we call the provided 
+function @f@ on the accumulator @z@ and the character 
+@x@, and write the \emph{resulting} character @c@ into the array. 
+%
+We know nothing about @c@ though, specifically
+whether @c@ will be stored as one or two @Word16@s, 
+so \toolname flags the call to @writeChar@ as \emph{unsafe}.
+
+To illustrate why the call is in fact buggy, 
+consider a sample iteration of @loop@ 
+where @i = malen arr - 1@ and
+@ord x < 0x10000@. 
+%
+In this case @j@ will equal @i@ and we will enter
+the @otherwise@ branch. 
+%
+Next, suppose @f z x@ returns a
+@c@ such that  @ord c >= 0x10000@. 
+%
+The action @writeChar arr i c@ will write to
+indices @i@ \emph{and} @i+1@ of @arr@, but 
+@i+1 = malen arr@ and is not a valid index 
+for writing! 
+
+The error lies dormant till the next loop 
+iteration, when @i = malen arr + 1@ and we 
+trigger the @j >= top@ branch. 
+%
+Here, we allocate a larger array and copy 
+the contents of the previous array into the 
+new array. 
+%
+The @copyM arr' 0 arr 0 top@ call
+only copies @top@ elements, \ie it 
+\emph{does not}
+copy the element \emph{at} \texttt{top},
+\emph{losing} a @Word16@ and so 
+yielding the wrong  output.
+%%% 
+%%% JHALA The fix, verified by \toolname, is simple, 
+%%% JHALA we lift @f z x@ into the @where@ clause 
+%%% JHALA and define @j@ in terms of @c@, not @x@. 
+%%% JHALA %
+%%% JHALA \begin{code}
+%%% JHALA    | j >= top  -> do ...
+%%% JHALA    | otherwise -> do
+%%% JHALA      d <- writeChar arr i c
+%%% JHALA      loop z' s' (i+d)
+%%% JHALA    where (z',c) = f z x
+%%% JHALA          j | ord c < 0x10000 = i
+%%% JHALA            | otherwise       = i + 1
+%%% JHALA \end{code}
+%%% JHALA %
+We have reported the error to the authors of the library.

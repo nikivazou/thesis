@@ -1,0 +1,124 @@
+\section{Constants}
+
+We can prove that all the above constants belong to the 
+interpretations of their types.
+%
+\begin{theorem}{[Constants]}\label{thm:constant}
+$c \in \interp{\constty{c}}$.
+\end{theorem} 
+%
+The Theorem trivially holds for more of the constants.
+For example, 
+\newcommand\eqtype{\ensuremath{
+	\tfun{x}{b^\lfinite}{
+	\tfun{y}{b^\lfinite}{
+	\tlref{v}{\tbool}{\lfinite}{v \Leftrightarrow x = y}
+	}}
+}}
+$$= \in \interp{\eqtype}$$
+as $\forall e_1, e_2, \evals{e_1}{d_1}, \evals{e_2}{d_2}\Rightarrow 
+			\evals{(e_1=e_2 \Leftrightarrow e_1= e_2)}{\etrue}
+			\land \exists d. \evals{(e_1 = e_2)}{d}$
+
+Here we prove that for any type $\tau$, 
+\efix{\tau} and \etfix{\tau} satisfy Theorem~\ref{thm:constant}.
+
+Given the families of constants:
+\begin{align*}
+\ceval{\etfix{\tau}}{f} & \doteq \efun{n}{}{\efun{f}{}{\etfixn{\tau}{}{n}}}\\ 
+%\ceval{\etfixf{\tau}{f}{??}}{n} &\doteq
+%f\ n\ (\etfixn{\tau}{f}{n}\ f) \\
+\ceval{\etfixn{\tau}{}{n}}{m} &\doteq
+\efun{f}{}{
+f\ m\ (\etfixn{\tau}{f}{m}\ f)} \\
+\end{align*}
+%
+and their types
+%
+\begin{align*}
+%\decr{\tau}{n} & \doteq \decrtypefull{\tau}{n}\\
+\constty{\etfix{\tau}} &\doteq 
+	(\decrty{\tau})
+	 \rightarrow
+	\tfun{m}{\tnat^\lfinite}{\tau\sub{x}{m}}\\ 
+%\constty{\etfixf{\tau}{f}{n}} &\doteq 
+%	 \etfixfty{\tau}{f}{n}\\ 
+\constty{\etfixn{\tau}{f}{n}} &\doteq  
+	(\decrty{\tau})
+	\rightarrow\adecrty{\tau}{n}\\ 
+%\constty{\etfixfn{\tau}{f}{n}} &\doteq 
+%	 \etfixfty{\tau}{f}{n}\\ 
+\end{align*}
+we prove that the constants belong to the 
+meanings of their types:
+%
+\begin{theorem}{[Terminating Fixpoint]}\label{thm:fixpoint}
+\begin{enumerate}
+\item\label{nfix}$\forall n. \etfixn{\tau}{f}{n} \in \constty{\etfixn{\tau}{f}{n}}$
+\item\label{tfix}$\etfix{\tau} \in \constty{\etfix{\tau}}$
+\item\label{fix}$\efix{\tau} \in \constty{\efix{\tau}}$, if the result of $\tau$ is a \Div type.
+\end{enumerate}
+\end{theorem}
+\begin{proof}
+\begin{itemize}
+\item \ref{nfix}.
+We prove that for all
+%$f \in \interp{\decrty{\tau}}$
+appropriate $f$
+and $ m \in \interp{\tref{v}{\tnat}{\lfinite}{v < n}}$,
+$e \equiv \etfixn{\tau}{f}{n}\ f \ m \in \interp{\tau\sub{x}{m}}$
+% 
+by induction on $n$.
+
+For $n=0$, 
+it is trivial, as 
+there is no $m$ such that
+$m \in \interp{\tref{v}{\tnat}{\lfinite}{v < 0}}$.
+
+For the inductive step, $e$ reduces to 
+$$
+\etfixn{\tau}{f}{n}\ f\ m 
+\hookrightarrow
+\etfixfn{\tau}{f}{n}\ m 
+\hookrightarrow
+f\ m\ (\etfixn{\tau}{f}{m}\ f)\\
+$$
+By IH, since $m < n$,
+$\etfixn{\tau}{f}{m} \in \constty{\etfixn{\tau}{f}{m}}$, 
+so $f$ receives the appropriate arguments, 
+and returns the appropriate result that proves the theorem.
+%
+\item \ref{tfix}.
+We prove that 
+for all appropriate $f$
+% \\$f \in \interp{\decrty{\tau}}$
+and     $ m \in \interp{\tnat^\lfinite}$,
+$\etfix{\tau}\ f \ m \in \interp{\tau\sub{x}{m}}$.
+%
+Since $m \in \interp{\tref{v}{\tnat}{\lfinite}{v < m+1}}$
+$$\etfixn{\tau}{f}{m+1}\ f \ m \in \interp{\tau\sub{x}{m}}$$
+%
+But operationally, 
+$\etfixn{\tau}{f}{m+1}\ f \ m$
+and
+$\etfix{\tau}\ f \ m$
+behave equivalently, which proves the theorem.
+\item \ref{fix}. The prove for 
+$\efix{\tau} \in \constty{\efix{\tau}}$.
+is similar.
+%
+The only difference is that for the base case
+\efixn{\tau}{0} should be defined to belong 
+into the interpretation of any type.
+%
+Thus, it is defined as a diverging expression
+and the type of \efix{\tau} is constrainted
+to $\tau$'s with potentially diverging result. 
+%
+With refinement types we prove that the basic
+\etfixn{\tau}{f}{0} operator
+cannot be called, so we omit 
+the definition of this basic case.
+\end{itemize}
+\end{proof}
+%

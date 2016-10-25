@@ -1,0 +1,35 @@
+\begin{table}
+\begin{scriptsize}
+\centering
+\begin{tabular}{|l|r|rrrr|r|}
+\hline
+\textbf{Module} & \textbf{LOC} & \textbf{Fun} & \textbf{Rec} & \textbf{Div} & \textbf{Hint} & \textbf{Time}\\
+\hline\hline
+\texttt{GHC.List}       & 309   & 66   & 34  & 5  & 0   & 14 \\
+\texttt{Data.List}      & 504   & 97   & 50  & 2  & 6   & 11 \\
+
+\texttt{Data.Map.Base}  & 1396  & 180  & 94  & 0  & 12  & 175 \\
+\texttt{Data.Set.Splay} & 149   & 35   & 17  & 0  & 7   & 26 \\
+
+\bytestring             & 3505  & 569  & 154 & 8  & 73  & 285 \\
+
+\libvectoralgos         & 1218  & 99   & 31  & 0  & 31  & 85 \\
+
+\libtext                & 3128  & 493  & 124 & 5  & 44  & 481 \\
+
+\hline
+\textbf{Total}          & 10209 & 1539 & 504 & 20 & 173 & 1080 \\
+\hline
+\end{tabular}
+\caption{\scriptsize A quantitative evaluation of our experiments.
+  \textbf{LOC}  is the number of non-comment lines of source code as reported
+                   by \texttt{sloccount}.
+  \textbf{Fun}  is the total number of functions in the library.
+  \textbf{Rec}  is the number of recursive functions.
+  \textbf{Div}  is the number of functions marked as potentially non-terminating.
+  \textbf{Hint} is the number of termination hints, in the form of
+                   \emph{termination expressions}, given to \toolname.
+  \textbf{Time} is the time, in seconds, required to run \toolname.}
+\label{table:results}
+\end{scriptsize}
+\end{table}

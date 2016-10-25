@@ -1,0 +1,232 @@
+\section{Termination Analysis}\label{sec:termination}
+\subsection{Theory}
+
+We refer again to \undeclang 
+and extend it with stratified types.
+%
+We can prove correctness of type-checking, in that 
+typing judgements respect denotational typing:
+%
+\begin{theorem}[Denotation Typing]\label{thm:typing}
+If $\hastype{}{e}{\tau}$ then $e \in \interp{\tau}$
+\end{theorem} 
+%
+Stratification of types preserves Theorem \ref{thm:typing}, 
+as all primitives in \undeclang preserves the stratum, 
+\ie there is no way to construct a diverging computation.
+%
+Moreover the above theorem implies that 
+expressions with finite (resp. WHNF) types 
+are indeed finite (resp. reduce to WHNF).
+
+\mypara{Recursive Functions}
+We use the \efix{} operator to allow recursive definitions,
+%
+$$\ceval{\efix{\tau}}{f} \doteq f\ (\efix{\tau}\ f) $$
+%
+Systems without stratified types, like \hlang,
+type \efix{\tau} as
+$\constty{\efix{\tau}}\doteq{\fixtype{\tau}}$,
+and can prove~\citep{PLC} that it belongs
+into the interpretation of its type:
+$\efix{\tau} \in \interp{\fixtype{\tau}}$.
+
+In our system, the usual type for \efix{\tau}
+cannot be proven correct, 
+as the result expression of a \efix{\tau}
+application may diverge.
+%
+For example, the diverging computation
+$\efix{{(\tfunbasic{\tint^\ltrivial}{\tint^\ltrivial})}}\ 
+	(\efun{f}{}{\efun{x}{}{f\ x}})\  4$
+would type as $\tint^\ltrivial$
+which is unsound.
+%
+Taking account of such cases we constraint 
+the type parameter $\tau$ to return a unlabelled type,
+\ie the result of a \efix{\tau} application \textit{may}
+diverge:
+%
+$$\constty{\efix{\tau}} \doteq {\fixtype{\tau}}, 
+	\text{if the result of}\ \tau\ \text{is Div type}$$
+%
+and prove that this type of \efix{\tau}
+is sound, or $\efix{\tau} \in \interp{\constty{\efix{\tau}}}$.
+
+\mypara{Finite Recursive Functions}
+%
+Not all recursive functions diverge
+and we would like to allow provably terminating 
+recursive functions return finite types.
+%
+Consider the fibonnaci function:
+$$
+\efib \doteq
+\efun{n}{}{\efun{f}{}{
+	\ecaseinstance{\_}{n}{
+		 \begin{array}{l}
+			 \ealt{0}{1}\\ 
+			 \ealt{\_}{f \ (n-1) + f\ (n-2)}	
+		\end{array}
+	}
+}}$$
+We know that the recursive function $f$ 
+is called with arguments less that the actual parameter $n$.
+We encode this information to \efib 's type: 
+\begin{align*}
+\tnat &\doteq \tref{v}{\tint}{}{0 \leq v}\\
+\efib &\colon\colon n\colon\tnat^\lfinite
+	\rightarrow
+		\tfunbasic{(\tfunbasic{\tref{n'}{\tnat}{\lfinite}{v < n}}{\tint^\lfinite})}
+			{\tint^\lfinite}
+\end{align*}
+%
+Note that in order to express the fact $f$ accepts arguments less that 
+$n$ we need an order of arguments, so that $n$ is in scope on $f$'s type.
+%
+This modification precludes the natural fixpoint definition, 
+instead we use \etfix{\tau} and some intermediate constants
+that behave as follows:
+%
+\begin{align*}
+\etfix{\tau}\ \efib\ n 
+& \hookrightarrow
+	\etfixf{\tau}{\efib}{??}\ n \\
+& \hookrightarrow
+    \efib\ n\ (\etfixn{\tau}{\efib}{n}\ \efib) \\
+& \hookrightarrow
+    (\etfixn{\tau}{f}{n}\ \efib \ (n-1))  + \dots \\
+%    + (\etfixn{\tau}{f}{n}\ \efib \ (n-2)) \\
+& \hookrightarrow
+    (\etfixfn{\tau}{\efib}{n}\ (n-1)) + \dots \\
+%    + (\etfixfn{\tau}{\efib}{n} \ (n-2)) \\
+& \hookrightarrow
+    (\efib\ (n-1)\ (\etfixn{\tau}{\efib}{n-1}\ \efib)) 
+    +\dots \\
+%     (\etfixfn{\tau}{\efib}{n} \ (n-2)) \\
+& \hookrightarrow \dots
+\end{align*}
+%
+Intuitively, 
+the parameter $n$
+means that $\mathtt{fix}^n$ can call itself 
+at most $n$ times, 
+while $f$ tracks the function that should 
+be called when applied the function's 
+first argument $n$.
+%
+Formally,  we define the following families of constants:
+\begin{align*}
+\ceval{\etfix{\tau}}{f} & \doteq \etfixf{\tau}{f}{??}\\ 
+\ceval{\etfixf{\tau}{f}{??}}{n} &\doteq
+f\ n\ (\etfixn{\tau}{f}{n}\ f) \\
+\ceval{\etfixn{\tau}{f}{n}}{f} & \doteq
+    \etfixfn{\tau}{f}{n}\\
+\ceval{\etfixfn{\tau}{f}{n}}{m} &\doteq
+f\ m\ (\etfixn{\tau}{f}{m}\ f) \\
+\end{align*}
+%
+We define the appropriate types for the above constants
+%
+\begin{align*}
+\decr{\tau}{n} & \doteq \decrtypefull{\tau}{n}\\
+\constty{\etfix{\tau}} &\doteq (\decrty{\tau})\\
+	& \rightarrow
+	\tfun{m}{\tnat^\lfinite}{\tau\sub{x}{m}}\\ 
+\constty{\etfixf{\tau}{f}{n}} &\doteq 
+	 \etfixfty{\tau}{f}{n}\\ 
+\constty{\etfixn{\tau}{f}{n}} &\doteq  
+	(\decrty{\tau})\\&
+	\rightarrow\adecrty{\tau}{n}\\ 
+\constty{\etfixfn{\tau}{f}{n}} &\doteq 
+	 \etfixfty{\tau}{f}{n}\\ 
+\end{align*}
+and prove that the constants belong to the 
+meanings of their types:
+%
+\begin{theorem}\textbf{Fixpoint.}\label{thm:fixpoint}
+\begin{itemize}
+\item$\forall n. \etfixn{\tau}{f}{n} \in \constty{\etfixn{\tau}{f}{n}}$
+\item$\etfix{\tau} \in \constty{\etfix{\tau}}$
+\end{itemize}
+\end{theorem}
+\begin{proof}
+\begin{itemize}
+\item 1.
+We prove that for all
+%$f \in \interp{\decrty{\tau}}$
+appropriate $f$
+and $ m \in \interp{\tref{v}{\tnat}{\lfinite}{v < n}}$,
+$e \equiv \etfixn{\tau}{f}{n}\ f \ m \in \interp{\tau\sub{x}{m}}$
+% 
+by induction on $n$.
+
+For $n=0$, 
+it is trivial, as 
+there is no $m$ such that
+$m \in \interp{\tref{v}{\tnat}{\lfinite}{v < 0}}$.
+
+For the inductive step, $e$ reduces to 
+$$
+\etfixn{\tau}{f}{n}\ f\ m 
+\hookrightarrow
+\etfixfn{\tau}{f}{n}\ m 
+\hookrightarrow
+f\ m\ (\etfixn{\tau}{f}{m}\ f)\\
+$$
+By IH, since $m < n$,
+$\etfixn{\tau}{f}{m} \in \constty{\etfixn{\tau}{f}{m}}$, 
+so $f$ receives the appropriate arguments, 
+and returns the appropriate result that proves the theorem.
+%
+\item 2.
+We prove that 
+for all appropriate $f$
+% \\$f \in \interp{\decrty{\tau}}$
+and     $ m \in \interp{\tnat^\lfinite}$,
+$\etfix{\tau}\ f \ m \in \interp{\tau\sub{x}{m}}$.
+%
+Since $m \in \interp{\tref{v}{\tnat}{\lfinite}{v < m+1}}$
+$$\etfixn{\tau}{f}{m+1}\ f \ m \in \interp{\tau\sub{x}{m}}$$
+%
+But operationally, 
+$\etfixn{\tau}{f}{m+1}\ f \ m$
+and
+$\etfix{\tau}\ f \ m$
+behave equivalently, which proves the theorem.
+\end{itemize}
+\end{proof}
+%
+Note that we used a similar proof for
+$\efix{\tau} \in \constty{\efix{\tau}}$.
+%
+The only difference is that for the base case
+\efixn{\tau}{0} should be defined to belong 
+into the interpretation of any type.
+%
+Thus, it is defined as a diverging expression.
+%
+With refinement types we prove that the basic
+\etfixn{\tau}{f}{0} operator
+cannot be called, so we omit 
+the definition of this basic case.
+
+\mypara{Downgrade Labels}
+%
+With \etfix{\tau} we can construct recursive expressions
+and prove them terminating.
+%
+But how do we prove that an expression is in WHNF?
+%
+Every terminating expression is in WHNF, 
+thus, we define \edown{l_1}{l_2}, an id function that 
+\textbf{downgrades} the stratum of from $l_1$ to $l_2$:
+%
+\begin{align*}
+\ceval{\edown{l_1}{l_2}}{e} &\doteq e\\
+\constty{\edown{l_1}{l_2}} & \equiv 
+\tfunbasic{\tref{v}{b}{l_1}{p}}{\tref{v}{b}{l_2}{p}}
+\end{align*}
+We can show that $\edown{\lfinite}{\ltrivial} 
+\in \interp{\constty{\edown{\lfinite}{\ltrivial}}}$
+and use this constant in \undeclang to downgrade stata.

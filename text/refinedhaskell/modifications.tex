@@ -1,0 +1,223 @@
+% Here is the syntax and typing rules for \lambda-D and QF-EUFLIAD
+
+\renewcommand\restrictdecidable[2]{#1}
+\newcommand\samerule[1]{}
+
+
+\begin{figure}[t!]
+\hrule width 0.48\textwidth \vspace{0.05in}
+$$
+\begin{array}{rrcl}
+\multicolumn{4}{l}{\text{\emphbf{Expressions}, \emphbf{Values}, \emphbf{Constants}, \emphbf{Basic types}:
+see Figure~\ref{fig:undeclang}}} \\[0.05in]
+
+\emphbf{Types} \quad 
+  & \tau
+  & ::=  
+  & 	 \tref{v}{\tbase}{}{\refi}
+  \spmid \tref{v}{\tbase}{l}{\refi}\\
+  &&
+  \spmid & \tfunref{x}{\tau}{\tau}{v}{\refi}   \\[0.05in]
+
+\emphbf{Labels} \quad 
+  & l
+  & ::= 
+  & \trivial \spmid \finite 
+  \\[0.05in] 
+
+\emphbf{Refinements} \quad 
+  & \refi
+  & ::=
+  & p
+  \\[0.05in] 
+
+\emphbf{Predicates} \quad 
+  & p
+  & ::= 
+  &   	 \lterm = \lterm
+  \spmid \lterm < \lterm
+  \spmid       p \land p
+  \spmid \lnot p\\
+  &&
+  \spmid &   	 n 
+  \spmid x 
+  \spmid f \ \overline{\lterm}
+  % \spmid D \ \overline{\lterm}
+  \spmid \lterm \oplus \lterm
+  \\ && \spmid &
+  \etrue
+  \spmid \efalse 
+  \\[0.05in] 
+
+\emphbf{Measures} \quad 
+  & \multicolumn{3}{l}{f,g,h}
+  \\[0.05in] 
+  
+\emphbf{Operators} \quad 
+  & \oplus
+  & ::= 
+  &   	 + 
+  \spmid -  
+  \spmid \dots
+  \\[0.05in] 
+  
+\emphbf{Integers} \quad 
+  & n
+  & ::= 
+  &   	 0 
+  \spmid 1
+  \spmid -1
+  \spmid \dots
+  \\[0.05in] 
+
+\emphbf{Domain} \quad 
+  & d
+  & ::= 
+  & n 
+  \spmid c_w 
+  \spmid D\ \overline{d}  
+  \spmid \etrue
+  \spmid \efalse
+  \\[0.05in] 
+  
+\emphbf{Model} \quad 
+  & \sigma & ::= & \gbind{x_1}{d_1},\ldots,\gbind{x_n}{d_n}
+  \\[0.05in] 
+
+\emphbf{Lifted Values} \quad 
+  & \botv
+  & ::= 
+  &   	 c 
+  \spmid \efun{x}{}{e} 
+  \spmid D \ \overline{\botv}
+  \spmid \ebot
+\end{array}
+$$
+\caption{Syntax of \declang}
+\label{fig:declang:syntax}
+\end{figure}
+
+
+\begin{figure}[t!]
+\hrule width 0.48\textwidth \vspace{0.05in}
+All rules as in Figure~\ref{fig:typing} except as follows: \\
+
+\judgementHead{Well-Formedness}{\deciswellformed{\Gamma}{\tau}}
+$$
+\inference{
+	\dechastype{\Gamma, v\colon \Base}{\restrictdecidable{p}{r}}{\FinTy{\tbool}}
+}{
+	\deciswellformed{\Gamma}{\tref{v}{\Base}{}{\restrictdecidable{p}{r}}}
+}[\rwbased]
+%%%% \samerule{\qquad
+%%%% \inference{
+%%%% 	\deciswellformed{\Gamma}{\tau_x} &&
+%%%% 	\deciswellformed{\Gamma, x \colon \tau_x}{\tau}
+%%%% }{
+%%%% 	\deciswellformed{\Gamma}{\tfunref{x}{\tau_x}{\tau}{v}{e}}
+%%%% }[\rwfun]
+%%%% }
+$$
+
+%%\judgementHead{Implication}{\issubref{\Gamma}{\restrictdecidable{p}{e}}{\restrictdecidable{p}{e}}}
+%%\restrictdecidable{
+%%$$
+%%\inference{
+%%  \VCOND{\Env}{p_1}{p_2}\ \mbox{is u-valid}
+%%}{
+%%	\issubref{\Env}{p_1}{p_2}
+%%}[\rtdimp]
+%%$$}{$$
+%%\inference{
+%%	\forall \theta. \deciswellformed{\Gamma}{\theta} \land
+%%				\evals{\theta\ e_1}{\etrue} 
+%%	\Rightarrow \evals{\theta\ e_2}{\etrue}
+%%}{
+%%	\issubref{\Gamma}{e_1}{e_2}
+%%}[\rimpl]
+%%$$}
+\judgementHead{Subtyping}{\decissubtype{\Gamma}{\tau_1}{\tau_2}}
+
+$$
+\inference{
+  \VCOND{\Env, v:B}{p_1}{p_2}\ \mbox{is valid}
+}{
+	\decissubtype{\Gamma}
+		{\tref{v}{B}{}{\restrictdecidable{p_1}{e_1}}}
+		{\tref{v}{B}{}{\restrictdecidable{p_2}{e_2}}}
+}[\rsubbased]
+\samerule{\qquad
+\inference{
+	\decissubtype{\Gamma}{\tau'_x}{\tau_x} &&
+	\decissubtype{\Gamma, x \colon \tau'_x}{\tau}{\tau'}
+}{
+	\decissubtype{\Gamma}{\tfunref{x}{\tau_x}{\tau}{v}{e_1}}{\tfunref{x}{\tau'_x}{\tau'}{v}{e_2}}
+}[\rsubfun]
+}$$
+
+\judgementHead{Typing}{\dechastype{\Gamma}{e}{\tau}}
+\samerule{$$
+\inference{
+	(x,\tau) \in \Gamma 
+}{
+	\dechastype{\Gamma}{e}{\tau}
+}[\rtvar]
+$$
+
+$$
+\inference{
+}{
+	\dechastype{\Gamma}{c}{\constty{c}}
+}[\rtconst]
+\qquad
+\inference{
+	\dechastype{\Gamma}{e}{\tau'} &&
+	\decissubtype{\Gamma}{\tau'}{\tau} &&
+	\deciswellformed{\Gamma}{\tau} &&
+}{
+	\dechastype{\Gamma}{e}{\tau}
+}[\rtsub]
+$$}
+$$
+\samerule{
+\inference{
+	\dechastype{\Gamma, x\colon\tau_x}{e}{\tau} &&
+	\deciswellformed{\Gamma}{\tau_x}
+}{
+	\dechastype{\Gamma}{\efun{x}{e}}{(\tfun{x}{\tau_x}{\tau})}
+}[\rtfun]
+\qquad}
+\inference{
+	\dechastype{\Gamma}{e_1}{(\tfunref{x}{\tau_{x}}{\tau}{v}{e_v})} &&
+	\dechastype{\Gamma}{\restrictdecidable{y}{e_2}}{\tau_{x}}
+}{
+	\dechastype{\Gamma}{\eapp{e_1}{\restrictdecidable{y}{e_2}}}{\tau\sub{x}{\restrictdecidable{y}{e_2}}}
+}[\rtapp-D]
+$$
+\samerule{
+$$
+\inference{
+	\dechastype{\Gamma}{e_x}{\tau_{x}} &&
+ in Figure~\ref{fig:}	\dechastype{\Gamma,x\colon\tau_x}{e}{\tau} &&
+	\deciswellformed{\Gamma}{\tau}
+}{
+	\dechastype{\Gamma}{\elet{x}{e_x}{e}}{\tau}
+}[\rtlet]
+$$
+}
+$$\inference{
+	l \not \in \{\finite, \trivial\} \Rightarrow \tau \ \text{is}\ \Div \\
+	\dechastype{\Gamma}{e}{\tref{v}{T}{l}{r}} &&
+	 \deciswellformed{\Gamma}{\tau}\\
+	\forall i. \constty{D_i} = \overline{y_j}{\tau_j} \rightarrow \tref{v}{T}{}{r_i} \\
+	\dechastype{\Gamma,  \overline{y_j \colon \tau_j},
+				x \colon \tref{v}{T}{\restrictdecidable{\trivial}
+				{\ltrivial}
+				}{r \land r_i}}{e_i}{\tau}	
+}{
+	\dechastype{\Gamma}{\ecase{e}{D_i}{\overline{y_j}}{e_i}{x}}{\tau}
+}[\rtcased]$$
+\caption{Typechecking for \declang}
+\label{fig:declang:typing}
+\end{figure}
+

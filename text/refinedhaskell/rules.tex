@@ -1,0 +1,120 @@
+\newcommand\restrictdecidable[2]{#2}
+\begin{figure}[t!]
+\hrule width 0.48\textwidth \vspace{0.05in}
+\judgementHead{Well-Formedness}{\undeciswellformed{\Gamma}{\tau}}
+$$
+\inference
+   {\undechastype{\Gamma, v \colon \Base}
+                 {\restrictdecidable{p}{r}}{\tbool}
+   }
+   {\undeciswellformed{\Gamma}{\tref{v}{\Base}{}{\restrictdecidable{p}{r}}}}
+   [\rwbase]
+$$
+$$
+\inference{
+	\undeciswellformed{\Gamma}{\tau_x} &&
+	\undeciswellformed{\Gamma, x \colon \tau_x}{\tau}
+}{
+	\undeciswellformed{\Gamma}{\tfunref{x}{\tau_x}{\tau}{v}{e}}
+}[\rwfun]
+$$
+
+\judgementHead{Subtyping}{\undecissubtype{\Gamma}{\tau_1}{\tau_2}}
+
+$$
+\inference{
+  {\forall \sto\in \interp{\Env}. 
+  		 \interp{\thetasub{\sto}{\tref{v}{\Base}{}{\restrictdecidable{p_1}{r_1}}}} 
+  		\subseteq   \interp{\thetasub{\sto}{\tref{v}{\Base}{}{\restrictdecidable{p_2}{r_2}}}}}
+}{
+	\undecissubtype{\Gamma}
+		{\tref{v}{\Base}{}{\restrictdecidable{p_1}{r_1}}}
+		{\tref{v}{\Base}{}{\restrictdecidable{p_2}{r_2}}}
+}[\rsubbase]
+$$
+$$
+\inference{
+	\undecissubtype{\Gamma}{\tau'_x}{\tau_x} &&
+	\undecissubtype{\Gamma, x \colon \tau'_x}{\tau}{\tau'}
+}{
+	\undecissubtype{\Gamma}{\tfunref{x}{\tau_x}{\tau}{v}{e_1}}{\tfunref{x}{\tau'_x}{\tau'}{v}{e_2}}
+}[\rsubfun]
+$$
+%%\judgementHead{Implication}{\isimplied{\Gamma}{e_1}{e_2}}
+%%\restrictdecidable{
+%%$$
+%%\inference{
+%%	\interp{\Gamma} \Rightarrow \interp{p_1} \Rightarrow \interp{p_2}
+%%}{
+%%	\isimplied{\Gamma}{p_1}{p_2}
+%%}[\rimpl]
+%%$$}{$$
+%%\inference{
+%%  \forall \theta. \theta \in \interp{\Gamma} 
+%%  \Rightarrow \evals{\thetasub{\sto}{e_1}}{\etrue} 
+%%  \Rightarrow \evals{\thetasub{\sto}{e_2}}{\etrue}
+%%}{
+%%	\isimplied{\Gamma}{e_1}{e_2}
+%%}[\rimpl]
+%%$$}
+
+\judgementHead{Typing}{\undechastype{\Gamma}{e}{\tau}}
+$$
+\inference{
+	(x,\tau) \in \Gamma 
+}{
+	\undechastype{\Gamma}{x}{\tau}
+}[\rtvar]
+\qquad
+\inference{
+}{
+	\undechastype{\Gamma}{c}{\constty{c}}
+}[\rtconst]
+$$
+$$
+\inference{
+	\undechastype{\Gamma}{e}{\tau'} &&
+	\undecissubtype{\Gamma}{\tau'}{\tau} &&
+	\undeciswellformed{\Gamma}{\tau} &&
+}{
+	\undechastype{\Gamma}{e}{\tau}
+}[\rtsub]
+$$
+$$
+\inference{
+	\undechastype{\Gamma, x\colon\tau_x}{e}{\tau} &&
+	\undeciswellformed{\Gamma}{\tau_x}
+}{
+	\undechastype{\Gamma}{\efun{x}{\tau_x}{e}}{(\tfun{x}{\tau_x}{\tau})}
+}[\rtfun]
+$$
+$$
+\inference{
+	\undechastype{\Gamma}{e_1}{(\tfunref{x}{\tau_{x}}{\tau}{v}{e_v})} &&
+	\undechastype{\Gamma}{\restrictdecidable{y}{e_2}}{\tau_{x}}
+}{
+	\undechastype{\Gamma}{\eapp{e_1}{\restrictdecidable{y}{e_2}}}{\tau\sub{x}{\restrictdecidable{y}{e_2}}}
+}[\rtapp]
+$$
+$$
+\inference{
+	\undechastype{\Gamma}{e_x}{\tau_{x}} &&
+	\undechastype{\Gamma,x\colon\tau_x}{e}{\tau} &&
+	\undeciswellformed{\Gamma}{\tau}
+}{
+	\undechastype{\Gamma}{\elet{x}{e_x}{e}}{\tau}
+}[\rtlet]
+$$
+
+$$\inference{
+	\undechastype{\Gamma}{e}{\tref{v}{T}{}{r}} &&
+	 \undeciswellformed{\Gamma}{\tau}\\
+     \forall i. \constty{D_i} = \overline{y_j \colon \tau_j} \rightarrow \tref{v}{T}{}{r_i} \\
+      \undechastype{\Gamma, \overline{y_j\colon \tau_j}, x \colon \tref{v}{T}{}{r \land r_i}}{e_i}{\tau}  \\
+}{
+	\undechastype{\Gamma}{\ecase{e}{D_i}{\overline{y_j}}{e_i}{x}}{\tau}
+}[\rtcase]$$
+\caption{Type-checking for \undeclang}
+\label{fig:typing}
+\end{figure}
+
