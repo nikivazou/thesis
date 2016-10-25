@@ -11,6 +11,4 @@
 - intro 
 - acks 
 
-\usepackage[textwidth=3.7cm]{todonotes}
-\usepackage[textwidth=3.7cm]{todonotes}
 
