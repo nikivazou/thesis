@@ -21,6 +21,7 @@
 \usepackage{xcolor}
 
 
+% \usepackage{todonotes}
 \usepackage[textwidth=3.7cm]{todonotes}
 \setlength{\marginparwidth}{4cm}
 
@@ -105,80 +106,7 @@ Simplicity is the ultimate sophistication.
 % use. See the examples here. In addition, each chapter ack needs to
 % be repeated at the end of the relevant chapter.
 \begin{acknowledgements}
-\todonum{acks}
-I want to thank my supervisor Ranjit Jhala for all the inspiration. 
-
-I want to thank my committee members 
-Samuel R. Buss, 
-Cormac Flanagan for inspiring my work,
-Sorin Lerner for direction on the PL group, 
-and Daniele Micciancio for his strong Haskell enthousiasm 
-for being in my committee. 
-
-Next thank the group and specifically my coauthors
-Patric Rondon,
-Alexander Bakst, 
-Eric Seidel for being there. 
-and the rest of the group for the supporting and friendly working environment.
-
-I want to thank all these people who hosted me in my internships. 
-%
-The Opa group in Paris who foresaw that types can help industrial development.
-%
-Then, Dimitrios Vytiniotis and Simon Peyton-Jones
-at Microsoft Research Cambridge
-who were the first ghc people who believed in Liquid Haskell
-and have been still supporting both the project and me personally.
-%
-I want to thank Jeff Polakow and all the people at Awake Networks 
-for giving me the opportunity to spend an awesome summer in Mountain View 
-and use Liquid Haskell in real world development code. 
-%
-Last but not least, 
-I want to thank Dann Leijen 
-for hosting me at Microsoft Research Redmond 
-and mentoring me since then, giving me all his insightful
-knowledge and  about research and life in general.
-
-Finally, I want to thanks all the family and friends, around the world,
-who supported me throughout this journey.
-%
-All the people from San Diego, 
-who made me feel San Diego as home, with all the goods and bads. 
-%
-All the friends I met in the infinite travelling in these five years, 
-that made me realize how knowledge unites people from different parts of the globe.
-%
-All my friends and family in Greece that never let me forget that
-whenever I want I have a paradise waiting for me.  
-%
-Specifically, my parents Paraskeui and Nikos and my sister Marianna
-who staid up all these Sunday nights to talk to my and keep me sane. 
-
-
-It is great that the destination is reached, 
-but after all, it is the journey that matters. 
-
-
-
-
-\todonum{paper acks}
-Chapter 2, in full, is a reprint of the material as it appears in
-Numerical Grid Generational in Computational Fluid Mechanics~2009.
-Smith, Laura; Smith, Jane~D., Pineridge Press,~2009. The dissertation
-author was the primary investigator and author of this paper.
-
-Chapter 3, in part, has been submitted for publication of the material
-as it may appear in Education Mechanics,~2009, Smith, Laura; Smith,
-Jane~D., Trailor Press,~2009. The dissertation author was the primary
-investigator and author of this paper.
-
-Chapter 5, in part is currently being prepared for submission for
-publication of the material. Smith, Laura; Smith, Jane~D\@. The
-dissertation author was the primary investigator and author of this
-material.
-
-
+\input{acknowledgements}
 \end{acknowledgements}
 
 % Stupid vita goes next
@@ -186,46 +114,48 @@ material.
 \noindent
 \begin{cv}{}
 \begin{cvlist}{}
-\item[1996] Bachelor of Arts, University of California, Berkeley
-\item[1996--2000] U.S. Marines
-\item[2000--2002] Teaching Assistant, Department of Mechanical
-Engineering\\University of California, San Diego
-\item[2002--2006] Research Assistant, University of California, San
-Diego
-\item[2010] Doctor of Philosophy, University of California, San Diego
+% \item[2010] B.S. in  Computer Software \& Computer Systems, National Technical University of Athens
+\item[2010] B.S. in Computer Software, National Technical University of Athens
+\item[2016] Ph.D. in Computer Science, University of California, San Diego
 \end{cvlist}
 \end{cv}
 
 % This puts in the PUBLICATIONS header. Note that it appears inside
 % the vita environment. It is optional.
 \publications
-\noindent``Distributions of Control Points in a System for Analysis of Stress
-Distribution'' IRE Transactions of the I.R.E\@. Professional Group on
-Automatic Control, vol. AC-7, pp 272--289, September 2005
 
-% This puts in the FIELDS OF STUDY. Also inside vita and also
-% optional.
-\fieldsofstudy
-\noindent Major Field: Engineering (Specialization or Focused Studies)
-\vskip\baselineskip
-Studies in Applied Mathematics\par
-Professors Alpha Beta and Gamma Delta
-\vskip\baselineskip
-Studies in Mechanices\par
-Professors Epsilon Zeta and Eta Theta
-\vskip\baselineskip
-Studies in Electromagnetism\par
-Professors Iota Kappa and Lambda Mu
+\noindent N. Vazou, M. Papakyriakou, and N. Papaspyrou, 
+``Memory Safety and Race Freedom in Concurrent Programming with Linear Capabilities'',
+FedCSIS, 2011.\\
+
+\noindent N. Vazou, P. Rondon, and R. Jhala,
+``Abstract Refinement Types'', 
+ESOP, 2013.\\
+
+\noindent N. Vazou, E. Seidel, R. Jhala, D. Vytiniotis, and S. Peyton-Jones,
+``Refinement Types for Haskell'', 
+ICFP, 2014.\\
+
+\noindent N. Vazou, E. Seidel, and R. Jhala,
+``LiquidHaskell: Experience with Refinement Types in the Real World'', 
+Haskell, 2014.\\
+
+\noindent E. Seidel, N. Vazou, and R. Jhala,
+``Type Targeted Testing'',
+ESOP, 2015.\\
+
+\noindent N. Vazou, A. Bakst, and R. Jhala,
+``Bounded Refinement Types'',
+ICFP, 2015.\\
+
+\noindent N. Vazou, and D. Leijen,
+``From Monads to Effects and Back'',
+PADL 2016.\\
 \end{vita}
 
 % Put your maximum 350 word abstract here.
 \begin{dissertationabstract}
-The Abstract begins here. The abstract is limited to 350 words for a
-doctoral dissertation. It should consist of a short statement of the
-problem, a brief explanation of the methods and procedures employed in
-generating the data, and a condensed summary of the findings of the
-study. The abstract may continute onto a second page if necessary. The
-text of the abstract must be double spaced.
+\input{abstract}
 \end{dissertationabstract}
 
 % This is where the main body of your dissertation goes!
@@ -233,199 +163,20 @@ text of the abstract must be double spaced.
 
 % Optional Introduction
 \begin{dissertationintroduction}
-This optional section is barely described in the OGS manual other than
-saying it is optional and that it appears in the table of contents
-between the Abstract and the first chapter.
-
-No formatting guidelines appear so presumably, it should be formatted
-like an ordinary chapter. It should appear after the
-\verb!\mainmatter! macro because it should start on page~1.
+\input{introduction}
 \end{dissertationintroduction}
 
-\chapter{An ordinary page}
-The purpose of this page is to illustrate an ordinary page of text in
-a doctoral dissertation or master's thesis. All pages of the doctoral
-dissertation or master's thesis must be kept within the margins of
-1.5'' on the left, 1'' on the right, 1'' on the top and 1.25'' on the
-bottom. All text must be double spaced except as indicated below.
 
-It is recommended that to increase the margins as paper can shift in a
-printer and as some photocopiers tend to increase the image being
-copied.
+%% main 
+\input{text/refinedhaskell}
+\input{text/abstractrefinements}
+\input{text/boundedrefinements}
+\input{text/refinementreflection}
+\input{conclusion}
 
-The first line of each paragraph must be indented at least one 0.5''
-tab, as done here.
 
-This text is intended to be a part of the dissertation, for a doctoral
-student, or the thesis if you are receiving a master's degree, and now
-a quote is included here:
-\begin{quote}
-All quotes of more than six lines, even though this one is not, are to
-be indented 0.5'' from the left and 0.5'' from the right. These longer
-quotes are to be single spaced. Don't forget to adjust for proper
-spacing after the last line of the quoted material.
-\end{quote}
-The rest of the paragraph would continue as so.
-
-\chapter{Figures and Such}
-This demonstrates how OGS wants figures and tables formatted. For
-figures, the caption goes below the figure and ``Figure'' is in bold.
-See Figure~\ref{fig:zen}. Tables are formatted with the caption above
-the table. See Table~\ref{tab:bad}.
-
-Of course, Table~\ref{tab:bad} looks horrible. It should probably be
-formatted like Table~\ref{tab:good} instead.
-
-For facing caption pages, see Table~\ref{tab:facing}. Of course,
-facing caption pages are vaguely ridiculous and my implementation of
-them in the class file is by far the most brittle part of the
-implementation. It's entirely possible that something has changed and
-these don't work at all. I implemented it merely for the challenge.
-
-\begin{figure}
-\centering
-\fbox{\parbox{.9\linewidth}{%
-	\noindent
-	{\Huge PHD ZEN}\par
-	\vskip.5in
-	\centerline{comic here}
-	\vskip.5in
-}}
-\caption[``Ph.D. Zen'']{Comic entitled ``Ph.D. Zen'' by Jorge Cham, 2005. Copyright
-has not been obtained and so it isn't displayed.}
-\label{fig:zen}
-\end{figure}
-
-\begin{table}
-\centering
-\caption[Electronic Dissertation Submission Rates]{Electronic
-Dissertation Submission Rates at UCSD, Fall 2005 and Winter 2006.
-(First two quarters that the program was available to all Ph.D.
-candidates not in a Joint Doctoral Program with SDSU.)}
-\label{tab:bad}
-\begin{tabular}{|*{5}{>{\centering\arraybackslash}m{.15\linewidth}|}}
-\hline
-&Ph.D.s awarded (Including Joint degrees) & Electronic submission of
-Dissertation & Paper Submission of Dissertation & Percentage of
-Electronic Submission\\
-\hline
-Fall\par 2005 & 84 & 37 & 47 & 44.05\%\\
-\hline
-Winter\par 2006 & 64 & 42 & 22 & 65.63\%\\
-\hline
-\end{tabular}
-\end{table}
-
-\begin{table}
-\centering
-\caption[Electronic Dissertation Submission Rates]{Electronic
-Dissertation Submission Rates at UCSD, Fall 2005 and Winter 2006.
-(First two quarters that the program was available to all Ph.D.
-candidates not in a Joint Doctoral Program with SDSU.)}
-\label{tab:good}
-\renewcommand\tabularxcolumn[1]{>{\RaggedRight\arraybackslash}p{#1}}
-\begin{tabularx}{.9\linewidth}{lcccc}
-\toprule
-&\multicolumn{1}{X}{Ph.D.s awarded (Including Joint degrees)}
-&\multicolumn{1}{X}{Electronic submission of Dissertation}
-&\multicolumn{1}{X}{Paper Submission of Dissertation}
-&\multicolumn{1}{X}{Percentage of Electronic Submission}\\
-\midrule
-Fall 2005 & 84 & 37 & 47 & 44.05\%\\
-Winter 2006 & 64 & 42 & 22 & 65.63\%\\
-\bottomrule
-\end{tabularx}
-\end{table}
-
-\begin{facingcaption}{table}
-\caption[UCSD Gender Distribution]{University of
-California, San Diego Gender Distribution for the Campus Population,
-October~2005\\
-(http://assp.ucsd.edu/analytical/Campus\%20Population.shtml)\\
-\emph{(This is an example of a facing caption page, the next page is
-the example of the table/figure/etc.\ that corresponds to this
-caption. It is also an example of table/figure that is rotated 90
-degrees to fit the page.)}}
-\label{tab:facing}
-\renewcommand\tabularxcolumn[1]{>{\RaggedLeft\arraybackslash}p{#1}}
-\parindent=0pt
-\setbox0=\vbox{%
-\vsize\textwidth
-\hsize\textheight
-\linewidth\hsize
-\columnwidth\hsize
-\textwidth\hsize
-\textheight\vsize
-\begin{tabularx}{\linewidth}{lXXXXXX}
-\toprule
-& \multicolumn{2}{c}{\textbf{Women}}
-& \multicolumn{2}{c}{\textbf{Men}}
-& \multicolumn{2}{c}{\textbf{Total}}\\
-\cmidrule(l){2-3}\cmidrule(l){4-5}\cmidrule(l){6-7}
-\textbf{Population Segment}
-& \multicolumn{1}{c}{\textbf{N}} & \multicolumn{1}{c}{\textbf{\%}}
-& \multicolumn{1}{c}{\textbf{N}} & \multicolumn{1}{c}{\textbf{\%}}
-& \multicolumn{1}{c}{\textbf{N}} & \multicolumn{1}{c}{\textbf{\%}}\\
-\midrule
-Students & 12,987 & 51\% & 12,686 & 49\% & 25,673 & 100\%\\
-Employees & 9,943 & 56\% &  7,671 & 44\% & 17,614 & 100\%\\
-\addlinespace
-\hfill\textbf{Total} & \textbf{22,930} & \textbf{53\%} &
-\textbf{20,357} & \textbf{47\%} & \textbf{43,287} & \textbf{100\%}\\
-\bottomrule
-\end{tabularx}
-\singlespacing
-
-\emph{Notes}:
-\begin{enumerate}
-\item The counts shown below will differ from the official quarterly
-Registrar's registration report because 1) data for residents in the
-Schools of Medicine and Pharmacy and Pharmaceutical Science are
-excluded, and 2) registered, non-matriculated, visiting students are
-included.
-\item Student workers are excluded from employees; however emeritus
-faculty and others on recall status are included.
-\end{enumerate}
-
-Campus Planning. Analytical Studies and Space Planning\\
-31 January 2006
-}
-\centerline{\rotatebox{90}{\box0}}
-\end{facingcaption}
-
-% This will give us some more text
-\Blinddocument
-
-% Skipping a bunch of chapters
-\setcounter{chapter}{50}
-\chapter{Another chapter}
-\setcounter{figure}{73}
-\setcounter{table}{88}
-\begin{figure}
-\centering
-\fbox{\hbox to.8\linewidth{\hss Another figure\hss}}
-\caption{Another figure caption}
-\end{figure}
-\begin{table}
-\centering
-\caption{Another table caption}
-\begin{tabular}{ccc}
-\toprule
-X&Y&Z\\
-\midrule
-a&b&c\\
-\bottomrule
-\end{tabular}
-\end{table}
-\begin{figure}
-\caption{ASDF fig}
-\end{figure}
-\begin{table}
-\caption{ASDF tab}
-\end{table}
-
-\appendix
-\Blinddocument
+%%\appendix
+%%\Blinddocument
 
 % Stuff at the end of the dissertation goes in the back matter
 \backmatter

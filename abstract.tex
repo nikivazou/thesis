@@ -1,0 +1,29 @@
+%% 350 words max 
+\todonum{abstract}
+Code deficiencies and bugs constitute an unavoidable part of software systems.
+%
+In safety-critical systems, like aircrafts or medical equipment, 
+even a single bug can lead to catastrophic impacts
+such as injuries or death.
+%
+Formal verification can be used to statically 
+track code deficiencies by proving or disproving correctness properties 
+of a system. 
+%
+However, at its current state formal verification is a cumbersome process
+that is rarely used by mainstream developers. 
+
+Theorem provers can be used for verification, 
+but they are limited to  verification specific non general purpose 
+languages (Coq, Adga, Dafny).
+%
+Our goal is to allow verification in general purpose languages, like Haskell.
+
+In this work we present how Haskell is turn into a theorem prover
+via the abstraction framework of Liquid Types
+that moreover use SMT-based automatic verification. 
+%
+We implemented out technique in Liquid Haskell 
+a refinement type verifier for Haskell code 
+and use both to verify shallow invariants of existing Haskell code 
+and to check deep properties of sophisticated program invariants.
