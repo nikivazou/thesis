@@ -3,11 +3,24 @@
 
 
 \renewcommand{\reft}{\ensuremath{e}\xspace}
-\renewcommand{\areft}{\ensuremath{p}\xspace}
-\renewcommand\rvapp[2]{\ensuremath{{#1 \ \overline{#2}}}} 
+\newcommand{\areft}{\ensuremath{p}\xspace}
+\newcommand\rvapp[2]{\ensuremath{{#1 \ \overline{#2}}}} 
 \renewcommand\tref[2]{\ensuremath{\left\lbrace \vref : #1\mid #2\right\rbrace}}
-\renewcommand{\tpp}[2]{{#1 \langle #2 \rangle}}
-\renewcommand\tpref[3]{\tref{\tpp{#1}{#2}}{#3}}
+\newcommand{\tpp}[2]{{#1 \langle #2 \rangle}}
+\newcommand\tpref[3]{\tref{\tpp{#1}{#2}}{#3}}
+\renewcommand\tref[2]{\ensuremath{\left\lbrace \vref : #1\mid #2\right\rbrace}}
+
+\renewcommand\subt{\preceq}
+\newcommand{\SUBST}[3]{{#1}\sub{#2}{#3}}
+\renewcommand\corelan{$\lambda_\downarrow$\xspace}
+\renewcommand\sub[2]{\ensuremath{ \left[ #1 \mapsto #2 \right] }}
+\renewcommand\shape{\ensuremath{\text{shape}}\xspace}
+\renewcommand\tfun[3]{\ensuremath{{(#1:#2)} \rightarrow #3}}
+
+
+\renewcommand\ecase[5]{\ensuremath{
+	\mathtt{case}\ #5 = #1\ \mathtt{of}\ \{ #2\ #3 \rightarrow #4\}
+}}
 
 
 \input{text/abstractrefinements/intro}
