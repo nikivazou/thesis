@@ -1,0 +1,272 @@
+%% \NV{TO CHECL that in the logic we use = instead of ==}
+%% \NV{TO CHECK that list type is L a}
+\section{Proofs as Haskell Functions}\label{sec:haskell-proofs}
+
+Refinement Reflection~\cite{reflection} is a technique
+that lets you write Haskell functions that prove theorems
+about other Haskell functions and have your proofs machine-checked
+by Liquid Haskell~\cite{Vazou14}.
+%
+As an introduction to Refinement Reflection,
+in this section, we prove that lists are monoids by
+\begin{itemize}
+\item \textit{specifying monoid laws} as refinement types,
+\item \textit{proving the laws} by writing the implementation of the law specifications, and
+\item \textit{verifying the proofs} using Liquid Haskell.
+\end{itemize}
+
+\subsection{Reflection of data types into logic.}
+To start with,
+we define a List data structure and
+teach Liquid Haskell basic properties about List,
+namely, how to check that proofs on lists are \textit{total}
+and how to encode functions on List into the logic.
+
+The data list definition @L@ is the standard recursive definition.
+\begin{code}
+data L [length] a = N | C a (L a)
+\end{code}
+%
+With the @length@ annotation in the definition Liquid Haskell
+will use the @length@ function to check termination
+of functions recursive on Lists.
+%
+We define @length@ as the standard Haskell function
+that returns natural numbers.
+%
+We lift @length@ into logic as a \textit{measure}~\cite{Vazou14},
+that is, a \textit{unary} function whose (1) domain is the data type, and
+(2) body is a single case-expression over the datatype.
+\begin{code}
+type Nat = {v:Int | 0 <= v}
+
+measure length
+length         :: L a -> Nat
+length N        = 0
+length (C x xs) = 1 + length xs
+\end{code}
+
+Finally, we teach Liquid Haskell how to encode functions on Lists
+into logic.
+%
+The flag @"--exact-data-cons"@
+automatically derives measures which
+(1) test if a value has a given data constructor, and
+(2) extract the corresponding field's value.
+%
+For example, Liquid Haskell will automatically derive the following
+List manipulation measures from the List definition.
+\begin{code}
+isN :: L a -> Bool    -- Haskell's null
+isC :: L a -> Bool    -- Haskell's not . null
+
+selC1 :: L a -> a     -- Haskell's head
+selC2 :: L a -> L a   -- Haskell's tail
+\end{code}
+%
+Next, we describe how Liquid Haskell uses the above measures
+to automatically reflect Haskell functions on Lists into logic.
+
+\subsection{Reflection of Haskell functions into logic.}
+Next, we define and reflect into logic the two monoid operators on Lists.
+Namely, the identity element @mempty@ (which is the empty list)
+and an associative operator @(mappend)@ (which is list append).
+%
+\begin{code}
+reflect mempty
+mempty :: L a
+mempty = N
+
+reflect (mappend)
+(mappend) :: L a -> L a -> L a
+N        mappend ys = ys
+(C x xs) mappend ys = C x (xs mappend ys)
+\end{code}
+
+The reflect annotations lift the Haskell functions into logic in three steps.
+%
+First, check that the Haskell functions indeed terminate by checking
+that the @length@ of the input list is decreasing,
+as specified in the data list definition.
+%
+Second, in the logic, they define the respective uninterpreted functions
+@mempty@ and @(mappend)@.
+%
+Finally, the Haskell functions and the logical uninterpreted functions
+are related by strengthening the result type of the Haskell function
+with the definition of the function's implementation.
+%
+For example, with the above @reflect@ annotations,
+Liquid Haskell will \textit{automatically} derive the following strengthened
+types for the relevant functions.
+\begin{code}
+mempty  :: {v:L a | v = mempty && v = N }
+
+(mappend):: xs:L a -> ys:L a
+    ->  {v:L a | v = xs mappend ys
+              && v = if isN xs then ys
+                     else C (selC1 xs) (selC2 xs mappend ys)
+        }
+\end{code}
+
+\subsection{Specification and Verification of Monoid Laws}
+
+Now we are ready to specify the monoid laws as refinement types and
+provide their respective proofs as terms of those type. Liquid Haskell
+will verify that our proofs are valid. 
+%
+Note that this is exactly what
+one would do in any standard logical framework,
+like LF~\cite{Harper93}.
+
+The type @Proof@ is defined as an alias of the unit type (@()@)
+in the library @ProofCombinators@ that comes with Liquid Haskell.
+Figure~\ref{figure:proofcombinators} summarizes the definitions we use from @ProofCombinators@.
+%
+We express theorems as refinement types by refining
+the @Proof@ type with appropriate refinements.
+%
+For example, the following theorem states
+the @mempty@ is always equal to itself.
+\begin{code}
+trivial :: {mempty = mempty}
+\end{code}
+%
+Where @{mempty = mempty}@ is a simplification for the @Proof@ type
+@{v:Proof | mempty = mempty}@, since the binder @v@ is irrelevant, and
+@trivial@ is defined in @ProofCombinators@ to be unit.
+%
+Liquid Haskell will typecheck the above code using an SMT
+solver to check congruence on @mempty@.
+%% \NV congruence on or with?
+%
+
+\begin{definition}[Monoid] \label{definition:monoid}
+The triple (@m@, @epsilon@, @<>@) is a monoid
+(with identity element @epsilon@ and associative operator @<>@),
+if the following functions are defined. % on @m@.
+%
+\begin{code}
+idLeft_m :: x:m -> {mempty mappend x = x}
+idRight_m :: x:m -> {x mappend mempty = x}
+assoc_m :: x:m -> y:m -> z:m -> {x mappend (y mappend z) = (x mappend y) mappend z}
+\end{code}
+\end{definition}
+%
+Using the above definition, we prove that our list type @L@ is a monoid
+by defining Haskell proof terms that satisfy the above monoid laws. 
+%%We now represent these conditions applied to our list type @L@ and
+%%their proofs as (refined) types and terms of those types.
+
+\paragraph{Left Identity} is expressed
+as a refinement type signature that takes as input
+a list @x:L a@ and returns a @Proof@ type refined
+with the property @mempty <> x = x@
+\begin{code}
+idLeft :: x:L a -> { mempty mappend x = x }
+idLeft x = empty <> x ==. N <> x ==. x *** QED
+\end{code}
+%
+We prove left identity using combinators from @ProofCombinators@ as
+defined in Figure~\ref{figure:proofcombinators}.
+%
+We start from the left hand side @empty <> x@,
+which is equal to @N <> x@ by calling @empty@ thus
+unfolding the equality @empty = N@ into the logic.
+%
+Next, the call @N <> x@ unfolds into the logic the definition of @(<>)@
+on @N@ and @x@, which is equal to @x@, concluding our proof.
+%
+Finally, we use the operators @p *** QED@ which basically casts @p@ into a proof term.
+%
+In short, the proof of left identity, proceeds by unfolding the definitions of @mempty@
+and @(<>)@ on the empty list.
+
+\begin{figure}[t]
+\begin{code}
+type Proof = ()
+data QED   = QED
+
+trivial :: Proof
+trivial = ()
+
+(==.) :: x:a -> y:{a | x = y} -> {v:a | v = x}
+x ==. _ = x
+
+(***) :: a -> QED -> Proof
+_ *** _ = ()
+
+(?) :: (Proof -> a) -> Proof -> a
+f ? y = f y
+\end{code}
+\caption{Operators and Types defined in \texttt{ProofCombinators}}
+\label{figure:proofcombinators}
+\end{figure}
+
+\paragraph{Right identity} is proved by structural induction.
+%
+We encode inductive proofs by case splitting on the base and inductive case,
+and enforcing the inductive hypothesis via a recursive call.
+\begin{code}
+idRight :: x:L a -> { x <> mempty = x }
+idRight N = N <> empty ==. N *** QED
+
+idRight (C x xs)
+   =   (C x xs) <> empty
+   ==. C x (xs <> empty)
+   ==. C x xs ? idRight xs
+   *** QED
+\end{code}
+The recursive call @idRight xs@ is provided
+as a third optional argument in the @(==.)@
+operator to justify the equality @xs <> empty = xs@,
+while the operator @(?)@ is merely a function application
+with the appropriate precedence.
+%
+Note that LiquiHaskell, via termination and totality checking,
+is verifying that all the proof terms are well formed because
+(1) the inductive hypothesis is only applying to smaller terms, and
+(2) all cases are covered.
+
+
+\paragraph{Associativity} is proved in a very similar manner,
+using structural induction.
+%
+\begin{code}
+assoc   :: x:L a -> y:L a -> z:L a
+        -> { x mappend (y mappend z) = (x mappend y) mappend z}
+assoc N y z
+  =   N <> (y <> z)
+  ==. y <> z
+  ==. (N <> y) <> z
+  *** QED
+
+assoc (C x xs) y z
+  =  (C x xs) <> (y <> z)
+  ==. C x (xs <> (y <> z))
+  ==. C x ((xs <> y) <> z) ? associativity xs y z
+  ==. (C x (xs <> y)) <> z
+  ==. ((C x xs) <> y) <> z
+  *** QED
+ \end{code}
+%
+As with the left identity, the proof proceeds by
+(1) function unfolding (or rewriting in paper and pencil proof terms),
+(2) case splitting (or case analysis), and
+(3) recursion (or induction).
+
+Since our list implementation satisfies the three monoid laws
+we can conclude that @L a@ is a monoid.
+%
+
+%% \NV{I need to discuss the difference between representation of proof terms and methods in the logic}
+
+\begin{theorem}\label{theorem:monoid:list}
+(@L a@, @epsilon@, @<>@) is a monoid.
+\end{theorem}
+\begin{proof}
+@L a@ is a monoid, as the implementation of
+@idLeft@, @idRight@, and @assoc@
+satisfy the specifications of
+@idLeft_m@, @idRight_m@, and @assoc_m@, with @m = L a@.
+\qed\end{proof}

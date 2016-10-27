@@ -1,0 +1,162 @@
+Next, we define the function @toSM :: RString -> SM target@ which does
+the actual string matching computation for a set
+target~\footnote{\texttt{toSM} assumes the target is clear from the
+  calling context; it is also possible to write a wrapper function
+  taking an explicit target which gets existentially reflected into
+  the type.}
+%
+\ignore{ The function @toSM input@ creates a string matcher @SM
+  target@ structure that matches the type level symbol target to the
+  string value argument @input@.  }
+%
+\begin{code}
+toSM :: forall (target :: Symbol). (KnownSymbol target)
+     => RString -> SM target
+toSM input = SM input (makeSMIndices input tg) where
+  tg = fromString (symbolVal (Proxy :: Proxy target))
+
+makeSMIndices
+  :: x:RString -> tg:RString -> [GoodIndex x tg]
+makeSMIndices x tg
+  = makeIndices x tg 0 (lenStr tg - 1)
+\end{code}
+%
+The input field of the result is the input string;
+the indices field is computed by calling @makeIndices@
+within the range of the @input@, that is from
+@0@ to @lenStr input - 1@.
+%
+\begin{code}
+\end{code}
+
+We now prove that @toSM@ is a monoid morphism.
+%
+\begin{theorem}[$\texttt{toSM}$ is a Morphism]\label{theorem:smmorphism}
+@toSM :: RString -> SM t@ is a morphism between the monoids
+(@RString@, @stringMempty@, @stringMappend@) and (@SM t@, @mempty@, @mappend@).
+\end{theorem}
+\begin{proof}
+Based on definition~\ref{definition:morphism}, proving @toSM@
+is a morphism requires constructing a valid inhabitant of the type
+\begin{code}
+Morphism RString (SM t) toSM
+  = x:RString -> y:RString
+  -> {toSM stringMempty = mempty && toSM (x <+> y) = toSM x <> toSM y}
+\end{code}
+%
+We define the function @distributestoSM :: Morphism RString (SM t) toSM@
+to be the required valid inhabitant.
+
+The core of the proof starts from
+exploring the string matcher @toSM x <> toSM y@.
+%
+This string matcher contains three sets of indices
+as illustrated in Figure~\ref{fig:mappend:indices}:
+(1) @xis@ from the input @x@,
+(2) @xyis@ from appending the two strings, and
+(3) @yis@ from the input @y@.
+%
+We prove that appending these three groups of indices together gives
+exactly the good indices of @x stringMappend y@, which are also the
+value of the indices field in the result of
+%
+@toSM (x stringMappend y)@.
+\begin{code}
+distributestoSM x y
+  =   (toSM x :: SM target) <> (toSM y :: SM target)
+  ==. (SM x is1) <> (SM y is2)
+  ==. SM i (xis ++ xyis ++ yis)
+  ==. SM i (makeIndices i tg 0 hi1 ++ yis)
+      ? (mapCastId tg x y is1 && mergeNewIndices tg x y)
+  ==. SM i (makeIndices i tg 0       hi1
+         ++ makeIndices i tg (hi1+1) hi)
+      ? shiftIndicesRight 0 hi2 x y tg
+  ==. SM i is
+      ? mergeIndices i tg 0 hi1 hi
+  ==. toSM (x <+> y)
+  *** QED
+  where
+    xis  = map (castGoodIndexRight tg x y) is1
+    xyis = makeNewIndices x y tg
+    yis  = map (shiftStringRight   tg x y) is2
+    tg   = fromString (symbolVal (Proxy::Proxy target))
+    is1  = makeSMIndices x tg
+    is2  = makeSMIndices y tg
+    is   = makeSMIndices i tg
+    i    = x <+> y
+    hi1  = lenStr x - 1
+    hi2  = lenStr y - 1
+    hi   = lenStr i - 1
+\end{code}
+%
+The most interesting lemma we use is
+@mergeIndices x tg lo mid hi@
+that states that for the input @x@ and the target @tg@
+if we append the indices in the range  from @to@ to @mid@
+with the indices in the range from @mid+1@ to @hi@,
+we get exactly the indices in the range from @lo@ to @hi@.
+%
+This property is formalized in the type of the lemma.
+\begin{code}
+mergeIndices
+ :: x:RString -> tg:RString
+  -> lo:Nat -> mid:{Int | lo <= mid} -> hi:{Int | mid <= hi}
+  -> {   makeIndices x tg lo hi
+     =  makeIndices x tg lo mid
+     ++ makeIndices x tg (mid+1) hi}
+\end{code}
+%
+The proof proceeds by induction on @mid@ and using three more lemmata:
+\begin{itemize}
+\item @mergeNewIndices@ states that appending the indices @xis@ and @xyis@
+is equivalent to the good indices of @x stringMappend y@ from @0@ to @lenStr x - 1@.
+%
+The proof case splits on the relative sizes of @tg@ and @x@
+and is using @mergeIndices@ on @mid = lenStr x1 - lenStr tg@
+in the case where @tg@ is smaller than @x@.
+%
+\item @mapCastId@ states that casting a list of indices returns the same list.
+\item @shiftIndicesRight@ states that shifting right @i@ units the indices from @lo@ to @hi@
+is equivalent to computing the indices from @i + lo@
+to @i + hi@ on the string @x stringMappend y@, with @lenStr x = i@.
+\end{itemize}
+%%\begin{code}
+%%mergeNewIndices
+%%  :: tg:RString -> x:RString -> y:RString
+%%  -> { makeSMIndices x tg
+%%    ++ makeNewIndices x y tg
+%%    == makeIndices (x <+> y) tg 0 (lenStr x - 1)}
+%%\end{code}
+%%The theorem states that appending the indices that appear in the first string @x@,
+%%that is the indices @xis@ that do not and the indices @xyis@ that do involve @y@,
+%%is equivalent to the indices @is@ on the input @x stringMappend y@
+%%in the range from @0@ to @lenStr x -1@.
+%%%
+%%The proof case splits on the sizes of @tg@ and @x@.
+%%%
+%%If the size of the target is less than two, then @xyis@ is empty,
+%%but @xis == is@, as appending @y@ to the input cannot create more indices.
+%%%
+%%Otherwise, if the input @x@ is smaller than the target,
+%%then @xis@ is empty and @xyis@ is equal to @is@.
+%%%
+%%Otherwise, we set
+%%and use the previous @mergeIndices@ lemma to merge @xis@ and @yis@ into @is@.
+%%\item Shifting is left concatenation.
+%%\begin{code}
+%%shiftIndicesRight
+%%  :: lo:Nat -> hi:Int
+%%  -> x:RString -> y:RString
+%%  -> tg:RString
+%%  -> { map (shiftStringRight tg x y)
+%%           (makeIndices y tg lo hi)
+%%  == makeIndices (x stringMappend y) tg
+%%                 (lenStr x + lo) (lenStr x + hi) }
+%%
+%%\end{code}
+%%The lemma states that shifting indices from @lo@ to @hi@ on @y@
+%%is equivalent to computing the indices from @lenStr x + lo@
+%%to @lenStr x + hi@ on @x stringMappend y@,
+%%and it is proved by induction on the difference @hi - lo@.
+%%\end{itemize}
+\qed\end{proof}

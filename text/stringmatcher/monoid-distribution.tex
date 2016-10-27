@@ -1,0 +1,145 @@
+\section{Verification of Distribution over Monoid Concatenation}~\label{sec:monoid:distribution}
+In this section we prove distribution over monoid concatenation. 
+%
+Concretely, if a function @f :: i -> m@
+from some input @i@ to a monoid @m@, 
+distributes on the input
+@f (i1 stringMappend i2) == (f i1) mappend (f i2)@, 
+then @f@ distributes over monoid concatenation: 
+@f i == mconcat (map f (chunk n i))@. 
+%
+For the above property to hold, the input @i@
+should satisfy certain properties, 
+for example, the input should define the methods
+@stringMappend@ and @chunk@. 
+%
+First~\S~\ref{subsec:rstring} we defined Refined Strings 
+as an example of proper inputs, and then~\S~\ref{subsec:distribution}
+we prove distribution over Monoid Concatenation on Refined Strings.  
+
+
+\subsection{Refined Strings}\label{subsec:rstring}
+We represent the input as a Refined String 
+defined at a library @RString.hs@
+with implementation irrelevant for the proofs.  
+%
+\NV{introduce RString here is good, but implementation and constact time indexing seems irrelevant here}
+\begin{code}
+data RString
+\end{code}
+%
+@RString.hs@
+defines the monoid operators @stringMempty@ and @(stringMappend)@
+that satisfy the monoid laws. 
+%
+Moreover, it defines string manipulation operators
+that come refined via various theorems. 
+%
+For example, the library exposes the
+operators @takeStr@ and @dropStr@
+\begin{code}
+takeStr :: i:Nat -> xs:{RString | i <= stringLen xs } 
+  -> {v:RString | stringLen v == i }
+dropStr :: i:Nat -> xs:{RString | i <= stringLen xs } 
+  -> {v:RString | stringLen v == stringLen xs - i}
+\end{code}
+%
+and asserts that appending a list split via @take@ and @drop@
+exactly reconstructs the list.
+\begin{code}
+concatTakeDrop 
+  :: i:Nat -> xs:{RString | i <= stringLen xs} 
+  -> {xs == takeStr i xs stringMappend dropStr i xs }
+\end{code}
+%
+The operators defined in @RString@ are already reflected in the logic. 
+%
+Thus we use them to further define operators
+that we reflect and use in the theorems. 
+%
+For example, @takeStr@ and @dropStr@ are used to define 
+@chunkStr@ 
+\begin{code}
+chunkStr i xs 
+  | i <= 1 ||stringLen xs <= i 
+  = C xs N 
+  | otherwise
+  = C (takeStr i xs) (chunkString i (dropStr i xs))
+\end{code}
+%
+We reflect @chunkStr@ into logic and use it to define and prove 
+distribution over monoid concatenation. 
+
+
+\subsection{Distribution over Monoid Concatenation on Refined Strings}\label{subsec:distribution}
+%
+We use the refinement type specification for @monoidDirstibution@
+to specify and prove  that for each monoid @m@, 
+if the function @f:RString -> m@ distributes over @RString@
+then it distributes over monoids. 
+%
+Note that the assumption of the theorem, 
+is expressed in the specifications as a functional argument 
+that makes the proper assumptions for @f@. 
+%
+To prove distribution over monoids for a specific @f@, 
+we need to invoke @monoidDirstibution@ 
+on @f@ and a proper proof argument that @f@ distributes over @RString@.
+%
+\begin{theorem}[Monoid Distribution]\label{theorem:monoid:distribution}
+If @m@ is a monoid, then each function @f:RString -> m@
+that distributes over @RString@, distributes over monoid concatenation.
+%
+\begin{code}
+monoidDirstibution
+  :: f:(RString -> m)
+  -> (x1:_ -> x2:_ -> {f (x1 stringMappend x2) == (f x1) <> (f x2)} )
+  -> is:RString
+  -> n:Int 
+  -> {f is == mconcat (map f (chunkStr n is))}
+\end{code}
+\end{theorem}
+
+\begin{proof}
+The proof proceeds by induction on the length of the input.
+%
+\begin{code}
+monoidDirstibution f thm is n  
+  | stringLen is <= n || n <= 1
+  =   mconcat (map f (chunkStr n is))
+  ==. mconcat (map f (C is N))
+  ==. mconcat (f is `C` map f N)
+  ==. f is <> mconcat N
+  ==. f is <> mempty 
+  ==. f is ? idRight (f is)
+  *** QED 
+monoidDirstibutionf f thm is n  
+  =   mconcat (map f (chunkStr n is))
+  ==. mconcat (map f (C takeIs (chunkStr n dropIs))) 
+  ==. mconcat (f takeIs `C` map f (chunkStr n dropIs))
+  ==. f takeIs <> f dropIs
+       ? monoidDirstibution f thm dropIs n  
+  ==. f (takeIs <+> dropIs)
+       ? thm takeIs dropIs
+  ==. f is 
+       ? concatTakeDrop n is 
+  *** QED  
+  where
+    dropIs = dropStr n is 
+    takeIs = takeStr n is 
+\end{code}
+%
+In the base case we use rewriting and right identity on the monoid @f is@. 
+%
+In the inductive case, 
+we use the inductive hypothesis on the input @dropIs = dropStr n is@, 
+that is provably smaller than @is@ as @n > 1@. 
+%
+Then, by our assumption argument @thm takeIs dropIs@
+we get basic distribution of @f@, that is 
+@f takeIs <> f dropIs == f (takeIs stringMappend dropIs)@. 
+%
+Finally, we merge @takeIs stringMappend dropIs@ to @is@
+using the property @concatTakeDrop@ take is exported by the @RString@
+library.
+\qed\end{proof}

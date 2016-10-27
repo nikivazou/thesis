@@ -1,0 +1,78 @@
+\section{Refined Strings}\label{sec:strings}
+
+Refined Strings provides a wrapping over a string manipulations library, 
+here `ByteString`
+\begin{code}
+data RString = S BS.ByteString 
+\end{code}
+
+String operators wrap the library operators
+and moreover they are assumed to be reflected into the logic
+
+\begin{code}
+assume concatString :: x:LHString -> y:LHString 
+      -> {v:LHString | v == concatString x y }
+concatString (S s1) (S s2) = S (s1 `BS.append` s2)
+
+assume stringEmp :: {v:RString | v == stringEmp  && stringLen v == 0 } 
+stringEmp = S (BS.empty)
+
+assume stringLen :: x:RString -> {v:Nat | v == stringLen x}
+stringLen (S s) = BS.length s 
+
+assume subString  :: s:RString -> offset:Int -> ln:Int -> {v:RString | v == subString s offset ln }
+subString (S s) o l = S (BS.take l (BS.drop o s))
+
+assume takeString :: i:Nat -> xs:{RString | i <= stringLen xs } 
+  -> {v:RString | stringLen v == i && v == takeString i xs }
+takeString i (S s) = S (BS.take i s)
+
+assume dropString :: i:Nat -> xs:{RString | i <= stringLen xs } 
+  -> {v:RString | stringLen v == stringLen xs - i && v == dropString i xs }
+dropString i (S s) = S (BS.drop i s)
+
+assume fromString :: i:String -> {o:RString | i == o && o == fromString i}
+fromString = S . ST.fromString 
+
+assume isNullString :: i:RString -> {b:Bool | Prop b <=> stringLen i == 0 }
+isNullString (S s) = BS.length s == 0 
+\end{code}
+
+
+Finally the refined string library, exposes theorems that hold (but are assumed) 
+for the internal string representation
+
+\begin{code}
+assume stringEmpProp :: x:RString  -> { stringLen x == 0 <=> x == stringEmp }
+stringEmpProp _ = trivial 
+ 
+assume concatStringNeutralLeft :: x:RString -> {concatString x stringEmp == x}
+concatStringNeutralLeft _ = trivial
+
+assume concatStringNeutralRight :: x:RString -> {concatString stringEmp x == x}
+concatStringNeutralRight _ = trivial
+
+assume concatTakeDrop :: i:Nat -> xs:{RString | i <= stringLen xs} 
+    -> {xs == concatString (takeString i xs) (dropString i xs) }
+concatTakeDrop _ _ = trivial
+
+assume concatLen :: x:RString -> y:RString -> { stringLen (concatString x y) == stringLen x + stringLen y }
+concatLen _ _ = trivial
+
+assume concatStringAssoc :: x:RString -> y:RString -> z:RString 
+     -> {concatString (concatString x y) z == concatString x (concatString y z) }
+concatStringAssoc _ _ _ = trivial
+
+
+-- | Substrings 
+
+assume subStringConcatBack :: input:RString -> input':RString -> j:Int -> i:{Int | i + j <= stringLen input }
+  -> { (subString input i j == subString (concatString input input') i j) }
+subStringConcatBack _ _ _ _ = trivial  
+
+
+assume subStringConcatFront  
+  :: input:RString -> input':RString -> j:Int -> i:Int 
+  -> { (subString input i j == subString (concatString input' input) (stringLen input' + i) j) }
+subStringConcatFront _ _ _ _ = trivial
+\end{code}

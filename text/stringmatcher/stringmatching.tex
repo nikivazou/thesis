@@ -1,0 +1,48 @@
+\section{Case Study: Correctness of Parallel String Matching}\label{sec:stringmatching}
+
+\S~\ref{sec:parallelization} showed that any monoid morphism
+whose domain is chunkable can be parallelized. We now make use of that
+result to parallelize string matching. We start by observing that
+strings are a chunkable monoid. %\NV add monoid methods
+We then turn string matching for a
+given target into a monoid morphism from a string to a suitable
+monoid, @SM target@, defined in
+\S~\ref{subsec:stringmatcher}. 
+Finally, in \S~\ref{subsec:parallel-string-matching}, we parallelize string matching
+by a simple use of the
+parallel morphism function of \S~\ref{subsec:both-levels}. 
+
+\ignore{
+  In this section we apply the Correctness of Parallelization Theorem~\ref{theorem:two-level}
+to a string matching function @toSM@
+that is a morphism between strings and the indices where a target string appears,
+to get correctness of parallelization of @toSM@.
+
+We define @toSM :: RString -> SM target@
+from a Refined String data type @RString@
+to a dependently typed string maching data type @SM target@
+where @target@ represents the substring to be matched.
+%
+To apply Theorem~\ref{theorem:two-level} on @toSM@ we need to discharge three proof obligations.
+%
+\begin{itemize}
+\item @RString@ is a chunkable monoid (\S~\ref{subsec:refinedstrings}),
+\item @SM target@ is a monoid (\S~\ref{subsec:stringmatcher}), and
+\item @toSM@ is a morphism between @RString@ and @SM target@ (\S~\ref{subsec:smmorphism}).
+\end{itemize}
+%
+With these proof obligations discharged we conclude (\S~\ref{subsec:parallel-string-matching})
+correctness of parallel string matching.
+}
+
+\subsection{Refined Strings are Chunkable Monoids}\label{subsec:refinedstrings}
+\input{rstring-is-monoid}
+
+\subsection{String Matching Monoid}\label{subsec:stringmatcher}
+\input{string-matcher-is-monoid}
+
+\subsection{String Matching Monoid Morphism}\label{subsec:smmorphism}
+\input{string-matching-morphism}
+
+\subsection{Parallel String Matching}\label{subsec:parallel-string-matching}
+\input{all-together}

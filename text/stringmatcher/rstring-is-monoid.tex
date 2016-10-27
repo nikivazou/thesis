@@ -1,0 +1,105 @@
+We define a new type @RString@, which is a chunkable monoid, to be the
+domain of our string matching function. Our type simply wraps
+Haskell's existing @ByteString@.
+\begin{code}
+data RString = RS BS.ByteString
+\end{code}
+Similarly, we wrap the existing @ByteString@ functions we will need to
+show @RString@ is a chunkable monoid.
+\begin{code}
+stringMempty = RS (BS.empty)
+(RS x) stringMappend (RS y)= S (x `BS.append` y)
+
+lenStr    (RS x) = BS.length x
+takeStr i (RS x) = RS (BS.take i x)
+dropStr i (RS x) = RS (BS.take i x)
+\end{code}
+Although it is possible to explicitly prove that @ByteString@
+implements a chunkable monoid~\cite{realworldliquid14}, it is time
+consuming and orthogonal to our purpose. Instead, we
+just \textit{assume} the chunkable monoid properties of @RString@--
+thus demonstrating that refinement reflection is capable of doing
+gradual verification.
+
+
+\ignore{
+We follow the easy route, defining the @RString@ data type to be a wrapper of the
+optimized @ByteString@ and
+
+%
+This allows our implementation to \textit{use the optimized library
+functions} of @ByteString@; additionally, it shows that refinement
+reflection can be used for \textit{gradual verification} where
+verified code uses untrusted components that are explicitely assumed
+to satisfy required properties.
+%
+Proving that @ByteString@ implements a chunkable monoid is feasible,
+as evidenced by the current verification of Bytestring functions~\cite{realworldliquid14},
+but it is time consuming and orthogonal to the string matching proof.
+%
+%% NV I need to automate this in LiquidHaskell!
+
+We need to use the above operators to specify the chunkable monoid
+laws, but we cannot reflect the operators in the logic, as the
+ByteString functions do not exist in the logic.  We ``manually
+reflect'' each of the above functions in the logic, by 1. defining a
+logical uninterpreted function for each of them that assumed to be
+equal to the Haskell functions and 2. use the logical functions to
+specify the chunkable monoid laws.
+}
+
+For instance, we define a logical uninterpreted function
+@stringMappend@ and relate it to the Haskell @stringMappend@ function
+via an assumed (unchecked) type.
+%
+\begin{code}
+assume (stringMappend)
+  :: x:RString -> y:RString -> {v:RString | v = x stringMappend y}
+\end{code}
+%
+Then, we use the uninterpreted function @stringMappend@ in the logic
+to assume monoid laws, like associativity.
+%
+\begin{code}
+assume assocStr :: x:RString -> y:RString -> z:RString
+                 -> { x <+> (y <+> z) = (x <+> y) <+> z }
+assocStr _ _     = trivial
+\end{code}
+%
+Haskell applications of @stringMappend@ are interpreted in the logic
+via the logical @stringMappend@ that satisfies associativity via theorem @assocStr@.
+
+Similarly for the chunkable methods, we define the uninterpreted functions
+@takeStr@, @dropStr@ and @lenStr@ in the logic,
+and use them to strengthen the result types of the respective functions.
+%
+\ignore{
+For example the type of @takeStr@ includes both the length specifications
+from chunkable monoid and the uninterpreted function equality @v = takStr i x@.
+\begin{code}
+assume takeStr
+  :: i:Nat -> x:{RString | i <= lenStr x}
+  ->  {v:RString | lenStr v = i && v = takeStr i x }
+\end{code}
+We use the uninterpreted function @takeStr@ and @dropStr@ to
+specify and \textit{assume} the @take@-@drop@ property of chunkable monoids.
+\begin{code}
+assume takeDropPropStr
+ :: i:Nat -> x:RString -> {x = takeStr i x <+> dropStr i x}
+takeDropPropStr _ _ = trivial
+\end{code}
+%
+} With the above function definitions (in both Haskell and logic) and
+assumed type specifications, Liquid Haskell will check (or rather
+assume) that the specifications of chunkable monoid, as defined in the
+Definitions~\ref{definition:monoid} and~\ref{definition:chunkable},
+are satisfied.
+%
+We conclude with the assumption (rather that theorem)
+that @RString@ is a chunkable monoid.
+\begin{assumption}[RString is a Chunkable Monoid]\label{assumption:rstring}
+(@RString@, @stringMempty@, @stringMappend@)
+combined with the methods
+@lenStr@, @takeStr@, @dropStr@ and @takeDropPropStr@
+is a chunkable monoid.
+\end{assumption}

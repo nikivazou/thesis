@@ -1,0 +1,128 @@
+\section{Evaluation: Strengths \& Limitations}\label{sec:evaluation}
+
+Verification of Parallel String Matching is the first realistic
+proof that uses (Liquid) Haskell
+to prove properties \textit{about} program functions.
+%
+In this section we use the String Matching proof
+to quantitatively and qualitatively evaluate theorem proving in Haskell.
+
+\paragraph{Quantitative Evaluation.}
+The Correctness of Parallel String Matching proof
+can be found online~\cite{implementation}.
+%
+Verification time, that is the time Liquid Haskell needs to check the proof,
+is 75 sec on a dual-core Intel Core i5-4278U processor.
+%
+The proof consists of \textit{1839} lines of code.
+%
+Out of those
+\begin{itemize}
+\item \textit{226} are Haskell ``runtime'' code,
+\item \textit{112} are liquid comments on the ``runtime'' Haskell code,
+\item \textit{1307} are Haskell proof terms, that is functions with @Proof@ result type, and
+\item \textit{194}  are liquid comments to specify theorems.
+\end{itemize}
+Counting both liquid comments and Haskell proof terms as verification code,
+we conclude that the proof requires 7x the lines of ``runtime'' code.
+%
+This ratio is high and takes us to 2006 Coq,
+when Leroy~\cite{Leroy06formalcertification} verified
+the initial CompCert C compiler with
+the ratio of verification to compiler lines being 6x.
+% 4,400 lines of compiler code and 28,000 lines devoted to verification.
+
+\paragraph{Strengths.}
+Though currently verbose,
+deep verification using Liquid Haskell has many benefits.
+%
+First and foremost,
+\textit{the target code is written in the general purpose Haskell}
+and thus can use advanced Haskell features, including
+type literals, deriving instances, inline annotations
+and optimized library functions like @ByteString@.
+Even diverging functions can coexist with the target code, as long
+as they are not reflected into logic~\cite{Vazou14}.
+
+Moreover, \textit{SMTs are used to automate the proofs}
+over key theories like linear arithmetic and equality.
+%
+As an example, associativity of @(+)@
+is assumed throughout the proofs while shifting indices.
+%
+Our proof could be further automated 
+by mapping refined strings to SMT strings and  
+using the automated SMT string theory.
+%
+We did not follow this approach because we want to show that
+our techinique can be used to prove any (and not only domain specific)
+program properties.
+
+Finally, we get further automation via
+\textit{Liquid Type Inference}~\cite{LiquidPLDI08}.
+%
+Properties about program functions,
+expressed as type specifications with unit result,
+often depend on program invariants,
+expressed as vanilla refinement types, and vice versa.
+%
+For example, we need the invariant that all indices of
+a string matcher are good indices
+to prove associativity of @(mappend)@.
+%%NV simplify the above.
+%%%For example, we need the invariant that all indices of
+%%%a string matcher are good indices
+%%%to prove that
+%%%when the target is smaller than the input
+%%%then the indices field is an empty list,
+%%%which is required to prove associativity of @(mappend)@
+%
+Even though Liquid Haskell cannot currently synthesize proof terms,
+it performs really well at inferring and propagating program invariants (like good indices)
+via the abstract interpretation framework of Liquid Types.
+
+\paragraph{Limitations.}
+There are severe limitations that should be addressed
+to make theorem proving in Haskell a pleasant and usable technique.
+%
+As mentioned earlier \textit{the proofs are verbose}.
+%
+There are a few cases where the proofs require domain specific knowledge.
+%
+For example, to prove associativity of string matching
+@x mappend (y mappend z) = (x mappend y) mappend z@
+we need a theorem that performs case analysis on the relative length of
+the input field of @y@ and the target string.
+%
+Unlike this case split though, most proofs
+do not require domain specific knowledge and merely proceed
+by term rewriting and structural inductuction
+that should be automated
+via Coq-like~\cite{coq-book} tactics or/and Dafny-like~\cite{dafny} heuristics.
+%
+For example, synquid~\cite{polikarpova16} could be used to automatically
+synthesize proof terms.
+
+Currently, we suffer from two engineering limitations.
+%
+First, all reflected function should exist in the same module,
+as reflection needs access to the function implementation
+that is unknown for imported functions.
+%
+This is the reason why we need to use a user defined,
+instead of Haskell's built-in, list.
+%
+In our implementation we used @CPP@ as a current workaround
+of the one module restriction.
+%
+Second, class methods
+cannot be currently reflected.
+%
+Our current workaround is to define Haskell functions instead
+of class instances.
+For example (@append@, @nil@) and (@concatStr@, @emptyStr@)
+define the monoid methods of List and Refined String respectively.
+
+Overall, we believe that the strengths outweigh the limitations which
+will be addressed in the near future,
+rendering Haskell a powerful theorem prover.

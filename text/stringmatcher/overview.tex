@@ -1,0 +1,70 @@
+\section{Overview}\label{sec:overviews}
+
+\def\sm{\texttt{sm}}
+\def\mc{\texttt{mconcat}}
+
+\subsection{Monoids and Parallelism}\label{subsec:monoids}
+
+As noted in section~\ref{sec:intro}, associativity ultimately
+allows monoidal operations to be run in parallel. However, for our
+purposes, we would like a way of breaking an input into pieces and
+running our computation, string matching, in parallel on all the
+pieces. For this, we will focus on the standard Haskell function \mc,
+\begin{code}
+  mconcat :: Monoid m => [m] -> m
+  mconcat [] = mempty
+  mconcat (x:xs) = x <> mconcat xs
+\end{code}
+where @mappend@ and @mempty@ are the monoid operation and identity for
+monoid \texttt{m} (usually written \texttt{mappend} and
+\texttt{mempty})~\footnote{\mc\, is usually defined as \texttt{foldr mappend mempty}}.
+
+\mc is a monoid morphism from lists of values of
+a monoid to that monoid, i.e.
+%
+$$
+\begin{array}{rcl}
+\mc\;[] & \quad \equiv \quad & \mempty \\
+\mc\;([x_0,\;\ldots x_m]\;\texttt{++}\;[y_0,\ldots y_n])
+& \quad \equiv \quad &
+\mc\;[x_0, \ldots x_m]\;\mappend\;\mc\;[y_0,\ldots y_n]
+\end{array}
+$$
+%
+where \texttt{++} is list append.
+
+$$
+\begin{array}{l}
+\mc\;[\sm\;x_0,\;\ldots \sm\;x_i, \sm\;x_{i+1},\ldots \sm\;x_j, \sm\;x_{j+1},\ldots \sm\;x_n] \\
+\;\;\equiv\;\; \quad
+\mc\;([\sm\;x_0,\;\ldots \sm\;x_i]\;\texttt{++}\;[\sm\;x_{i+1},\ldots \sm\;x_j]\;\texttt{++}\;[\sm\;x_{j+1},\ldots \sm\;x_n]) \\
+\;\;\equiv\;\; \quad
+%\mc\;[\mc\;[\sm\;x_0,\;\ldots \sm\;x_i]\;,\;\mc\;[\sm\;x_{i+1},\ldots \sm\;x_n]] \\
+%\;\;\equiv\;\; \quad
+\mc\;[\sm\;x_0, \ldots \sm\;x_i]\;\mappend\;\mc\;[\sm\;x_{i+1},\ldots \sm\;x_j]\;\mappend\;\mc\;[\sm\;x_{j+1},\ldots \sm\;x_n]
+\end{array}
+$$
+
+
+\subsection{String Matching}\label{subsec:string-matching}
+
+String matching is determining all the indices in a source string
+where a given target string begins; for example, for source string
+\texttt{abababa} and target \texttt{aba} the results of string
+matching would be \texttt{[0, 2, 4]}. We will use the following code
+as a specification of string matching:
+\begin{code}
+makeIndices inp trg = go 0 where
+  trgLen = length trg
+  go i | i >= length inp = []
+       | take trgLen (drop i inp) == trg = i : rest
+       | otherwise = rest
+  where rest = go (i + 1)
+
+*Main> makeIndices "abababa" "aba" == [0, 2, 4]
+\end{code}
+Though this implementation is not efficient, it is simple and provides
+a good starting point from which to create a verifiable function (see
+sec~\ref{sec:monoid}).
+
+\subsection{Monoidal String Matching}\label{subsec:monoidal-string-matching}

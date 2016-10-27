@@ -1,0 +1,152 @@
+\section{Verification of Parallel Concatenation on Monoids}\label{sec:parallelization}
+In this section we define how to concatenate a list of monoids
+into a monoid. 
+%
+Then, we parallelize list concatenation 
+and use LiquidHaskell to prove that the 
+parallel and sequential versions are equivalent. 
+\NV{What does equivalence means here?}
+
+\subsection{Concatenation of lists using monoids}
+If @m@ is a monoid, then @mconcat@ reduces a list of monoids @xs@
+to one monoid. 
+\begin{code}
+mconcat :: List m -> m 
+mconcat N        = mempty
+mconcat (C x xs) = x mappend (mconcat xs)
+\end{code}
+%
+Concatenation folds the elements of the list using @(mappend)@ 
+and returns @mempty@ when the list is empty. 
+
+Next, we define a parallel version of list concatenation 
+%
+\begin{code}
+pmconcat :: Int -> List m -> m
+pmconcat i xs  | i <= 1 || llen xs <= i
+  = mconcat xs 
+pmconcat i xs 
+  = pmconcat i $ withStrategy parStrategy $  
+                 map mconcat (chunk i xs)
+\end{code}%$
+The function @pmconcat i xs@ calls @mconcat xs@ in the base case, 
+otherwise it
+(1) chunks the list @xs@ in lists of size @i@, 
+(2) runs in parallel @mconcat@ to each chunk, 
+(3) recursively runs itself in the result list.
+%
+Termination of @pmconcat@ holds, as the length of @chunk i xs@
+is smaller than the length of @xs@, when @1 < i@. 
+%
+Concretely, we define @chunk@ using the standard definition for 
+list @take@ and @drop@.
+\begin{code}
+chunk :: i:Pos -> xs:List a 
+  -> {v:List (List a) | chunkRes i xs } 
+chunk i xs 
+  | length xs <= i 
+  = C xs N 
+  | otherwise
+  = C (take i xs) (chunk i (drop i xs))
+
+chunkRes i xs
+  | length xs <= i = length v == 1 
+  | i == 1         = length v == length xs
+  | otherwise     = length v < length xs
+\end{code}
+
+Where @take@ and @drop@ type as follows
+\begin{code}
+drop :: i:Nat -> xs:{List a | i <= length xs } 
+  -> {v:List a | length v == length xs - i }
+take :: i:Nat -> xs:{List a | i <= length xs } 
+  -> {v:List a | length v == i }
+\end{code}
+
+
+\paragraph{Runtime Parallelism.}
+To parallelize concatenation of the chunks we use parallel strategies 
+from the Haskell library @Control.Parallel.Strategies@.
+%
+For example, in our implementation @parStrategy@ is defined as
+\begin{code}
+parStrategy :: Strategy (List a)
+parStrategy = parTraversable rdeepseq
+\end{code}
+
+Note that parallelization of concatenation leads to runtime speedups
+only when @(mappend)@ runs in constant time with respect to the monoid size. 
+%
+Otherwise, at each recursive call of @pmconcat@,
+runtime will be dominated by the size of the biggest list element. 
+
+Even though runtime of the parallel version depends on the implementation details 
+of the monoids, correctness holds for every monoid. 
+%
+In the rest of this section we prove equivalence of the sequential and parallel concatenation operations. 
+
+
+\paragraph{Parallelism in the Logic.}
+To prove equivalence we make the \textit{assumption}
+that the Haskell function @withStrategy s x@ 
+returns @x@ for every strategy.
+\begin{code}
+assume withStrategy :: Strategy a -> x:a -> {v:a | v == x}
+\end{code}
+%
+Moreover, to prove equivalence, we need to represent 
+the implementation of @pmconcat@ in logic.
+%
+Which, in turn, requires representation of @withStrategy@. 
+%
+LiquidHaskell represents @withStrategy@ in logic as a function that merely returns
+its second argument @withStrategy _ x = x@
+and does not reason about parallelism. 
+
+\subsection{Equivalence of Parallel and Sequential Concatenation}
+
+\begin{theorem}[Monoid Concatenation Equivalence]\label{theorem:equivalence:concat}
+If @m@ is monoid, then the parallel and sequential concatenations are equivalent:
+\begin{code}
+pmconcatEquivalence 
+  :: i:Int -> is:List m -> { pmconcat i is == mconcat is }
+\end{code}
+\end{theorem}
+
+\begin{proof}
+We prove the theorem by providing a Haskell implementation of @pmconcatEquivalence@
+that is safe under LiquidHaskell. The details of the proof can be found in~\cite{implementation}, 
+here we provide the sketch of the proof. 
+
+First we prove that @mconcat@ distributes over list splitting
+\begin{code}
+mconcatSplit 
+  :: i:Nat -> xs:{List m | i <= llen xs} 
+  -> { mconcat xs == mconcat (take i xs) 
+                 <> mconcat (drop i xs) }
+\end{code}
+%
+The proofs proceeds by structural induction, using monoid left identity in the base case
+and associavity in the inductive step.
+
+We generalize the above lemma
+to prove that @mconcat@ distributes over list chunking
+\begin{code}
+mconcatChunk 
+  :: i:Pos -> xs:List (Monoid a) 
+  -> { mconcat xs == mconcat (map mconcat (chunk i xs)) }
+\end{code}
+%
+The proofs proceeds by structural induction, using monoid left identity in the base case
+and lemma @mconcatSplit@ in the inductive step.
+
+Lemma @mconcatChunk@ is sufficient to prove @pmconcatEquivalence@ by structural induction, 
+using monoid left identity in the base case. 
+\qed\end{proof}
+
+Note that the proof uses only the monoid laws and not the implementations of the monoid
+operators, thus the theorem holds \textit{for any} type that satisfies the monoid laws. 
+%
+Next we define a monoid structure for string matching and prove it satisfies the monoid laws. 
+Thus we conclude that string matching concatenation can be parallelized. 
+ 

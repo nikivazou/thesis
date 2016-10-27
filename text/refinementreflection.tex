@@ -448,3 +448,37 @@
 \input{text/refinementreflection/algorithmic}
 \input{text/refinementreflection/lambda}
 \input{text/refinementreflection/evaluation2}
+
+
+
+\newcommand\stringMempty{\ensuremath{\eta}}
+\newcommand\stringMappend{\ensuremath{\boxdot}}
+\newcommand\mempty{\ensuremath{\epsilon}}
+\newcommand\mappend{\ensuremath{\diamondsuit}}
+\newcommand\listMappend{\ensuremath{\texttt{++}}\xspace}
+\newcommand\listMempty{\ensuremath{\texttt{[]}}\xspace}
+
+\renewcommand\tx{\ensuremath{\texttt{x}}\xspace}
+\renewcommand\ty{\ensuremath{\texttt{y}}\xspace}
+\newcommand\txs{\ensuremath{\texttt{xs}}\xspace}
+\renewcommand\efmap{\ensuremath{\texttt{fmap}}\xspace}
+\providecommand\emap{\ensuremath{\texttt{map}}\xspace}
+\newcommand\ecompose{\ensuremath{\circ}\xspace}
+\newcommand\eseq{\ensuremath{\circledast}\xspace}
+\newcommand\eid{\ensuremath{\texttt{id}\ }\xspace}
+\newcommand\emempty{\ensuremath{\texttt{mempty}}\xspace}
+\newcommand\epure{\ensuremath{\texttt{pure}\ }\xspace}
+\newcommand\ereturn{\ensuremath{\texttt{return}\ }\xspace}
+% \newcommand\ebind{\ensuremath{\ $\gg=$\texttt{>>=}\ }\xspace}
+\newcommand\ebind{\ensuremath{\gg\!=}\xspace}
+\newcommand\eappend{\ensuremath{\ \texttt{++}\ }\xspace}
+\newcommand\emappend{\ensuremath{\diamondsuit}\xspace}
+
+\newtheorem{assumption}[theorem]{Assumption}
+
+\input{intro}
+% \input{haskell-proofs}
+\input{morphisms}
+\input{stringmatching}
+\input{evaluation}
+

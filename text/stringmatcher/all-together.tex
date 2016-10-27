@@ -1,0 +1,93 @@
+We conclude this section with
+the definition of a parallelized version of string matching.
+%
+We put all the theorems together to prove 
+that the sequential and parallel versions always give the same result.
+% and compare their time complexities.
+
+We define @toSMPar@ as a parallel version of @toSM@ using machinery of section~\ref{sec:parallelization}.
+\begin{code}
+toSMPar :: forall (target :: Symbol). (KnownSymbol target)
+        => Int -> Int -> RString -> SM target
+toSMPar i j = pmconcat i . pmap toSM . chunkStr j
+\end{code}
+%
+First, @chunkStr@ splits the input into @j@ chunks.
+%
+Then, @pmap@ applies @toSM@ at each chunk in parallel.
+Finally, @pmconat@ concatenates the mapped chunks in parallel
+using @mappend@, the monoidal operation for @SM target@.
+
+\paragraph{Correctness.}
+We prove correctness of @toSMPar@ directly from
+Theorem~\ref{theorem:two-level}.
+\begin{theorem}[Correctness of Parallel String Matching]\label{theorem:correctness}
+For each parameter @i@ and @j@, and input @x@,
+@toSMPar i j x@ is always equal to @toSM x@.
+\begin{code}
+correctness :: i:Int -> j:Int -> x:RString
+             -> {toSM x = toSMPar i j x}
+\end{code}
+\end{theorem}
+
+\begin{proof}
+The proof follows by direct application of Theorem~\ref{theorem:two-level}
+on the chunkable monoid (@RString@, @$\eta$@, @<+>@) (by Assumption~\ref{assumption:rstring})
+and the monoid (@SM t@, @$\epsilon$@, @<>@) (by Theorem~\ref{theorem:stringmatchers}).
+%
+\begin{code}
+correctness i j x
+  =   toSMPar i j x
+  ==. pmconcat i (pmap toSM (chunkStr j x))
+  ==. toSM is
+    ? parallelismEquivalence toSM distributestoSM x i j
+  *** QED
+\end{code}
+%
+Note that application of the theorem @parallelismEquivalence@
+requires a proof that its first argument @toSM@ is a morphism.
+%
+By Theorem~\ref{theorem:monoid:distribution},
+the required proof is provided as the function @distributestoSM@.
+\qed\end{proof}
+
+\ignore{
+
+\paragraph{Time Complexity.}
+Counting only string comparisons as the expensive operations,
+the sequential string matcher on input @x@ runs in time
+linear to @n = lenStr x@. Thus $T_\texttt{toSM}(n) = O(n)$.
+
+We get time complexity of @toSMPar@ by the time complexity of
+two-level parallel algorithms equation~\ref{eq:complexity},
+with the time of string matching mappend being linear on the length
+of the target @t = lenStr tg@, or
+$T_\mappend(\texttt{SM})= O(t)$.
+%
+$$
+T_\texttt{toSMPar} (n, t, i, j) =
+O((i-1)(\frac{\log n - \log j}{\log i}) t  + \frac{n}{j})
+$$
+%
+The above analysis refers to a model with infinite processor and no caching.
+To compare the algorithms in practice,
+we matched the target "the"
+in  Oscar Wilde's "The Picture of Dorian Gray", a text of @n = 431372@ characters
+using a two processor Intel Core i5.
+%
+The sequential algorithm detected 4590 indices in 40 ms.
+%
+We experimented with different parallization factors @i@ and chunk sizes @j / n@
+and observed up to $50\%$ speedups of the parallel algorithm for parallelization factor
+@4@ and @8@ chunks.
+%
+As a different experiment, we matched the input against its size @t = 400@ prefix,
+a size comparable to the input size @n@.
+%
+For bigger targets,
+mappend gets slower, as it has complexity linear to the size of target.
+%
+We observed $20\%$ speedups for @t=400@ target but also $30\%$ slow downs for various sizes of @i@ and @j@.
+%
+In all cases the indices returned by the sequential and the parallel algorithms were the same.
+}

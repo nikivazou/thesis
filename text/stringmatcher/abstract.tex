@@ -1,0 +1,16 @@
+In this paper, we prove correctness of parallelizing a string matcher
+using Haskell as a theorem prover.
+%
+We use refinement types to specify correctness properties,
+Haskell terms to express proofs and Liquid Haskell to
+check correctness of proofs.
+%
+First, we specify and prove that a class of monoid morphisms
+can be parallelized via parallel monoid concatenation.
+%
+Then, we encode string matching as a morphism
+to get a provably correct parallel transformation.
+%
+Our 1839LoC prototype proof shows that
+Liquid Haskell can be used as a fully expressive
+theorem prover on realistic Haskell implementations.

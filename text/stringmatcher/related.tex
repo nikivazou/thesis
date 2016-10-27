@@ -1,0 +1,88 @@
+\section{Related Work}\label{sec:related}
+
+
+\paragraph{SMT-Based Verification}
+%
+SMT solvers have been extensively used to automate
+reasoning on verification languages like
+Dafny~\cite{dafny}, Fstar~\cite{fstar} and Why3~\cite{why3}.
+%
+These languages are designed for verification,
+thus have limited support for commonly used language
+features like parallelism and optimized libraries
+that we use in our verified implementation.
+%
+Refinement Types~\cite{ConstableS87,FreemanPfenningDONTCITE91,Rushby98}
+on the other hand, target existing general purpose languages,
+such as
+ML~\cite{pfenningxi98,GordonRefinement09,LiquidPLDI08},
+C~\cite{deputy,LiquidPOPL10},
+Haskell~\cite{Vazou14},
+Racket~\cite{RefinedRacket}
+and Scala~\cite{refinedscala}.
+However, before Refinement Reflection~\cite{reflection} was introduced,
+they only allowed ``shallow'' program specifications,
+that is, properties that only talk about behaviors of program functions
+but not functions themselves.
+%
+
+\paragraph{Dependent Types}
+Unlike Refinement Types, dependent type systems,
+like Coq~\cite{coq-book}, Adga~\cite{agda} and Isabelle/HOL~\cite{isabelle} allow for ``deep'' specifications
+which talk about program functions,
+such as the program equivalence reasoning we presented.
+%
+Compared to (Liquid) Haskell,
+these systems allow for tactics and heuristics
+that automate proof term generation
+but lack SMT automations and
+general-purpose language features,
+like non-termination, exceptions and IO.
+%
+Zombie~\cite{Zombie,Sjoberg2015} and Fstar~\cite{fstar} allow dependent types to
+coexist with divergent and effectful programs,
+but still lack the optimized libraries,
+like @ByteSting@, which come
+with a general purpose language
+with long history, like Haskell.
+
+
+
+\paragraph{Parallel Code Verification}
+Dependent type theorem provers have been used before to
+verify parallel code.
+%
+BSP-Why~\cite{bspwhy} is an extension to Why2 that is using both Coq and SMTs
+to discharge user specified verification conditions.
+%
+Daum~\cite{daum07} used Isabelle to formalize the semantics
+of a type-safe subset of C, 
+by extending Schirmer's~\cite{schirmer06}
+formalization of sequential imperative languages.
+%
+Finally, Swierstra~\cite{wouter10} formalized mutable arrays in Agda
+and used them to reason about distributed maps and sums.
+
+One work  closely related to ours is
+SyDPaCC~\cite{SyDPaCC}, a Coq library that
+automatically parallelizes list homomorphisms
+by extracting parallel Ocaml versions of user provided Coq functions.
+%
+Unlike SyDPaCC, we are not automatically generating the parallel
+function version, because of engineering limitations
+(\S~\ref{sec:evaluation}).  Once these are addressed, code extraction
+can be naturally implemented by turning
+Theorem~\ref{theorem:two-level} into a Haskell type class with a
+default parallelization method.
+%
+SyDPaCC used maximum prefix sum as a case study,
+whose morphism verification is
+much simpler than our string matching case study.
+%
+Finally, our implementation consists of
+2K lines of Liquid Haskell, which we consider verbose and aim to
+use tactics to simplify.
+On the contrary, the SyDPaCC implementation
+requires three different languages:
+2K lines of Coq with tactics, 600 lines of Ocaml and 120 lines of C,
+and is considered ``very concise''.

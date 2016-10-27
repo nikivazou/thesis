@@ -1,0 +1,33 @@
+\section{Conclusion}\label{sec:conclusion}
+We made the first non-trivial use of (Liquid) Haskell as a proof
+assistant. 
+We proved the parallelization of chunkable monoid
+morphisms to be correct
+and applied our parallelization technique to string matching,
+resulting in a formally verified parallel string matcher.
+%
+Our proof uses refinement types to specify
+equivalence theorems,
+Haskell terms to express proofs,
+and Liquid Haskell to check that the terms prove the theorems.
+%
+Based on our 1839LoC sophisticated proof we conclude that
+Haskell can be successfully used as a theorem prover
+to prove arbitrary theorems about real Haskell code
+using SMT solvers to automate proofs
+over key theories like linear arithmetic and equality.
+%
+However, Coq-like tactics or Dafny-like heurestics are required
+to ease the user from manual proof term generation.
+
+
+\begin{comment}
+  - lines of code
+  - interaction of proofs with code
+        no interaction: the main proof
+        invariant good indices are requied to prove that
+           if target it bigger than input then indices is empty
+           proof oof good indexing requires casting
+   - proof reuse
+   - trust library factions with assume annotations
+\end{comment}

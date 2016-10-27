@@ -1,0 +1,70 @@
+\documentclass[nocopyrightspace, preprint]{llncs}
+
+\usepackage{amsmath,amssymb,latexsym}
+
+\usepackage{amsmath}
+
+
+\usepackage{comment}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{mathtools}
+\usepackage{xspace}
+\usepackage{commands}
+\usepackage{hyperref}
+\usepackage{listings}
+
+
+\title{Verified Parallel String Matching in Haskell}
+\author{Niki Vazou\inst{1,2} \and Jeff Polakow\inst{2}}
+\institute{$^1$UC San Diego \quad $^2$Awake Networks}
+
+
+%% MACROS
+
+\newcommand\stringMempty{\ensuremath{\eta}}
+\newcommand\stringMappend{\ensuremath{\boxdot}}
+\newcommand\mempty{\ensuremath{\epsilon}}
+\newcommand\mappend{\ensuremath{\diamondsuit}}
+\newcommand\listMappend{\ensuremath{\texttt{++}}\xspace}
+\newcommand\listMempty{\ensuremath{\texttt{[]}}\xspace}
+
+\newcommand\tx{\ensuremath{\texttt{x}}\xspace}
+\newcommand\ty{\ensuremath{\texttt{y}}\xspace}
+\newcommand\txs{\ensuremath{\texttt{xs}}\xspace}
+
+\newtheorem{assumption}[theorem]{Assumption}
+
+
+\input{haskellListings}
+
+
+\begin{document}
+\maketitle
+
+%% 25pp excluding bib
+%% NV TODO 
+%% - abstract    - drafted
+%% - conclusion  - drafted
+
+
+\begin{abstract}
+\input{abstract}
+\end{abstract}
+
+\input{intro}
+\input{haskell-proofs}
+\input{morphisms}
+\input{stringmatching}
+\input{evaluation}
+
+\input{related}
+\input{conclusion}
+
+
+{
+\bibliographystyle{plain}
+\bibliography{sw}
+}
+
+\end{document}

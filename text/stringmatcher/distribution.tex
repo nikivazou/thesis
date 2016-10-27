@@ -1,0 +1,160 @@
+\section{String Matching Distributes over Input}\label{sec:distribution}
+%
+In this section we prove that String Matching distributes over @RString@.
+%
+We first (\S~\ref{subsec:toSM}) we define the functino @toSM::RString -> SM target@
+that creates a String Matcher for its input String, 
+and then (\S~\ref{subsec:distribution:sm}) we prove distribution of @toSM@ over mappend. 
+%
+Next, we will use this proof combined with the Theorem of 
+Distribution over monoid concatenation (\S~\\ref{sec:monoid:distribution}), 
+to prove that String Matching Distributes over Monoid Concatenation.
+
+\subsection{Distribution of String Matching over Strings}\label{subsec:toSM}
+
+The function @toSM input@  creates a String Matcher @SM target@
+structure that matches the type level string target to the 
+string value argument @input@.
+\begin{code}
+toSM :: forall (target :: Symbol). (KnownSymbol target) 
+     => RString -> SM target 
+toSM input = SM input (makeSMIndices input tg) 
+  where
+    tg = fromString (symbolVal (Proxy :: Proxy target))
+\end{code}
+%
+The input field of the result is the input string, 
+while the indices are computed by calling @makeIndices@ 
+in the range from @0@ to @stringLen input -1@
+via @makeSMIndices@
+%
+\begin{code}
+makeSMIndices 
+  :: input:RString -> target:RString 
+  -> [GoodIndex input target]
+makeSMIndices input target 
+  = makeIndices input target 0 (stringLen input - 1)
+\end{code}
+
+\subsection{Distribution of String Matching over Refined Strings}\label{subsec:distribution:sm}
+
+Next, we prove that @toSM@ distributes over mappending
+\begin{theorem}[Distribution of string matching]\label{theorem:distribution:toSM}
+\begin{code}
+distributestoSM :: x:RString -> y:RString 
+  -> { toSM x mappend toSM y == toSM (x stringMappend y)}
+\end{code}
+\end{theorem}
+
+\begin{proof}
+The core of the proof starts from the left hand side 
+creating two matching structures, one for each input 
+substring @x@ and @y@. 
+%
+The mappending of these two string matchers leads to 
+three set of indices
+1. @xis@ from the input @x@, 
+2. @xyis@ from mappending the two strings, and
+3. @yis@ from the input @y@.
+%
+We prove using lemmata, 
+that appending these three sets of indices is equal to 
+the indices directly created from the mappended input @x stringMappend y@.
+\begin{code}
+distributestoSM x y 
+  =   (toSM x :: SM target) <> (toSM y :: SM target)  
+  ==. (SM x is1) <> (SM y is2)
+  ==. SM i (xis ++ xyis ++ yis)
+  ==. SM i (makeIndices i tg 0 hi1 ++ yis) 
+      ?  (mapCastId tg x y is1 
+      &&& mergeNewIndices tg x y)
+  ==. SM i (makeIndices i tg 0       hi1 
+         ++ makeIndices i tg (hi1+1) hi) 
+      ? shiftIndicesRight 0 hi2 x y tg 
+  ==. SM i is
+      ? mergeIndices i tg 0 hi1 hi
+  ==. toSM (x <+> y)
+  *** QED 
+  where
+    xis  = map (castGoodIndexRight tg x y) is1
+    xyis = makeNewIndices x y tg
+    yis  = map (shiftStringRight   tg x y) is2
+
+    tg  = fromString (symbolVal (Proxy::Proxy target))
+    is1 = makeSMIndices x tg 
+    is2 = makeSMIndices y tg 
+    is  = makeSMIndices i tg 
+
+    i = x <+> y
+
+    hi1 = stringLen x - 1
+    hi2 = stringLen y - 1
+    hi  = stringLen i - 1 
+\end{code}
+%
+The proof uses four lemmata.
+Identity of casting @mapCastId@
+is reused and explained in the associativity proof. 
+Here we explain the rest three
+\begin{itemize}
+\item Merging indices from low to high, using some medium value
+\begin{code}
+mergeIndices 
+  :: input:RString -> target:RString 
+  -> lo:Nat -> mid:{Int | lo <= mid} 
+  -> hi:{Int | mid <= hi} 
+  -> { makeIndices input target lo hi   == 
+      makeIndices input target lo mid  ++ 
+      makeIndices input target (mid+1) hi} 
+\end{code}
+The lemma states that making indices for the strings @input@ and @target@
+in the range from @lo@ to @hi@
+is equivalent to makeing indices for the same string in the ranges
+from @lo@ to @mid@ appended with the range from @mid+1@ to @hi@, 
+for any @mid@ between @lo@ and @hi@. 
+%
+The proof of the lemma proceeds by induction on @mid@.
+
+\item Merging the indices of the first substring
+\begin{code}
+mergeNewIndices 
+  :: tg:RString -> x:RString -> y:RString
+  -> { makeSMIndices x tg 
+    ++ makeNewIndices x y tg
+    == makeIndices (x <+> y) tg 0 (lenStr x - 1)} 
+\end{code}
+The theorem states that appending the indices that appear in the first string @x@, 
+that is the indices @xis@ that do not and the indices @xyis@ that do involve @y@, 
+is equivalent to the indices @is@ on the input @x stringMappend y@
+in the range from @0@ to @lenStr x -1@. 
+%
+The proof case splits on the sizes of @tg@ and @x@. 
+%
+If the size of the target is less than two, then @xyis@ is empty, 
+but @xis == is@, as appending @y@ to the input cannot create more indices. 
+%
+Otherwise, if the input @x@ is smaller than the target, 
+then @xis@ is empty and @xyis@ is equal to @is@. 
+%
+Otherwise, we set @mid = stringLen x1 - stringLen tg@ 
+and use the previous @mergeIndices@ lemma to merge @xis@ and @yis@ into @is@.
+\item Shifting is left concatenation.
+\begin{code}
+shiftIndicesRight
+  :: lo:Nat -> hi:Int  
+  -> x:RString -> y:RString 
+  -> tg:RString
+  -> { map (shiftStringRight tg x y) 
+           (makeIndices y tg lo hi) 
+  == makeIndices (x stringMappend y) tg 
+                 (lenStr x + lo) (lenStr x + hi) }
+
+\end{code}
+The lemma states that shifting indices from @lo@ to @hi@ on @y@
+is equivalent to computing the indices from @lenStr x + lo@
+to @lenStr x + hi@ on @x stringMappend y@, 
+and it is proved by induction on the difference @hi - lo@.
+\end{itemize}
+\qed\end{proof}
+
+
