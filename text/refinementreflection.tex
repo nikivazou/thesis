@@ -463,22 +463,22 @@
 \newcommand\txs{\ensuremath{\texttt{xs}}\xspace}
 \renewcommand\efmap{\ensuremath{\texttt{fmap}}\xspace}
 \providecommand\emap{\ensuremath{\texttt{map}}\xspace}
-\newcommand\ecompose{\ensuremath{\circ}\xspace}
-\newcommand\eseq{\ensuremath{\circledast}\xspace}
-\newcommand\eid{\ensuremath{\texttt{id}\ }\xspace}
-\newcommand\emempty{\ensuremath{\texttt{mempty}}\xspace}
-\newcommand\epure{\ensuremath{\texttt{pure}\ }\xspace}
-\newcommand\ereturn{\ensuremath{\texttt{return}\ }\xspace}
+\providecommand\ecompose{\ensuremath{\circ}\xspace}
+\providecommand\eseq{\ensuremath{\circledast}\xspace}
+\providecommand\eid{\ensuremath{\texttt{id}\ }\xspace}
+\providecommand\emempty{\ensuremath{\texttt{mempty}}\xspace}
+\providecommand\epure{\ensuremath{\texttt{pure}\ }\xspace}
+\providecommand\ereturn{\ensuremath{\texttt{return}\ }\xspace}
 % \newcommand\ebind{\ensuremath{\ $\gg=$\texttt{>>=}\ }\xspace}
-\newcommand\ebind{\ensuremath{\gg\!=}\xspace}
-\newcommand\eappend{\ensuremath{\ \texttt{++}\ }\xspace}
-\newcommand\emappend{\ensuremath{\diamondsuit}\xspace}
+\providecommand\ebind{\ensuremath{\gg\!=}\xspace}
+\providecommand\eappend{\ensuremath{\ \texttt{++}\ }\xspace}
+\providecommand\emappend{\ensuremath{\diamondsuit}\xspace}
 
 \newtheorem{assumption}[theorem]{Assumption}
 
-\input{intro}
+\input{text/stringmatcher/intro}
 % \input{haskell-proofs}
-\input{morphisms}
-\input{stringmatching}
-\input{evaluation}
+\input{text/stringmatcher/morphisms}
+\input{text/stringmatcher/stringmatching}
+\input{text/stringmatcher/evaluation}
 
