@@ -1,0 +1,265 @@
+\section{Evaluation}\label{sec:evaluation}
+
+
+\begin{figure}
+\begin{itemize}
+\item \S~\ref{subsec:ackermann}: Ackermann Properties (Figure~\ref{fig:ackermann})
+\item \S~\ref{subsec:fold}: Folding Properties (@universal@ \& @fusion@)
+\item \S~\ref{subsec:class}: Class Laws (Figure~\ref{fig:laws}) for @List@ and @Maybe@
+\item \S~\ref{subsec:programs}: Proofs and Programs: (@SAT-solve@ \& @unify@)
+\end{itemize}
+\caption{Summary of Benchmarks}
+\label{fig:summary}
+\end{figure}
+
+
+\subsection{Arithmetic Properties}\label{subsec:ackermann}
+\input{ackermann}
+We used \libname to prove arithmetic properties.
+We proved that the fibonacci function is increasing,
+as described in \S~\ref{sec:examples}
+and the properties of Ackermann function
+from~\citep{ackermann} summarized in
+Figure~\ref{fig:ackermann}.
+%
+This figure provides two alternative definitions
+for the Ackermann Function. We proved equivalence
+of the definition (Prop 1.) and various arithmetic
+relations among them.
+
+
+\spara{Generalizing Increasing Properties}
+Property 3. shows that \ack{n}{x} is increasing on $x$.
+We derived property 4. by applying the\\
+\hbox{@gen_increasing@} theorem
+from \S~\ref{sec:examples} with input function
+the partially applied Ackermann Function \ack{n}{\star}.
+%
+We used the same technique to generalize increasing properties
+from 8. to 9. on the partially applied funciton \iack{h}{n}{\star}.
+%
+Property 5. proves that \ack{n}{x} is increasing on the first argument $n$.
+To generalize it to 6. we cannot reuse theorem @gen_increasin@,
+since it only applies to the first argument,
+and we need to define a variant @gen_increasing2@ that
+generalizes increasing property on the first argument.
+
+\spara{Existentials}
+Properties 11. and 12. are described in~\citep{ackermann}
+to hold for almost every $x$.
+%
+That is, Property 11. is described as
+$\exists x_0. x_0 < x \Rightarrow x + l < \ack{n}{x}$.
+%
+Refinement types cannot express existentials,
+thus expressing the above property is (currently)
+not feasible, but the minimum $x$ was easy to retrieve.
+Thus, we expressed the above statement by specifying $x_0 = l-2$.
+
+\spara{Constructive Proofs}
+Property 12. was proved in~\citep{ackermann} using a constructive proofs.
+Specifically, it constructed a ``ladder'' if Ackermann invocations
+and bounded \iack{h}{n}{x} and \ack{n}{x} with this ``ladder''.
+To follow the steps of the proof, we defined a function @ladder@ that
+simulated the proofs construction.
+
+\subsection{Folding Properties}\label{subsec:fold}
+
+Next, we proved properties of list folding,
+as encoded in Adga~\citep{agdaequational}.
+%
+The following type encodes the universal property of foldr
+\begin{code}
+  foldr_univ
+    :: f:(a -> b -> b)
+    -> h:(L a -> b)
+    -> e:b
+    -> ys:L a
+    -> base:{h [] == e }
+    -> step:(x:a -> xs:[a] ->
+            {h (x:xs) == f x (h xs)})
+    -> {h ys == foldr f e ys }
+\end{code}
+The \libname proof term of @foldr_univ@
+is similar to the one in Agda.
+But, there are two major differences.
+First, specifications do not support quantifiers:
+universal quantification of @x@ and @xs@ in
+the step assumption is encoded as functional arguments.
+Second, unlike Agda,
+\libname does not support optional arguments,
+thus to use @foldr_univ@ the proof arguments
+@base@ and @step@ that were implicit arguments in Agda
+need to be explicitely provided.
+%
+For example, the following code calls @foldr_univarsal@ to prove
+@foldr_fusion@ by explicitely applying proofs for the base and the step arguments
+\begin{code}
+  foldr_fusion
+   :: h:(b -> c)
+   -> f:(a -> b -> b)
+   -> g:(a -> c -> c)
+   -> e:b
+   -> z:[a]
+   -> x:a -> y:b
+   -> fuse: {h (f x y) == g x (h y)})
+   -> {(h.foldr f e) z == foldr g (h e) z}
+
+  foldr_fusion h f g e ys fuse
+   = foldr_univ g (h.foldr f e) (h e) ys
+       (fuse_base h f e)
+       (fuse_step h f e g fuse)
+\end{code}
+
+As an example, @fuse_base@ is a function with type
+\begin{code}
+  fuse_base
+   :: h:(b -> c)
+   -> f:(a -> b -> b)
+   -> e:b
+   -> { (h.foldr f e) [] == h e }
+\end{code}
+
+\subsection{Class Laws}\label{subsec:class}
+\input{classlaws}
+We used \libname to prove Monoid, Functor, Applicative and Monad Laws,
+as in HERMIT~\citep{Farmer15}, as summarized
+in Figure~\ref{fig:laws} for user-defined
+List and Maybe data types.
+%
+
+The purpose of these proofs is to investigate the proving abilities of \libname.
+For this purpose, we defined the appropriate class operators on user defined lists,
+instead of using Haskell's predefined class instances.
+%
+In the near future, we plan to embed these proofs
+to check the laws on real Haskell instances,
+but this requires some engineering from the \liquidHaskell team.
+
+
+\spara{Maybe is a Monoid}
+The library definition of Monoid instance on @Maybe a@
+defines @mappend@ as
+\begin{code}
+  instance (Monoid a)
+           => Monoid (Maybe a) where
+    mappend (Just x) (Just y)
+      = Just (mappend x y)
+    ...
+\end{code}
+%
+Since we define @mappend@ as a Haskell function,
+rather than an instance,
+we have no way to express the above definition.
+Instead we define @mappend@ to return the first non @Nothing@
+argument, if any:
+\begin{code}
+  mappend Nothing x  = x
+  mappend (Just x) _ = Just x
+\end{code}
+and prove that satisfies the associativity property.
+
+\spara{Functor}
+%
+We proved both functor laws of Figure~\ref{fig:laws}
+by induction on the argument $xs$.
+%
+One limitation of \libname name, is that
+we know of no way to derive the partial
+applied version of these laws.
+%
+For instance, even though we can prove
+$\efmap\ \eid\ xs \equiv \eid\ xs$
+we know of no way to derive
+$\efmap\ \eid \equiv \eid$.
+
+\spara{Monad}
+Monad Laws refer to $\lambda$-functions,
+thus their proof require defunctionalization and
+the extensionality axioms to prove.
+
+In all,
+most of the proofs are straightforward,
+using inductive reasoning in the structure of the data constructors
+and rewriting the definitions of axiomatized functions.
+%
+The proofs are Haskell programs, and before checked by \liquidHaskell
+they are checked by GHC for simple type errors.
+%
+Our experience,
+during the proof process was that most of the times,
+proofs that went thought vanilla GHC type checking,
+were actually correct, \ie they were accepted by \liquidHaskell.
+
+\subsection{Combining Proofs and Programs} \label{subsec:programs}
+%
+We used \libname to prove correctness of Haskell functions
+that we could not previously prove,
+namely, a SAT solver, and type unification.
+
+\spara{SAT solver}.
+We encoded the SAT solver example of~\citep{Zombie}
+A solver is a Haskell function that takes as input a logical
+@f:Formula@ and returns an assignment that satisfies @f@,
+if one exists.
+
+\begin{code}
+  solve :: f:Formula
+        -> Maybe {a:Assignment | sat a f }
+  solve f = find (`sat` f) (assignments f)
+
+  assignments :: Formula -> [Assignment]
+
+  find :: (a -> Bool) -> [a] -> Maybe a
+
+  axiomatize sat
+  sat :: Assignment -> Formula -> Bool
+  \end{code}
+
+Function @assignments f@ returns all possible assignments of the formula @f@,
+@sat a f@ returns True $\iff$ the assignment @a@ satisfies the formula @f@.
+%
+Verification of @solve@ follows directly from axiomatization of the Haskell function @sat@.
+
+\spara{Term Unification}
+As another example, we verified unification of first order terms,
+as presented in~\citep{Sjoberg2015}.
+
+We define the Haskell function @unify t1 t2@ that can
+1. diverge, 2. return @Nothing@, or 3. return a substitution @su@ such that
+@apply su t1 == apply su t2@:
+
+\begin{code}
+  inline eq_subst
+  eq_subst su t1 t2
+    = apply su t1 == apply su t2
+
+  type EQSubst T1 T2 =
+    {su:Subst | eq_subst su T1 T2 }
+
+  unify :: t1:Term -> t2:Term
+        -> Maybe (EQSubst t1 t2)
+\end{code}
+%
+Note for the specification we axiomatize the Haskell function @apply@,
+but we do not axiomatize @unify@.
+Thus the user \textit{needs not prove} that @unify@ terminates, which is a complicate proof.
+%
+As before, we prove correctness by invoking helper lemmas that
+are separately proved.
+%
+For example to prove the post-condition when unifying a variable
+@TVar i@ with any type @t@ that does not contain the variable @i@,
+we invoke the theorem @theoremVar t2 i@ that inductively proves the requirement
+
+\begin{code}
+  unify (TVar i) t2
+    | not (i Set_mem freeVars t2)
+    = Just $ [(i, t2)]
+           `byTheorem` theoremVar t2 i
+
+  theoremVar
+    :: t:Term
+    -> i:{Int | not (i Set_mem freeVars t) }
+    -> { eq_subst [(i, t)] (TVar i) t }
+\end{code}	%% $

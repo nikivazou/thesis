@@ -1,0 +1,23 @@
+\begin{abstract}
+Refinement Reflection turns your favorite programming 
+language into a proof assistant by reflecting
+the ​code implementing a​ user-defined function 
+into the function's (output) refinement type. 
+%
+As a consequence, at \emph{uses} of the function, 
+the function definition is unfolded into the refinement logic 
+in a precise, predictable and most
+importantly, programmer controllable way.
+%
+In the logic, we encode functions and lambdas using uninterpreted symbols
+preserving SMT-based decidable verification. 
+In the language, we provide a library of combinators that lets programmers 
+compose proofs from basic refinements and function definitions.
+%
+We have implemented our approach in the Liquid Haskell system, 
+thereby converting Haskell into an interactive proof assistant, 
+that we used to verify a variety of properties ranging 
+from arithmetic properties of higher order, recursive functions
+to the Monoid, Applicative, Functor and Monad type class laws 
+for a variety of instances.
+\end{abstract}

@@ -1,0 +1,739 @@
+\section{Refinement Reflection}
+\label{sec:formalism}
+\label{sec:types-reflection}
+
+Our first step towards formalizing refinement
+reflection is a core calculus \corelan with an
+\emph{undecidable} type system based on
+denotational semantics.
+We show how the soundness of the type system
+allows us to \emph{prove theorems} using \corelan.
+
+%
+%% Note that \smtlan programs are a subset of
+%% \corelan programs derivations
+%%
+%% a subset of \corelan where the that forms a
+%% decidable logic of
+%% refinements, and use it to obtain \corelan with
+%% decidable SMT-based algorithmic typing.
+
+\subsection{Syntax}
+\input{text/refinementreflection/syntax}
+%
+Figure~\ref{fig:syntax} summarizes the syntax of \corelan,
+which is essentially the calculus \undeclang~\cite{Vazou14}
+with explicit recursion and a special $\erefname$ binding form
+to denote terms that are reflected into the refinement logic.
+%
+In \corelan refinements $r$ are arbitrary expressions $e$
+(hence $r ::= e$ in Figure~\ref{fig:syntax}).
+%
+This choice allows us to prove preservation and progress,
+but renders typechecking undecidable.
+%
+In \S~\ref{sec:algorithmic} we will see how to recover
+decidability by soundly approximating refinements.
+
+The syntactic elements of \corelan are layered into
+primitive constants, values, expressions, binders
+and programs.
+
+\mypara{Constants}
+The primitive constants of \corelan
+include all the primitive logical
+operators $\op$, here, the set $\{ =, <\}$.
+%
+Moreover, they include the
+primitive booleans $\etrue$, $\efalse$,
+integers $\mathtt{-1}, \mathtt{0}$, $\mathtt{1}$, \etc,
+and logical operators $\mathtt{\land}$, $\mathtt{\lor}$, $\mathtt{\lnot}$, \etc.
+
+\mypara{Data Constructors}
+%
+We encode data constructors as special constants.
+% Each data type has an equality predicate $\haseq{T}$
+% that is true only if values of type $T$ can be finitely compared.
+For example the data type \tintlist, which represents
+finite lists of integers, has two data constructors: $\dnull$ (``nil'')
+and $\dcons$ (``cons'').
+% and satisfies $\haseq{\tintlist}$.
+
+%% NV Arity is not used anywhere
+%%Each data type has an arity $\arity{T}$ that represents
+%%the exact number of data constructors that return
+%%a value of type $T$.
+%
+%%For example the data type \tintlist, which represents
+%%lists of integers, has two data constructors: $\dnull$ (``nil'')
+%%and $\dcons$ (``cons'') and so has arity $2$.
+
+
+\mypara{Values \& Expressions}
+%
+The values of \corelan include
+constants, $\lambda$-abstractions
+$\efun{x}{\typ}{e}$, and fully
+applied data constructors $D$
+that wrap values.
+%
+The expressions of \corelan
+include values and variables $x$,
+applications $\eapp{e}{e}$, and
+$\mathtt{case}$ expressions.
+
+\mypara{Binders \& Programs}
+%
+A \emph{binder} $\bd$ is a series of possibly recursive
+let definitions, followed by an expression.
+%
+A \emph{program} \prog is a series of $\erefname$
+definitions, each of which names a function
+that can be reflected into the refinement
+logic, followed by a binder.
+%
+The stratification of programs via binders
+is required so that arbitrary recursive definitions
+are allowed but cannot be inserted into the logic
+via refinements or reflection.
+%
+(We \emph{can} allow non-recursive $\mathtt{let}$
+binders in $e$, but omit them for simplicity.)
+
+\subsection{Operational Semantics}
+
+Figure~\ref{fig:syntax} summarizes the small
+step contextual $\beta$-reduction semantics for
+\corelan.
+%
+%%There are two points to note.
+%%%
+%%First, we allow for reductions under
+%%data constructors, and thus, values may
+%%be further reduced.
+%%%
+%%Second, for simplicity, we treat both
+%%$\eletname$ and $\erefname$ as possibly
+%%recursive (\ie $\mathtt{let\ rec}$) binders.
+%% Note that, for simplicity, we treat each
+%% $\eletname$ as a possibly
+%% recursive (\ie $\mathtt{let\ rec}$) binder.
+%
+We write \evalj{e}{e'}{j} if there exist
+$e_1,\ldots,e_j$ such that $e$ is $e_1$,
+$e'$ is $e_j$ and $\forall i,j, 1 \leq i < j$,
+we have $\evals{e_i}{e_{i+1}}$.
+%
+We write $\evalsto{e}{e'}$ if there exists
+some finite $j$ such that $\evalj{e}{e'}{j}$.
+%
+We define $\betaeq{}{}$ to be the reflexive,
+symmetric, transitive closure of $\evals{}{}$.
+
+\mypara{Constants} Application of a constant requires the
+argument be reduced to a value; in a single step the
+expression is reduced to the output of the primitive
+constant operation.
+%
+For example, consider $=$, the primitive equality
+operator on integers.
+%
+We have $\ceval{=}{n} \defeq =_n$
+where $\ceval{=_n}{m}$ equals \etrue
+iff $m$ is the same as $n$.
+%
+%\mypara{Equality}
+%
+We assume that the equality operator
+is defined \emph{for all} values,
+and, for functions, is defined as
+extensional equality.
+%
+That is, for all
+$f$ and
+$f'$
+we have
+$\evals{(f = f')}{\etrue}
+  \quad \mbox{iff} \quad
+  \forall v.\ \betaeq{f\ v}{f'\ v}$.
+%
+We assume source \emph{terms} only contain implementable equalities
+over non-function types; the above only appears in \emph{refinements}
+and allows us to state and prove facts about extensional
+equality~\S~\ref{subsec:extensionality}.
+%% % \RJ{CHECK}
+
+%%That is, for all
+%%$f \defeq \efun{x}{\typ}{e}$ and
+%%$f' \defeq \efun{x}{\typ}{e'}$
+%%we have
+%%$$\evals{(f = f')}{\etrue}
+%%  \quad \mbox{iff} \quad
+%%  \forall v.\ \evalsto{(\SUBST{e}{x}{v} = \SUBST{e'}{x}{v})}{\etrue}
+%%$$
+
+
+\subsection{Types}
+
+\corelan types include basic types, which are \emph{refined} with predicates,
+and dependent function types.
+%
+\emph{Basic types} \btyp comprise integers, booleans, and a family of data-types
+$T$ (representing lists, trees \etc.)
+%
+For example the data type \tintlist represents lists of integers.
+%
+We refine basic types with predicates (boolean valued expressions \refa) to obtain
+\emph{basic refinement types} $\tref{v}{\btyp}{\refa}$.
+%
+Finally, we have dependent \emph{function types} $\tfun{x}{\typ_x}{\typ}$
+where the input $x$ has the type $\typ_x$ and the output $\typ$ may
+refer to the input binder $x$.
+%
+We write $\btyp$ to abbreviate $\tref{v}{\btyp}{\etrue}$,
+and \tfunbasic{\typ_x}{\typ} to abbreviate \tfun{x}{\typ_x}{\typ} if
+$x$ does not appear in $\typ$.
+%
+We use $r$ to refer to refinements.
+
+
+\mypara{Denotations}
+%
+Each type $\typ$ \emph{denotes} a set of expressions $\interp{\typ}$,
+that are defined via the dynamic semantics~\cite{Knowles10}.
+%
+Let $\shape{\typ}$ be the type we get if we erase all refinements
+from $\typ$ and $\bhastype{}{e}{\shape{\typ}}$ be the
+standard typing relation for the typed lambda calculus.
+%
+Then, we define the denotation of types as:
+\begin{align*}
+\interp{\tref{x}{\btyp}{r}} \defeq &
+    \{e \mid  \bhastype{}{e}{\btyp},
+              \mbox{ if } \evalsto{e}{w}
+              \mbox{ then } \evalsto{r\subst{x}{w}}{\etrue} \}\\
+\interp{\tfun{x}{\typ_x}{\typ}} \defeq &
+    \{e \mid  \bhastype{}{e}{\shape{\tfunbasic{\typ_x}{\typ}}},
+              \forall e_x \in \interp{\typ_x}.\ \eapp{e}{e_x} \in \interp{\typ\subst{x}{e_x}}
+    \}
+\end{align*}
+
+
+\mypara{Constants}
+For each constant $c$ we define its type \constty{c}
+such that $c \in \interp{\constty{c}}$.
+%
+For example,
+%
+$$
+\begin{array}{lcl}
+\constty{3} &\doteq& \tref{v}{\tint}{v = 3}\\
+\constty{+} &\doteq& \tfun{\ttx}{\tint}{\tfun{\tty}{\tint}{\tref{v}{\tint}{v = x + y}}}\\
+\constty{\leq} &\doteq& \tfun{\ttx}{\tint}{\tfun{\tty}{\tint}{\tref{v}{\tbool}{v \Leftrightarrow x \leq y}}}\\
+\end{array}
+$$
+%
+So, by definition we get the constant typing lemma
+%
+\begin{lemma}{[Constant Typing]}\label{lemma:constants}
+Every constant $c \in \interp{\constty{c}}$.
+\end{lemma}
+%
+Thus, if $\constty{c} \defeq \tfun{x}{\typ_x}{\typ}$,
+then for every value $w \in \interp{\typ_x}$, we require
+$\ceval{c}{w} \in \interp{\typ\subst{x}{w}}$.
+
+%% \mypara{Equality}
+%% The equality predicate
+%% $\haseq{B}$, is defined to be true for \tint and \tbool,
+%% and for each type constructor $T$
+%% whose values can be finitely compared.
+%% %
+%% So, by definition we get the equality lemma
+%% %
+%% \begin{lemma}{[Equality]}\label{lemma:equality}
+%% If $\haseq{B}$ then for each value $\bhastype{\emptyset}{w}{B}$
+%% \evalsto{w = w}{\etrue}
+%% \end{lemma}
+
+\subsection{Refinement Reflection}
+\label{subsec:logicalannotations}
+%
+The simple, but key idea in our work is to
+\emph{strengthen} the output type of functions
+with a refinement that \emph{reflects} the
+definition of the function in the logic.
+%
+We do this by treating each
+%
+$\erefname$-binder:
+%
+${\erefb{f}{\gtyp}{e}{\prog}}$
+%
+as a $\eletname$-binder:
+%
+${\eletb{f}{\exacttype{\gtyp}{e}}{e}{\prog}}$
+%
+during type checking (rule $\rtreflect$ in Figure~\ref{fig:typing}).
+
+\mypara{Reflection}
+%
+We write \exacttype{\typ}{e} for the \emph{reflection}
+of term $e$ into the type $\typ$,  defined by strengthening
+\typ as:
+%
+$$
+\begin{array}{lcl}
+\exacttype{\tref{v}{\btyp}{r}}{e}
+  & \defeq
+  & \tref{v}{\btyp}{r \land v = e}\\
+\exacttype{\tfun{x}{\typ_x}{\typ}}{\efun{y}{}{e}}
+  & \defeq
+  & \tfun{x}{\typ_x}{\exacttype{\typ}{e\subst{y}{x}}}
+\end{array}
+$$
+%
+As an example, recall from \S~\ref{sec:overview}
+that the @reflect fib @ strengthens the type of
+@fib@ with the reflected refinement @fibP@.
+%% NV In Overview, we have fibP v n = v = fib n && fibR v n
+%% NV Here we get the reflection part (fibR v n)
+%% NV which we can verify
+%% NV at each fix invocation we also get the v = fib n portion
+%% NV via the exact rule
+%% NV We can not add the v = fib n as a port condition, because
+%% NV we cannot prove it.
+
+
+\mypara{Consequences for Verification}
+%
+Reflection has two consequences for verification.
+%
+First, the reflected refinement is \emph{not trusted};
+it is itself verified (as a valid output type)
+during type checking.
+%
+Second, instead of being tethered to quantifier
+instantiation heuristics or having to program
+``triggers'' as in Dafny~\citep{dafny} or
+\fstar~\citep{fstar}
+%
+the programmer can predictably ``unfold'' the
+definition of the function during a proof simply
+by ``calling'' the function, which we have found
+to be a very natural way of structuring
+proofs~\S~\ref{sec:evaluation}.
+
+
+\subsection{Refining \& Reflecting Data Constructors with Measures}
+\label{subsec:measures}
+\label{subsec:list}
+
+% We reuse the notion of \emph{measures}~\cite{Vazou14}
+% to reflect functions over datatypes into the refinement
+% logic.
+
+We assume that each data type is equipped with
+a set of \emph{measures} which are \emph{unary}
+functions whose (1)~domain is the data type, and
+(2)~body is a single case-expression over the
+datatype~\cite{Vazou14}:
+%
+$$\emeasb{f}
+         {\gtyp}
+         {\efun{x}{\typ}{\ecase{y}{x}{\dc_i}{\overline{z}}{e_i}}}$$
+%
+For example, @len@ measures the size of an $\tintlist$:
+%
+\begin{code}
+  measure len :: [Int] -> Nat
+  len = \x -> case x of
+                []     -> 0
+                (x:xs) -> 1 + len xs
+\end{code}
+
+\mypara{Checking and Projection}
+%
+We assume the existence of measures that
+\emph{check} the top-level constructor,
+and \emph{project} their individual fields.
+%
+\NV{Remove this pointer since we removed the text}
+In \S~\ref{subsec:embedding} we show how to
+use these measures to reflect functions over
+datatypes.
+%
+% Such measures are straightforward to generate
+% automatically from the data-type definition.)
+%
+For example, for lists, we assume the existence of measures:
+%
+\begin{code}
+  isNil []      = True
+  isNil (x:xs)  = False
+
+  isCons (x:xs) = True
+  isCons []     = False
+
+  sel1 (x:xs)   = x
+  sel2 (x:xs)   = xs
+\end{code}
+
+\mypara{Refining Data Constructors with Measures}
+%
+We use measures to strengthen the types
+of data constructors, and we use these
+strengthened types during construction
+and destruction (pattern-matching).
+%
+Let:
+%
+(1)~$\dc$ be a data constructor,
+   with \emph{unrefined} type
+   $\tfun{\overline{x}}{\overline{\gtyp}}{T}$
+%
+(2)~the $i$-th measure definition with
+   domain $T$ is:
+%
+$$\emeasb{f_i}
+         {\gtyp}
+         {\efun{x}{\typ}{\ecase{y}{x}{\dc}{\overline{z}}{e_{i}}}}
+$$
+%
+Then, the refined type of $\dc$ is defined:
+$$
+\constty{\dc} \defeq
+   \tfun{\overline{x}}
+        {\overline{\typ}}
+        {\tref{v}{T}{ \wedge_i f_i\ v = \SUBST{e_{i}}{\overline{z}}{\overline{x}}}}
+$$
+
+Thus, each data constructor's output type is refined to reflect
+the definition of each of its measures.
+%
+For example, we use the measures @len@, @isNil@, @isCons@, @sel1@,
+and @sel2@ to strengthen the types of $\dnull$ and $\dcons$ to:
+%
+\begin{align*}
+\constty{\dnull}  \defeq & \tref{v}{\tintlist}{r_{\dnull}} \\
+\constty{\dcons}  \defeq & \tfun{x}{\tint}
+                                   {\tfun{\mathit{xs}}
+                                         {\tintlist}
+                                         {\tref{v}{\tintlist}{r_\dcons}}}
+\intertext{where the output refinements are}
+r_{\dnull} \defeq &\ \mathtt{len}\ v = 0
+             \land  \mathtt{isNil}\ v
+             \land  \lnot \mathtt{isCons}\ v \\
+r_{\dcons} \defeq &\ \mathtt{len}\ v = 1 + \mathtt{len}\ \mathit{xs}
+             \land  \lnot \mathtt{isNil}\ v
+             \land  \mathtt{isCons}\ v \\
+             \land & \  \mathtt{sel1}\ v = x
+             \land  \mathtt{sel2}\ v = \mathit{xs}
+\end{align*}
+%
+It is easy to prove that Lemma~\ref{lemma:constants}
+holds for data constructors, by construction.
+%
+For example, $\mathtt{len}\ \dnull = 0$ evaluates to $\tttrue$.
+
+
+%%
+%% The above annotation \emph{strengthens} the types of data constructors
+%% $\dc_i$ to reflect the
+%% behavior of $f$:
+%%
+%%
+%% \preproc{\eletrecoptsmall{f}{\efun{x}{\typ}{\ecase{y}{x}{\dc_i}{\overline{z}}{e_i}}}{\gtyp}{M}{\prog}}
+%%
+%% %
+%% Where \exacttypefun{f}{\gtyp}{e} strengthens the result $v$ of the type \typ to exactly
+%% describe that $f\ v = e$:
+%% %
+%% \begin{align*}
+%% \exacttypefun{f}{\tref{v}{\btyp}{r}}{e} &= \tref{v}{\btyp}{r \land f\ v = e}\\
+%% \exacttypefun{f}{\tfun{x}{\typ_x}{\typ}}{\efun{y}{}{e}} &=\tfun{x}{\typ_x}{\exacttype{\typ}{e\subst{y}{x}}}
+%% \end{align*}
+
+\subsection{Typing Rules}
+\input{text/refinementreflection/typing}
+%
+Next, we present the type-checking
+judgments and rules of \corelan.
+
+\mypara{Environments and Closing Substitutions}
+A \emph{type environment} $\env$ is a sequence of type bindings
+$\tbind{x_1}{\typ_1},\ldots,\tbind{x_n}{\typ_n}$. An environment
+denotes a set of \emph{closing substitutions} $\sto$ which are
+sequences of expression bindings:
+$\gbind{x_1}{e_1}, \ldots, \gbind{x_n}{e_n}$ such that:
+$$
+\interp{\env} \defeq  \{\sto \mid \forall \tbind{x}{\typ} \in \Env.
+                                    \sto(x) \in \interp{\applysub{\sto}{\typ}} \}
+$$
+
+\mypara{Judgments}
+We use environments to define three kinds of
+rules: Well-formedness, Subtyping,
+and Typing~\citep{Knowles10,Vazou14}.
+%
+%\mypara{Well-formedness}
+A judgment \iswellformed{\env}{\typ} states that
+the refinement type $\typ$ is well-formed in
+the environment $\env$.
+%
+Intuitively, the type $\typ$ is well-formed if all
+the refinements in $\typ$ are $\tbool$-typed in $\env$.
+%
+%\mypara{Subtyping}
+A judgment \issubtype{\env}{\typ_1}{\typ_2} states
+that the type $\typ_1$ is a subtype of %the type
+$\typ_2$ in the environment $\env$.
+%
+Informally, $\typ_1$ is a subtype of $\typ_2$ if, when
+the free variables of $\typ_1$ and $\typ_2$
+are bound to expressions described by $\env$,
+the denotation of $\typ_1$
+is \emph{contained in} the denotation of $\typ_2$.
+%
+Subtyping of basic types reduces to denotational containment checking.
+%
+%\mypara{Implication}
+%%A judgment \issubref{\Env}{p_1}{p_2} states
+%%that the predicate $p_1$ \emph{implies}
+%%the predicate $p_2$ in the environment $\Env$.
+%
+That is, for any closing substitution $\sto$
+in the denotation of $\env$, for every expression $e$,
+if $e \in \interp{\applysub{\sto}{\typ_1}}$ then
+$ e \in \interp{\applysub{\sto}{\typ_2}}$.
+%
+%\mypara{Typing}
+A judgment \hastype{\env}{\prog}{\typ} states that
+the program $\prog$ has the type $\typ$ in
+the environment $\env$.
+That is, when the free variables in $\prog$ are
+bound to expressions described by $\env$, the
+program $\prog$ will evaluate to a value
+described by $\typ$.
+
+\mypara{Rules}
+%
+All but three of the rules are standard~\cite{Knowles10,Vazou14}.
+%
+First, rule \rtreflect is used to strengthen the type of each
+reflected binder with its definition, as described previously
+in \S~\ref{subsec:logicalannotations}.
+%
+% \NV{FIX:Eq}
+% applies only to expressions that can be finitely compared
+% (\ie whose type satisfies the \haseq{B} predicate) and
+Second, rule \rtexact strengthens the expression with
+a singleton type equating the value and the expression
+(\ie reflecting the expression in the type).
+%
+This is a generalization of the ``selfification'' rules
+from \cite{Ou2004,Knowles10}, and is required to
+equate the reflected functions with their definitions.
+%
+For example, the application $(\fib\ 1)$ is typed as
+${\tref{v}{\tint}{\fibdef\ v\ 1 \wedge v = \fib\ 1}}$ where
+the first conjunct comes from the (reflection-strengthened)
+output refinement of \fib~\S~\ref{sec:overview}, and
+the second conjunct comes from rule~\rtexact.
+%
+Finally, rule \rtfix is used to type the intermediate
+$\texttt{fix}$ expressions that appear, not in the
+surface language but as intermediate terms in the
+operational semantics.
+
+\mypara{Soundness}
+Following \undeclang~\citep{Vazou14}, we can show that
+evaluation preserves typing and that typing implies
+denotational inclusion.
+%
+\begin{theorem}{[Soundness of \corelan]}\label{thm:safety}
+\begin{itemize}
+\item\textbf{Denotations}
+If $\hastype{\env}{\prog}{\typ}$ then
+$\forall \sto\in \interp{\env}. \applysub{\sto}{\prog} \in \interp{\applysub{\sto}{\typ}}$.
+\item\textbf{Preservation}
+If \hastype{\emptyset}{\prog}{\typ}
+       and $\evalsto{\prog}{w}$ then $\hastype{\emptyset}{w}{\typ}$.
+\end{itemize}
+\end{theorem}
+
+\subsection{From Programs \& Types to Propositions \& Proofs}
+
+The denotational soundness Theorem~\ref{thm:safety}
+lets us interpret well typed programs as proofs of
+propositions.
+
+\NV{say that definition is a context that will be used later}
+\mypara{``Definitions''}
+A \emph{definition} $\defn$ is a sequence of reflected binders:
+%
+$$\defn \ ::= \ \bullet \spmid \erefb{x}{\gtyp}{e}{\defn}$$
+%
+A \emph{definition's environment} $\env(\defn)$ comprises
+its binders and their reflected types:
+%
+\begin{align*}
+\aenv(\bullet)                    \defeq & \emptyset \\
+\aenv(\erefb{f}{\gtyp}{e}{\defn}) \defeq & (f, \exacttype{\gtyp}{e}),\ \env(\defn) \\
+\end{align*}
+%
+A \emph{definition's substitution} $\sto(\defn)$ maps each binder
+to its definition:
+%
+\begin{align*}
+\sto(\bullet)                     \defeq & \emptysto \\
+\sto(\erefb{f}{\gtyp}{e}{\defn})  \defeq & \extendsto{f}{\efix{f}\ e}{\sto(\defn)}
+\end{align*}
+
+\mypara{``Propositions''}
+%
+A \emph{proposition} is a type
+%
+$$\tbind{x_1}{\typ_1} \rightarrow \ldots
+  \rightarrow \tbind{x_n}{\typ_n}
+  \rightarrow \tref{v}{\tunit}{\ppn}$$
+%
+For brevity, we abbreviate propositions like the above to
+%
+$\tfun{\overline{x}}{\overline{\typ}}{\ttref{\ppn}}$
+%
+and we call $\ppn$ the \emph{proposition's refinement}.
+%
+For simplicity we assume that $\freevars{\typ_i} = \emptyset$.
+
+\mypara{``Validity''}
+%
+\NV{add termination: proofs should provably terminates}
+
+A proposition $\tfun{\overline{x}}{\overline{\typ}}{\ttref{\ppn}}$
+is \emph{valid under} $\defn$ if
+%
+$$\forall \overline{w} \in \interp{\overline{\typ}}.\
+  \evalsto{\applysub{\sto(\defn)}{\SUBST{\ppn}{\overline{x}}{\overline{w}}}}{\etrue}$$
+%
+That is, the proposition is valid if its refinement
+evaluates to $\etrue$ for every (well typed)
+interpretation for its parameters $\overline{x}$
+under $\defn$.
+
+\mypara{``Proofs''}
+%
+A binder $\bd$ \emph{proves} a proposition $\gtyp$ under $\defn$ if
+$$\hastype{\emptyset}{\defn[\eletb{x}{\typ}{\bd}{\eunit}]}{\tunit}$$
+%
+That is, if the binder $\bd$ has the proposition's type $\gtyp$
+under the definition $\defn$'s environment.
+
+\begin{theorem}{[Proofs]} \label{thm:validity}
+If $\bd$ proves $\typ$ under $\defn$ then $\typ$ is valid under $d$.
+\end{theorem}
+
+\begin{proof}
+As $\bd$ proves $\typ$ under $\defn$, we have
+%
+\begin{align}
+\hastype{\emptyset}{\defn[\eletb{x}{\typ}{\bd}{\eunit}]}{\tunit}
+\label{pf:1} \\
+%
+\intertext{By Theorem~\ref{thm:safety} on \ref{pf:1} we get}
+%
+\sto(\defn) \in \interp{\env(\defn)} \label{pf:2}\\
+%
+\intertext{Furthermore,  by the typing rules \ref{pf:1}
+implies $\hastype{\env(\defn)}{\bd}{\typ}$ and hence, via Theorem~\ref{thm:safety}}
+%
+\forall \sub \in \interp{\env(\defn)}.\ \applysub{\sub}{\bd} \in \interp{\applysub{\sub}{\typ}}
+\label{pf:3} \\
+\intertext{Together, \ref{pf:2} and \ref{pf:3} imply}
+\applysub{\sto(\defn)}{\bd} \in \interp{\applysub{\sto(\defn)}{\typ}}
+\label{pf:4}
+\intertext{By the definition of type denotations, we have}
+%
+\interp{\applysub{\sto(\defn)}{\typ}}
+  \defeq \{ f\ |\ \typ \mbox{ is valid under}\ \defn\}
+  \label{pf:5}
+\end{align}
+By \ref{pf:4}, the above set is not empty, and hence $\typ$ is valid under $\defn$.
+\end{proof}
+
+
+%%%%%  \begin{definition}[Theorem]
+%%%%%  Let $\aenv=\aenv(\prog)$ be the set of axioms for some program \prog.
+%%%%%  Then
+%%%%%  $\typ\defeq\tbind{x_1}{\typ_1} \rightarrow \dots \rightarrow \tbind{x_n}{\typ_n} \rightarrow \ttreft{v}{\btyp}{\refa}$
+%%%%%  is a theorem if
+%%%%%  $\freevars{\refa} \subseteq \{x_1, \dots, x_n\} \cup \domain{\aenv}$,
+%%%%%  and for simplicity $\freevars{\typ_i} = \emptyset$.
+%%%%%
+%%%%%  Moreover, every expression $e'$ such that  \hastype{\aenv}{e'}{\typ}
+%%%%%  provides a proof of the theorem $\typ$ with respect to the definitions in \prog.
+%%%%%  \end{definition}
+%%%%%  %
+%%%%%  In other words, any expression $e'$ provides an evidence that the theorem expressed
+%%%%%  by \typ holds.
+%%%%%  The above definition is an instance of the Curry-Howard correspondence,
+%%%%%  where programs as interpreted as proofs or the theorems expressed by their types.
+%%%%%  %
+%%%%%  %% Moreover, since the proof of the theorem is any expression $e'$ with type $\typ$
+%%%%%  %% the definition states that our proof system is proof irrelevant.
+%%%%%
+%%%%%  \begin{theorem}
+%%%%%  Let $\aenv=\aenv(\prog)$.
+%%%%%  For every theorem
+%%%%%  $\typ \equiv \tbind{x_1}{\typ_1} \rightarrow \dots \rightarrow \tbind{x_n}{\typ_n} \rightarrow \ttreft{v}{\btyp}{\refa}$
+%%%%%  with a proof $e_\typ$ with respect to $p$,
+%%%%%  then $\forall x_1\in\interp{\typ_1},\dots, x_n\in\interp{\typ_n}. \evalsto{\applysub{\Theta_\aenv(\prog)}{\refa}}{\etrue}$.
+%%%%%  \end{theorem}
+%%%%%  \begin{myproof}
+%%%%%  Since \hastype{\aenv}{e_\typ}{\typ}
+%%%%%  by Theorem~\ref{thm:safety} we have
+%%%%%  $\forall \sub \in \interp{\aenv}.
+%%%%%  \applysub{\sub}{e_\typ} \in \interp{\applysub{\sub}{\typ}}
+%%%%%  $.
+%%%%%  %
+%%%%%  Since \prog type checks
+%%%%%  we have $\Theta_\aenv(\prog)\in\interp{\aenv}$, thus
+%%%%%  $\applysub{\Theta_\aenv(\prog)}{\refa} \in \interp{\applysub{\Theta_\aenv(\prog)}{\typ}}$.
+%%%%%  %
+%%%%%  By the Definition of Type Denotations we have
+%%%%%  $\interp{\typ} =  \{f |\forall x_1\in\interp{\typ_1},\dots, x_n\in\interp{\typ_n}. \evalsto{\applysub{\Theta_\aenv(\prog)}{\refa}}{\etrue} \}$.
+%%%%%  %
+%%%%%  But $e_\typ$ is a witness that the set \interp{\typ} is not empty, thus
+%%%%%  $\forall x_1\in\interp{\typ_1},\dots, x_n\in\interp{\typ_n}. \evalsto{\applysub{\Theta_\aenv(\prog)}{\refa}}{\etrue}$.
+%%%%%  \end{myproof}
+
+%% Theta_\aenv(\eletrec{f}{e}{\gtyp}{L}{\prog})
+ %% & = (f, \efix{f}\ e),\aenv(p) \\
+%% \Theta_\aenv(\elet{f}{e}{\gtyp}{L}{\prog})
+ %% & = (f, e),\aenv(p) \\
+%% \Theta_\aenv(\eletrecopt{f}{e}{\gtyp}{}{\prog})
+ %% & = \Theta_\aenv(p) \\
+%% \Theta_\aenv(e) &= \emptyset
+%% \end{align*}
+
+%% A proposition is \emph{well-formed} under $\defn$ if
+%% $\freevars{\refa} \subseteq \{x_1, \dots, x_n\} \cup \domain{\aenv}$,
+
+
+\mypara{Example: Fibonacci is increasing}
+%
+In \S~\ref{sec:overview} we verified that
+under a definition $\defn$ that includes \fibname,
+the term \fibincrname proves
+$${\tfun{n}{\tnat}{\ttref{\fib{n} \leq \fib{(n+1)}}}}$$
+%
+Thus, by Theorem~\ref{thm:validity} we get
+%that the \fib{}, as defined in $\defn$ is increasing
+%
+%$$
+%\forall n\in\interp{\tnat}. \evalsto{\fib{n} \leq \fib{(n+1)}}{\etrue}
+%$$
+%Equivalently
+$$
+\forall n. \evalsto{0 \leq n}{\etrue} \Rightarrow \evalsto{\fib{n} \leq \fib{(n+1)}}{\etrue}
+$$

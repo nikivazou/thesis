@@ -1,0 +1,51 @@
+\begin{figure}[t!]
+\centering
+$$
+\begin{array}{rrcl}
+\emphbf{Predicates} \quad
+  & \pred & ::= &
+    \pred \binop \pred \spmid
+    \unop \pred \\
+  && \spmid & n \spmid b \spmid x \spmid \dc \spmid  x\ \overline{\pred}\\
+%%  && \spmid & \forall \overline{\tbind{x}{\sort}}. \pred
+  && \spmid & \eif{\pred}{\pred}{\pred}
+\\[0.03in]
+
+\emphbf{Integers} \quad
+  & n
+  & ::= & 0, -1, 1, \dots
+\\[0.03in]
+
+\emphbf{Booleans} \quad
+  & b
+  & ::= & \etrue \spmid \efalse
+\\[0.03in]
+
+\emphbf{Bin Operators} \quad
+  & \binop
+  & ::= & = \spmid < \spmid \land \spmid + \spmid - \spmid \dots
+\\[0.03in]
+
+\emphbf{Un Operators} \quad
+  & \unop
+  & ::= & \lnot \spmid \dots 
+\\[0.03in]
+
+\emphbf{Model} \quad
+  & \sigma
+  & ::= & \sigma, (x:\pred) \spmid \emptyset
+\\[0.03in]
+
+\emphbf{Sort Arguments} \quad
+  & \sort_a
+  & ::= & \tint \spmid \tbool \spmid \tuniv 
+         \spmid \tsmtfun{\sort_a}{\sort_a}
+\\[0.03in]
+\emphbf{Sorts} \quad
+  & \sort
+  & ::=  & \sort_a \rightarrow \sort
+\end{array}
+$$
+\caption{\textbf{Syntax of \smtlan}}
+\label{fig:smtsyntax}
+\end{figure}

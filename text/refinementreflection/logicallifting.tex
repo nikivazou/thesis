@@ -1,0 +1,106 @@
+\section{Logical Lifting}
+
+\begin{figure}[t!]
+\centering
+$$
+\begin{array}{rrcl}
+\emphbf{Program} \quad 
+  & \prog & ::= & e \spmid \elet{x}{e}{\gtyp}{[L]}{\prog}\\
+  & & \spmid & \eletrec{x}{e}{\gtyp}{[L]}{\prog}
+\\[0.03in] 
+
+\emphbf{Logic Label} \quad 
+  & \prog & ::= & A \spmid M \spmid I 
+\end{array}
+$$
+\end{figure}
+\subsubsection{Axioms}
+Axioms that are instantiated via function calls. 
+
+\newcommand\exacttype[2]{\ensuremath{\mathtt{exact}(#1, #2)}\xspace}
+\newcommand\exacttypefun[3]{\ensuremath{\mathtt{exactfun}(#1, #2, #3)}\xspace}
+\newcommand\inline[2]{\ensuremath{[#1 := #2]}\xspace}
+\begin{align*}
+\embed{\eletrecopt{x}{e}{\gtyp}{A}{\prog}}
+  &= \eletrecopt{x}{e}{\exacttype{\gtyp}{e}}{}{\embed{\prog}}\\
+\embed{\eletrecopt{x}{e}{\gtyp}{\star}{\prog}}
+  &= \eletrecopt{x}{e}{\gtyp}{\star}{\embed{\prog}}\\
+\embed{e} &= e 
+\end{align*}
+
+
+\begin{align*}
+\exacttype{\tref{v}{\btyp}{r}}{e} &= \tref{v}{\btyp}{r \land v = e}\\
+\exacttype{\tfun{x}{\typ_x}{\typ}}{\efun{y}{}{e}} &=\tfun{x}{\typ_x}{\exacttype{\typ}{e\subst{y}{x}}} 
+\end{align*}
+
+
+\subsubsection{Inlines}
+Non-recursive logical macros. Can be used only to non-recursive functions. 
+\NV{We need to explicitly track recursion}
+
+\begin{align*}
+\embed{\elet{f}{\efun{\overline{x}}{}{e}}{\gtyp}{I}{\prog}}
+  &= \elet{f}{\efun{\overline{x}}{}{e}}{\gtyp}{}{\embed{\prog\inline{f\ \overline{x}}
+  {e}}}\\
+\embed{\eletrecopt{x}{e}{\gtyp}{\star}{\prog}}
+  &= \eletrecopt{x}{e}{\gtyp}{\star}{\embed{\prog}}\\
+\embed{e} &= e 
+\end{align*}
+
+
+\begin{align*}
+{\eletrecopt{x}{e}{\gtyp}{\star}{\prog}}\inline{f\ \overline{x}}{e_f}\\
+  = \eletrecopt{x}{e}{\gtyp\inline{f\ \overline{x}}{e_f}}{\star}{\prog\inline{f\ \overline{x}}{e_f}}\\
+e\inline{f\ \overline{x}}{e_f} = e 
+\end{align*}
+
+
+\begin{align*}
+(\tfun{x}{\typ_x}{\typ})\inline{f\ \overline{x}}{e_f}
+ = & \tfun{x}{\typ_x\inline{f\ \overline{x}}{e_f}}{\typ\inline{f\ \overline{x}}{e_f}}\\
+\tref{v}{\btyp}{e}\inline{f\ \overline{x}}{e_f}
+ = & \tref{v}{\btyp}{e\inline{f\ \overline{x}}{e_f}}
+\end{align*}
+
+\begin{align*}
+(x\ \overline{e})\inline{f\ \overline{x}}{e_f} &= e_f\subst{\overline{x}}{\overline{e}}\\
+c\inline{f\ \overline{x}}{e_f} &= c \\
+(\efun{x}{\typ}{e})\inline{f\ \overline{x}}{e_f} &=  
+\efun{x}{\typ}{e\inline{f\ \overline{x}}{e_f}}\\
+(D\ \overline{e})\inline{f\ \overline{x}}{e_f} &=  
+D\ \overline{e\inline{f\ \overline{x}}{e_f}}\\
+x\inline{f\ \overline{x}}{e_f} &= x \\
+(e_1 \ e_2)\inline{f\ \overline{x}}{e_f} &=  (e_1\inline{f\ \overline{x}}{e_f})\ (e_2\inline{f\ \overline{x}}{e_f})\\
+\ecase{x}{e}{C}{\overline{x}}{e}\inline{f\ \overline{x}}{e_f} &= 
+\ecase{x}{e\inline{f\ \overline{x}}{e_f}}{C}{\overline{x}}{e\inline{f\ \overline{x}}{e_f}}
+\end{align*}
+
+
+\newcommand\updatedcty[2]{\ensuremath{\mathtt{updatedc}(#1, #2)}\xspace}
+
+\subsubsection{Measures}
+  Axioms that are automatically instantiated, always.
+  \NV{can we encode them using axioms?}
+  \NV{not efficient as call invocations}
+
+\begin{align*}
+\embed{\eletrecopt{x}{e}{\gtyp}{M}{\prog}}
+  &= \eletrecopt{x}{e}{\gtyp}{}{\embed{\prog}}
+; \updatedcty{x}{e} \\
+\embed{\eletrecopt{x}{e}{\gtyp}{\star}{\prog}}
+  &= \eletrecopt{x}{e}{\gtyp}{\star}{\embed{\prog}}\\
+\embed{e} &= e 
+\end{align*}
+
+
+\begin{align*}
+\updatedcty{f}{\efun{x}{\typ}{\ecase{y}{x}{\dc_i}{\overline{z}}{e_i}}}\\
+ \defeq 
+ \constty(\dc_i) := \exacttypefun{f}{\constty(\dc_i)}{\efun{\overline{z}}{}{e_i\subst{x}{v}\subst{y}{v}}}
+\end{align*}
+
+\begin{align*}
+\exacttypefun{f}{\tref{v}{\btyp}{r}}{e} &= \tref{v}{\btyp}{r \land f\ v = e}\\
+\exacttypefun{f}{\tfun{x}{\typ_x}{\typ}}{\efun{y}{}{e}} &=\tfun{x}{\typ_x}{\exacttype{\typ}{e\subst{y}{x}}} 
+\end{align*}

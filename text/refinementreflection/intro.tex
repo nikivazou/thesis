@@ -1,0 +1,253 @@
+%%\begin{comment}
+%%
+%%Dependent types: Coq and Adga fully dependent types,
+%%
+%%Utopia: extends liquidHaskell to fully dependent types while preserving decidable and predictable type cheking.
+%%
+%%\begin{itemize}
+%%\item \textit{Curry–Howard correspondence} into action!
+%%Theorems are refinement types, proofs are plain Haskell programs.
+%%\item Type directed proofs: if it (Haskell) type checks, your proof is (most probably) correct!
+%%\item Type directed proofs: if it (liquid) type checks, your proof is provably correct!
+%%\end{itemize}
+%%\end{comment}
+
+\section{Intoduction}\label{sec:intro}
+
+Is decidable and predictable dependent
+type programming in a general purpose
+programming language utopic?
+%
+Traditional dependent type
+languages, like Coq~\citep{coq-book}
+and Adga~\citep{agda},
+have been extensively used for
+program verification, but they
+are not typically used for
+general-purpose programming
+as they disallow key features
+like non-termination, exceptions
+and IO.
+%
+Such features are embedded in verification oriented
+general purpose languages, such as
+Dafny~\citep{dafny} and \fstar~\citep{fstar}
+that allow for semi-automated, SMT based verification.
+%
+
+Verification in such languages is
+unpredictable~\citep{Leino16}.
+Programs are represented as a
+logical model in the SMT logic,
+and verification relies on SMT
+heuristics that an instable.
+%
+In between, \liquidHaskell restricts
+specification languages to
+decidable logics ensuring
+predictable verification in
+the general-purpose language
+Haskell, in the cost of low
+expressiveness in specifications.
+
+We present \libname,
+an extension to Liquid Types that allows
+interpretation of terminating program functions
+while preserving predictable and decidable type checking.
+%
+The common route~\citep{dafny, fstar, HALO} for program function
+interpretation is to explicitly model function's behavior as an SMT axiom.
+Axiom instantiation relies on SMT heuristics that are impredictable,
+leading to the ``butterfly effect'' where
+modification in a part of the program changes the outcome of verification in other part.
+%
+Instead of creating SMT axioms, \libname captures the behavior of functions
+in function's return type.
+%
+That way, implicit axioms instantiations occur at each function invocation
+and are fully controlled by the programmer.
+
+\mypara{Function Axiomatization} into the SMT logic has been
+commonly used to model program functions in SMT-based program
+verification. As an example, consider the fibonacci function
+%
+\begin{code}
+  -- I am a comment fib :: Int -> Int
+  fib n
+    | n == 0    = 0
+    | n == 1    = 1
+    | otherwise = fib (n-1) + fib (n-2)
+\end{code}
+
+An interpretation of @fib@ function can be a logical axiom that exactly captures its behavior:
+$$
+\begin{array}{rll}
+\forall n. \fib{n} = &\texttt{if}\ n = 0 & \texttt{then}\ 0\\
+& \texttt{else if}\ n = 1 & \texttt{then}\ 1\\
+& \texttt{else}\ & \fib{(n-1)} + \fib{(n-2)}\\
+\end{array}
+$$
+
+\mypara{Instantiation} of such axioms is problematic as can lead to
+matching loops and unpredictable bahaviors.
+%
+Consider that the existence of the term \fib{n}
+triggers the above axiom during verification.
+Then, the instantiation $x := \fib{n}$ will produce the terms
+\fib{(n-1)} and \fib{(n-2)}, which give rise to other possible instantiations.
+%
+To prevent matching loops a `fuel'' parameter~\citep{Amin2014ComputingWA}
+can be used to restrict the numbers of the SMT
+unrollings of each function.
+
+
+\liquidHaskell followed a simpler approach to prevent matching loops
+and keep verification decidable.
+%
+The implementation of recursive functions was not encoded at all in the logic.
+%
+Worse, program functions were (syntactically) not allowed
+to appear in the specifications.
+
+\libname extends \liquidHaskell allowing interpretation of terminating
+program functions while preserving predictability in three steps.
+%
+The user marks with @axiomatize@
+the program functions she wants to refer to in the specifications, sat @f@.
+
+Then, \libname will
+\begin{enumerate}
+\item Create a logical uninterpreted function with the same name @f@.
+\item Automatically strengthen the result type of @f@'s to exactly capture @f@'s behavior.
+\item Unfold the function's definition once into the logic, at each program function invocation.
+\end{enumerate}
+
+As an example, say that the user wants to reason about the fibonacci function.
+Since @fib@ is provably terminating, the user can ``axiomatize'' it.
+\begin{code}
+  axiomatize fib
+\end{code}
+
+\mypara{Step 1: Definition of} @fib@ \textbf{\emph{in the logic.}}
+Initially, the axiomatization annotation declares an uninterpreted function @fib@ in the logic
+\begin{code}
+  fib :: Int -> Int
+\end{code}
+%
+The logical @fib@ is not directly connected to the program function @fib@.
+As far as the logic is concerned, @fib@ only satisfies the congruence axiom
+%
+$$\forall n, m. n = m \Rightarrow \fib{n} = \fib{m}$$
+%
+
+\mypara{Step 2: Connecting logical and program} @fib@ \textbf{\emph{via liquid types.}}
+Liquid types are Haskell types refined with logical predicates.
+As an example, we define the Liquid Type that describes natural numbers
+as values @v@ that are integers and moreover satisfy the predicate @0<=v@:
+\begin{code}
+  type Nat = {v:Int | 0 <= v}
+\end{code}
+%
+The user can use the @Nat@ Liquid Type alias to specify that @fib@ maps
+natural numbers to natural numbers
+\begin{code}
+  fib :: Nat -> Nat
+\end{code}
+%
+Axiomatization of @fib@  \textit{automatically} strengthens the user specified type for @fib@ to
+exactly capture @fib@'s behavior via the homonymous uninterpreted function:
+\begin{code}
+  fib :: n:Nat
+      -> {v:Nat |
+          v == if n == 0 then 0
+               else if n == 1 then 1
+               else fib (n-1) + fib (n-2)
+          }
+\end{code}
+%
+With this type each invocation of the program @fib@ function automatically
+unfolds the @fib@ definition \textit{once} in the logic.
+
+\mypara{Step 3: Function invocation as logical unfolding.}
+When the user invokes @fib@ with, say @0@, in @v == fib 0@,
+it can be verified that both @v == fib 0@ and @v == 0@.
+Thus, the @fib@ function is unfolded once in the logic concluding that
+$\fib{0} = 0$.
+
+As an example, by invoking @fib@ on both @2@, @1@ and @0@, we can verify
+that @fib 2 == 1@
+\begin{code}
+  fib2_safe :: {fib 2 == 1}
+  fib2_safe = fib 2 == fib 1 + fib 0
+\end{code}
+Where we use @{p}@ $\defeq$ @{v:t | p}@ when @t@ is obvious from the context
+and @v@ does not appear on @p@.
+
+Note that verification on @safe@ relies on the invocations of @fib@
+but not on the way these invocations are combined.
+%
+SMT-based verifies that directly axiomatize program functions do not require such invocations.
+For example, \fstar and Dafny can verify the following @fib2@ specification that fails in
+\liquidHaskell
+%
+\begin{code}
+  fib2_unsafe :: {fib 2 == 1}
+  fib2_unsafe = ()
+\end{code}
+%
+Yet, verification of @fib2_safe@ requires invoking @fib@ on @2@, @1@, and @0@
+so that the @fib@ function is unfolded exactly once on these arguments.
+%
+But, the combination of these function calls in not important.
+For example the following term suffices to prove the equality @fib 2 == 2@
+\begin{code}
+  fib2_safe_tuple :: {fib 2 == 1}
+  fib2_safe_tuple = (fib 2, fib 1, fib 0)
+\end{code}
+%
+Even though @fib2_safe@ provides the same information as
+@fib2_ safe_tuple@,
+it has a better structure regarding the proof it provides.
+%
+We implemented the library \libname, that smoothly complements the
+current extensions in \liquidHaskell, by providing operators that
+intuitively structure proofs.
+
+In this paper we present how we extended \liquidHaskell
+to allow for arbitrary terminating expressions appear in the specifications.
+%
+This extension allows the user to specify theorems about program functions
+using Liquid Types and prove such theorems using Haskell Code,
+instantiating Curry–Howard correspondence.
+\begin{itemize}
+\item First, we describe the library \libname,
+a Haskell library that structures ``axiomatized'' Haskell's functions invocations
+into readable, type directed proofs that are checked using \liquidHaskell
+(\S~\ref{sec:library}).
+%
+\item Then, we use \libname to state and prove theorems theorems
+on integers (\eg fibonacci function is increasing)
+and inductive lists (\eg associativity of append, map fusion, and monad laws)
+%
+(\S~\ref{sec:examples}).
+\item Next, we formalize our system by showing that
+the presented extension is sound with respect to denotational semantics
+%
+(\S~\ref{sec:formalism})
+and we present a transformation from a core calculus to
+the SMT logic that via lambda lifting and defunctionalization
+preserves decidable type checking
+of higher order specifications (\S~\ref{sec:algorithmic}).
+%
+In present of lambda expressions in the specifications,
+our translation can (optionally) insert extensionality axioms
+that express $\alpha$- and $\beta$-equivalence in the logic,
+but do not preserve undecidability and thus unpredictability of type checking.
+
+\item Finally, we evaluated our extension by verification of
+arithmetic properties of the Ackermann functions,
+class laws on inductive data types,
+folding properties,
+and by combining proof terms on (potentially diverging)
+Haskell programs (\S~\ref{sec:evaluation}).
+\end{itemize}

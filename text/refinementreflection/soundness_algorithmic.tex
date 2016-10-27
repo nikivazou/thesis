@@ -1,0 +1,494 @@
+\section{Soundness of Algorithmic Verification}
+%
+In this section we prove soundness of Algorithmic verification, 
+by proving the theorems of \S~\ref{sec:algorithmic}
+by referring to the proofs in~\citep{Vazou14-tech}. 
+
+\subsection{Transformation}
+
+\begin{definition}[Initial Environment]\label{def:initialsmt}
+ We define the initial SMT environment \smtenvinit to include
+ $$
+ \begin{array}{rcll}
+ \smtvar{c}  &\colon &\embed{\constty{c}}
+   &\forall c\in \corelan\\
+ \smtlamname{\sort_x}{\sort}&\colon&\sort_x \rightarrow \sort\rightarrow\tsmtfun{\sort_x}{\sort}
+   &\forall \sort_x, \sort\in \smtlan\\
+ \smtappname{\sort_x}{\sort}&\colon&\tsmtfun{\sort_x}{\sort} \rightarrow \sort_x \rightarrow \sort
+   &\forall \sort_x, \sort\in \smtlan\\
+ \smtvar{\dc}&\colon&\embed{\constty{\dc}}
+   &\forall\dc\in\corelan\\
+ \checkdc{\dc}&\colon&\embed{T \rightarrow \tbool}
+   &\forall \dc\in \corelan\ \text{of data type}\ T \\
+ \selector{\dc}{i}&\colon&\embed{T \rightarrow \typ_i}
+   &\forall \dc\in \corelan\ \text{of data type}\ T \\
+   &&&\text{and}\ i\text{-th argument}\ \typ_i \\
+ {x^{\sort}_i} & \colon&{\sort}& \forall \sort \in \smtlan \text{and} 1\leq i\leq \maxlamarg\\
+ \end{array}
+ $$
+Where $x^{\sort}_i$ are $\maxlamarg$ global names that only appear as lambda arguments.
+\end{definition}
+
+
+We modify the $\lgfun$ rule to ensure that 
+logical abstraction is performed 
+using the minimum globally defined lambda argument that is not already abstracted. 
+We do so, using the helper function \maxlam{\sort}{\pred}:
+
+\begin{align*}
+\maxlam{\sort}{\smtlamname{\sort}{\sort'}\ {x^{\sort}_i}\ \pred} =& \mathtt{max}(i, \maxlam{\sort}{\pred})\\
+\maxlam{\sort}{r\ \overline{r}} =& \mathtt{max}(\maxlam{\sort}{\pred, \overline{\pred}}) \\
+\maxlam{\sort}{\pred_1 \binop \pred_2} = &  \mathtt{max}(\maxlam{\sort}{\pred_1, \pred_2})\\
+\maxlam{\sort}{\unop \pred} =& \maxlam{\sort}{\pred}\\
+\maxlam{\sort}{\eif{\pred}{\pred_1}{\pred_2}} =& \mathtt{max}(\maxlam{\sort}{\pred, \pred_1, \pred_2}) \\
+\maxlam{\sort}{\pred} =& 0 \\
+\end{align*}
+$$
+\inference{
+    i = \maxlam{\embed{\typ_x}}{\pred} & i < \maxlamarg & y = x^{\embed{\typ_x}}_{i+1} \\ 
+    \tologicshort{\env, \tbind{y}{\typ_x}}{e\subst{x}{y}}{}{\pred}{}{}{} &
+  	\hastype{\env}{(\efun{x}{}{e})}{(\tfun{x}{\typ_x}{\typ})}\\
+}{
+	\tologicshort{\env}{\efun{x}{}{e}}{}
+	        {\smtlamname{\embed{\typ_x}}{\embed{\typ}}\ {y}\ {\pred}}
+	        {}{}{}
+}[\lgfun]
+$$
+
+\begin{lemma}[Type Transformation]
+If \tologicshort{\env}{e}{\typ}{p}{\sort}{\smtenv}{\axioms},
+and \hastype{\env}{e}{\typ}, then
+\smthastype{\smtenvinit, \embed{\env}}{p}{\embed{\typ}}.
+\end{lemma}
+\begin{proof}
+We proceed by induction on the translation
+\begin{itemize}
+\item \lgbool : Since $\embed{\tbool} = \tbool$,
+If \hastype{\env}{b}{\tbool}, then  
+\smthastype{\smtenvinit, \embed{\env}}{b}{\embed{\tbool}}.
+
+\item \lgint :  Since $\embed{\tint} = \tint$,
+If \hastype{\env}{n}{\tint}, then  
+\smthastype{\smtenvinit, \embed{\env}}{n}{\embed{\tint}}.
+
+\item \lgun : 
+Since $\hastype{\env}{\lnot\ e}{\typ}$, then it should be 
+$\hastype{\env}{e}{\tbool}$ and $\typ \equiv \tbool$.
+By IH,  
+\smthastype{\smtenvinit, \embed{\env}}{\pred}{\embed{\tbool}}, 
+thus 
+\smthastype{\smtenvinit, \embed{\env}}{\lnot \pred}{\embed{\tbool}}. 
+
+\item \lgbinGEN
+Assume 	
+ $\tologicshort{\env}{e_1\binop e_2}{\tbool}{\pred_1 \binop\pred_2}{\tbool}{\smtenv}{\andaxioms{\axioms_1}{\axioms_2}}$.  
+By inversion
+    \tologicshort{\env}{e_1}{\typ}{\pred_1}{\embed{\typ}}{\smtenv}{\axioms_1}, and
+    \tologicshort{\env}{e_2}{\typ}{\pred_2}{\embed{\typ}}{\smtenv}{\axioms_2}.
+Since 
+  \hastype{\env}{e_1\binop e_2}{\typ}, then 
+  \hastype{\env}{e_1}{\typ_1} and  
+  \hastype{\env}{e_1}{\typ_2}.
+By IH,  
+\smthastype{\smtenvinit, \embed{\env}}{\pred_1}{\embed{\typ_1}} and  
+\smthastype{\smtenvinit, \embed{\env}}{\pred_2}{\embed{\typ_2}}.
+We split cases on $\binop$
+\begin{itemize}
+\item If $\binop \equiv =$, then 
+  $\typ_1 = \typ_2$, thus $\embed{\typ_1} = \embed{\typ_2}$
+  and $\embed{\typ} = \typ = \tbool$.
+
+\item If $\binop \equiv <$, then 
+  $\typ_1 = \typ_2 = \tint$, thus $\embed{\typ_1} = \embed{\typ_2} = \tint$
+  and $\embed{\typ} = \typ = \tbool$.
+
+\item If $\binop \equiv \land$, then 
+  $\typ_1 = \typ_2 = \tbool$, thus $\embed{\typ_1} = \embed{\typ_2} = \tbool$
+  and $\embed{\typ} = \typ = \tbool$.
+\item If $\binop \equiv +$ or $\binop \equiv -$, then 
+  $\typ_1 = \typ_2 = \tint$, thus $\embed{\typ_1} = \embed{\typ_2} = \tint$
+  and $\embed{\typ} = \typ = \tint$.
+\end{itemize}
+
+
+\item \lgvar : 
+Assume 
+	\tologicshort{\env}{x}{\env(x)}{x}{\embed{\env(x)}}{\emptyset}{\emptyaxioms}
+Then 
+   \hastype{\env}{x}{\env (x)} and 
+   \smthastype{\smtenvinit, \embed{\env}}{x}{\embed{\env} (x)}.
+But by definition 
+  $(\embed{\env}) (x) = \embed{\env(x)}$. 
+
+\item \lgpop : 
+Assume 
+	\tologicshort{\env}{c}{\constty{\odot}}{\smtvar{c}}{\embed{\constty{\odot}}}{\emptyset}{\emptyaxioms}
+Also, 
+   \hastype{\env}{c}{\constty{c}} and 
+   \smthastype{\smtenvinit, \embed{\env}}{\smtvar{c}}{\smtenvinit (\smtvar{c})}.
+But by Definition~\ref{def:initialsmt}
+  $\smtenvinit (\smtvar{c}) = \embed{\constty{c}}$. 
+
+\item \lgdc : 
+Assume 
+	\tologicshort{\env}{\dc}{\constty{\dc}}{\smtvar{\dc}}{\embed{\constty{\dc}}}{\emptyset}{\emptyaxioms}
+Also, 
+   \hastype{\env}{\dc}{\constty{\dc}} and 
+   \smthastype{\smtenvinit, \embed{\env}}{\smtvar{\dc}}{\smtenvinit (\smtvar{\dc})}.
+But by Definition~\ref{def:initialsmt}
+  $\smtenvinit(\smtvar{\dc}) = \embed{\constty{c}}$. 
+
+\item \lgfun : 
+Assume 
+	\tologicshort{\env}{\efun{x}{}{e}}{(\tfun{x}{\typ_x}{\typ})}
+	        {\smtlamname{\embed{\typ_x}}{\embed{\typ}}\ {x^{\embed{\typ_x}}_{i}}\ {\pred}}
+	        {\sort'}{\smtenv, \tbind{f}{\sort'}}{\andaxioms{\{\axioms_{f_1}, \axioms_{f_2}\}}{\axioms}}. 
+By inversion 
+    $i \leq \maxlamarg$
+	\tologicshort{\env, \tbind{x^{\embed{\typ_x}}_{i}}{\typ_x}}{e\subst{x}{x^{\embed{\typ_x}}_{i}}}{}{\pred}{}{}{}, and
+  	\hastype{\env}{(\efun{x}{}{e})}{(\tfun{x}{\typ_x}{\typ})}.
+By the Definition~\ref{def:initialsmt} on $\smtlamname{}{}$, $x^{\sort}_i$ and induction, we get
+   \smthastype{\smtenvinit, \embed{\env}}
+     {\smtlamname{\embed{\typ_x}}{\embed{\typ}}\ {x^{\embed{\typ_x}}_{i}}\ {\pred}}
+     {\tsmtfun{\embed{\typ_x}}{\embed{\typ}}}.
+By the definition of the type embeddings we have
+$\embed{\tfunbasic{x}{\typ_x}{\typ}} \defeq \tsmtfun{\embed{\typ_x}}{\embed{\typ}}$.
+
+
+\item \lgapp : 
+Assume 
+\tologicshort{\env}{e\ e'}{\typ}
+  {\smtappname{\embed{\typ_x}}{\embed{\typ}}\ {\pred}\ {\pred'}}{\embed{\typ}}{\smtenv}{\andaxioms{\axioms}{\axioms'}}. 
+By inversion, 
+	\tologicshort{\env}{e'}{\typ_x}{\pred'}{\embed{\typ_x}}{\smtenv}{\axioms'}, 
+	\tologicshort{\env}{e}{\tfun{x}{\typ_x}{\typ}}{\pred}{\tsmtfun{\embed{\typ_x}}{\embed{\typ}}}{\smtenv}{\axioms},
+	\hastype{\env}{e}{\tfun{x}{\typ_x}{\typ}}. 
+By IH and the type of $\smtappname{}{}$ we get that 
+   \smthastype{\smtenvinit, \embed{\env}}
+     {\smtappname{\embed{\typ_x}}{\embed{\typ}}\ {\pred}\ {\pred'}}
+     {\embed{\typ}}.
+
+\item \lgcaseBool : 
+Assume
+	\tologicshort{\env}{\ecaseexp{x}{e}{\etrue \rightarrow e_1; \efalse \rightarrow e_2}}{\typ}
+	 {\eif{\pred}{\pred_1}{\pred_2}}{\embed{\typ}}{\smtenv}{\andaxioms{\axioms}{\axioms_i}}
+Since 
+  \hastype{\env}{\ecaseexp{x}{e}{\etrue \rightarrow e_1; \efalse \rightarrow e_2}}{\typ}, then 
+  \hastype{\env}{e}{\tbool}, 
+  \hastype{\env}{e_1}{\typ}, and
+  \hastype{\env}{e_2}{\typ}.
+%  
+By inversion and IH, 
+  \smthastype{\smtenvinit, \embed{\env}}{\pred}{\tbool}, 
+  \smthastype{\smtenvinit, \embed{\env}}{\pred_1}{\embed{\typ}}, and
+  \smthastype{\smtenvinit, \embed{\env}}{\pred_2}{\embed{\typ}}.
+Thus, 
+  \smthastype{\smtenvinit, \embed{\env}}{\eif{\pred}{\pred_1}{\pred_2}}{\embed{\typ}}.
+
+\item \lgcase : 
+Assume 
+	\tologicshort{\env}{\ecase{x}{e}{\dc_i}{\overline{y_i}}{e_i}}{\typ}
+	 {\eif{\checkdc{\dc_1}\ \pred}{\pred_1}{\ldots} \ \mathtt{else}\ \pred_n}{\embed{\typ}}{\smtenv}
+	 {\andaxioms{\axioms}{\axioms_i}} and
+	 \hastype{\env}{\ecase{x}{e}{\dc_i}{\overline{y_i}}{e_i}}{\typ}.
+By inversion we get 
+	\tologicshort{\env}{e}{\typ_e}{\pred}{\embed{\typ_e}}{\smtenv}{\axioms} and
+	\tologicshort{\env}{e_i\subst{\overline{y_i}}{\overline{\selector{\dc_i}{}\ x}}\subst{x}{e}}{\typ}{\pred_i}{\embed{\typ}}{\smtenv}{\axioms_i}.
+By IH and the Definition~\ref{def:initialsmt} on the checkers and selectors, we get
+  \smthastype{\smtenvinit, \embed{\env}}{\eif{\checkdc{\dc_1}\ \pred}{\pred_1}{\ldots} \ \mathtt{else}\ \pred_n}{\embed{\typ}}.
+\end{itemize}
+\end{proof}
+
+
+\newcommand\tsub[1]{\ensuremath{{\theta_{#1}^\perp}}\xspace}
+\newcommand\track[2]{\ensuremath{\langle #1; #2\rangle}\xspace}
+\begin{theorem}\label{thm:approximation}
+If \tologicshort{\env}{\refa}{}{\pred}{}{}{},
+then for every substitution $\sub\in\interp{\env}$
+and every model $\sigma\in\interp{\theta^\perp}$,
+if $\evalsto{\applysub{\theta^\perp}{\refa}}{v}$ then $\sigma^\beta \models \pred = \interp{v}$.
+\end{theorem}
+\begin{proof}
+We proceed using the notion of tracking substitutions from Figure 8 of~\citep{Vazou14-tech}. 
+Since $\evalsto{\applysub{\theta^\perp}{\refa}}{v}$, 
+there exists a sequence of evaluations via tracked substitutions, 
+$$
+\track{\tsub{1}}{e_1} \hookrightarrow \dots \track{\tsub{i}}{e_i} \dots \hookrightarrow \track{\tsub{n}}{e_n}
+$$
+with $\tsub{1}\equiv\tsub{}$, $e_1\equiv e$, and $e_n\equiv v$. 
+Moreover, each $e_{i+1}$ is well formed under $\Gamma$, 
+thus it has a translation 
+$\tologicshort{\Gamma}{\refa_{i+1}}{}{\pred_{i+1}}{}{}{}$. 
+%
+Thus we can iteratively apply Lemma~\ref{lemma:approximation} $n-1$ times and 
+since $v$ is a value the extra variables in $\tsub{n}$ are irrelevant, thus we
+get the required
+$\sigma^\beta \models \pred = \interp{v}$. 
+\end{proof}
+
+For Boolean expressions we specialize the above to
+\begin{corollary}\label{thm:embedding}
+If \hastype{\env}{\refa}{\tbool^\downarrow} and
+\tologicshort{\env}{\refa}{\tbool}{\pred}{\tbool}{\smtenv}{\axioms},
+then for every substitution $\sub\in\interp{\env}$
+and every model $\sigma\in\interp{\theta^\perp}$,
+$\evalsto{\applysub{\theta^\perp}{\refa}}{\etrue} \iff \sigma^\beta \models \pred $
+\end{corollary}
+\begin{proof}
+We prove the left and right implication separately:
+\begin{itemize}
+\item $\Rightarrow$
+By direct application of Theorem~\ref{thm:approximation} for $v \equiv \etrue$. 
+
+\item $\Leftarrow$ 
+Since $\refa$ is terminating, 
+$\evalsto{\applysub{\theta^\perp}{\refa}}{v}$. 
+with either $v \equiv \etrue$ or $v \equiv \efalse$. 
+Assume $v \equiv \efalse$, then by Theorem~\ref{thm:approximation}, 
+$\bmodel \models \lnot \pred$, which is a contradiction. 
+Thus, $v \equiv \etrue$.
+\end{itemize}
+\end{proof}
+
+
+\begin{lemma}[Equivalence Preservation]\label{lemma:approximation}
+If \tologicshort{\env}{\refa}{}{\pred}{}{}{},
+then for every substitution $\sub\in\interp{\env}$
+and every model $\sigma\in\interp{\theta^\perp}$,
+if  
+$\track{\tsub{}}{\refa}\hookrightarrow\track{\tsub{2}}{\refa_2}$
+and
+for $\Gamma \subseteq \Gamma_2$ so that $\tsub{2} \in \interp{\Gamma_2}$
+and $\bmodel_2\in\interp{\tsub{2}}$,
+$\tologicshort{\Gamma_2}{\refa_2}{}{\pred_2}{}{}{}$
+then 
+$\bmodel \cup (\bmodel_2 \setminus \bmodel) \models \pred = \pred_2$.
+\end{lemma}
+
+\begin{proof}
+We proceed by case analysis on the derivation 
+$\track{\tsub{}}{\refa}\hookrightarrow\track{\tsub{2}}{\refa_2}$.
+\begin{itemize}
+\item 
+Assume
+	$\track{\tsub{}}{\refa_1\ \refa_2}\hookrightarrow\track{\tsub{2}}{\refa_1'\ \refa_2}$. 
+By inversion 
+	$\track{\tsub{}}{\refa_1}\hookrightarrow\track{\tsub{2}}{\refa_1'}$.
+Assume
+  $\tologicshort{\Gamma}{\refa_1}{}{\pred_1}{}{}{}$, 	
+  $\tologicshort{\Gamma}{\refa_2}{}{\pred_2}{}{}{}$, 	
+  $\tologicshort{\Gamma_2}{\refa_1'}{}{\pred_1'}{}{}{}$.  	
+By IH 
+  $\bmodel \cup (\bmodel_2 \setminus \bmodel)
+    \models \pred_1 = \pred_1'$, 
+thus  
+  $\bmodel \cup (\bmodel_2 \setminus \bmodel)
+    \models \smapp{\pred_1}{\pred_2} = \smapp{\pred_1'}{\pred_2}$. 
+    
+\item 
+Assume
+	$\track{\tsub{}}{c\ \refa}\hookrightarrow\track{\tsub{2}}{c\ \refa'}$. 
+By inversion 
+	$\track{\tsub{}}{\refa}\hookrightarrow\track{\tsub{2}}{\refa'}$.
+Assume
+  $\tologicshort{\Gamma}{\refa}{}{\pred}{}{}{}$,	
+  $\tologicshort{\Gamma}{\refa'}{}{\pred'}{}{}{}$.  	
+By IH 
+  $\bmodel \cup (\bmodel_2 \setminus \bmodel)
+    \models \pred = \pred'$, 
+thus  
+  $\bmodel \cup (\bmodel_2 \setminus \bmodel)
+    \models \smapp{c}{\pred} = \smapp{c}{\pred'}$. 
+
+\item 
+Assume
+	$\track{\tsub{}}{\ecase{x}{\refa}{\dc_i}{\overline{y_i}}{e_i}}
+	  \hookrightarrow\track
+	  {\tsub{2}}{\ecase{x}{\refa'}{\dc_i}{\overline{y_i}}{e_i}}$. 
+By inversion 
+	$\track{\tsub{}}{\refa}\hookrightarrow\track{\tsub{2}}{\refa'}$.
+Assume
+  $\tologicshort{\Gamma}{\refa}{}{\pred}{}{}{}$,	
+  $\tologicshort{\Gamma}{\refa'}{}{\pred'}{}{}{}$.  	
+  $\tologicshort{\env}{e_i\subst{\overline{y_i}}{\overline{\selector{\dc_i}{}\ x}}\subst{x}{e}}{\typ}{\pred_i}{\embed{\typ}}{\smtenv}{\axioms_i}$.
+By IH 
+  $\bmodel \cup (\bmodel_2 \setminus \bmodel)
+    \models \pred = \pred'$, 
+thus  
+  $\bmodel \cup (\bmodel_2 \setminus \bmodel)
+   \models
+	 {\eif{\checkdc{\dc_1}\ \pred}{\pred_1}{\ldots} \ \mathtt{else}\ \pred_n}{\embed{\typ}}
+ $\\ $=
+	 {\eif{\checkdc{\dc_1}\ \pred'}{\pred_1}{\ldots} \ \mathtt{else}\ \pred_n}{\embed{\typ}}
+  $.	 
+
+\item 
+Assume
+	$\track{\tsub{}}{D\ \overline{\refa_i}\ \refa\ \overline{\refa_j}}
+	\hookrightarrow\track{\tsub{2}}{D\ \overline{\refa_i}\ \refa'\ \overline{\refa_j}}$. 
+By inversion 
+	$\track{\tsub{}}{\refa}\hookrightarrow\track{\tsub{2}}{\refa'}$.
+Assume
+  $\tologicshort{\Gamma}{\refa}{}{\pred}{}{}{}$,	
+  $\tologicshort{\Gamma}{\refa_i}{}{\pred_i}{}{}{}$,	
+  $\tologicshort{\Gamma}{\refa'}{}{\pred'}{}{}{}$.  	
+By IH 
+  $\bmodel \cup (\bmodel_2 \setminus \bmodel)
+    \models \pred = \pred'$, 
+thus  
+  $\bmodel \cup (\bmodel_2 \setminus \bmodel)
+    \models \smapp{D}{\overline{\pred_i}\ \pred\ \overline{\pred_j}} 
+          = \smapp{D}{\overline{\pred_i}\ \pred'\ \overline{\pred_j}}$. 
+
+\item 
+Assume
+	$\track{\tsub{}}{c\ w}
+	\hookrightarrow\track{\tsub{}}{\delta(c, w)}$. 
+By the definition of the syntax, $c\ w$ is a fully applied logical operator, thus
+  $\bmodel \cup (\bmodel_2 \setminus \bmodel)
+    \models {c\ w} = \interp{\delta(c, w)}$
+
+\item 
+Assume
+	$\track{\tsub{}}{(\efun{x}{}{\refa}) \refa_x}
+	\hookrightarrow\track{\tsub{}}{\refa\subst{x}{\refa_x}}$. 
+Assume
+  $\tologicshort{\Gamma}{\refa}{}{\pred}{}{}{}$,	
+  $\tologicshort{\Gamma}{\refa_x}{}{\pred_x}{}{}{}$. 
+Since $\bmodel$ is defined to satisfy the $\beta$-reduction axiom, 
+  $\bmodel \cup (\bmodel_2 \setminus \bmodel)
+    \models \smapp{(\smlam{x}{\refa})}{\pred_x} =\pred\subst{x}{\pred_x}$. 
+  
+\item 
+Assume
+	$\track{\tsub{}}{\ecase{x}{D_j\ \overline{e}}{\dc_i}{\overline{y_i}}{e_i}}
+	\hookrightarrow\track{\tsub{}}{e_j\subst{x}{D_j\ \overline{e}}\subst{y_i}{\overline{e}}}$. 
+Also, let 
+  $\tologicshort{\Gamma}{\refa}{}{\pred}{}{}{}$,	
+  $\tologicshort{\Gamma}{\refa_i\subst{x}{D_j\ \overline{\refa}}\subst{y_i}{\overline{\refa_i}}}{}{\pred_i}{}{}{}$.
+By the axiomatic behavior of the measure selector $\checkdc{\dc_j\ \overline{\pred}}$, we get 
+  $\bmodel\models \checkdc{\dc_j\ \overline{\pred}}$.
+Thus, 
+  $\bmodel
+	 {\eif{\checkdc{\dc_1}\ \pred}{\pred_1}{\ldots} \ \mathtt{else}\ \pred_n}
+	= \pred_j
+  $.
+
+
+\item 
+Assume
+	$\track{(x, e_x)\tsub{}}{x}
+	\hookrightarrow
+	\track{(x, e_x')\tsub{2}}{x}$.
+By inversion
+	$\track{\tsub{}}{e_x}
+	\hookrightarrow
+	\track{\tsub{2}}{e_x'}$.
+By identity of equality, 
+  $(x, \pred_x)\bmodel \cup (\bmodel_2 \setminus \bmodel)
+    \models x = x$. 
+
+\item 
+Assume
+	$\track{(y, e_y)\tsub{}}{x}
+	\hookrightarrow
+	\track{(y, e_y)\tsub{2}}{e_x}$.
+By inversion
+	$\track{\tsub{}}{x}
+	\hookrightarrow
+	\track{\tsub{2}}{e_x}$.
+Assume 
+  $\tologicshort{\Gamma}{\refa_x}{}{\pred_x}{}{}{}$.
+By IH
+  $\bmodel \cup (\bmodel_2 \setminus \bmodel)
+    \models x = \pred_x$. 
+Thus  
+  $(y,\pred_y)\bmodel \cup (\bmodel_2 \setminus \bmodel)
+    \models x = \pred_x$. 
+
+\item 
+Assume
+	$\track{(x, w)\tsub{}}{x}
+	\hookrightarrow
+	\track{(x, w)\tsub{}}{w}$.
+Thus  
+  $(x,\interp{w})\bmodel 
+    \models x = \interp{w}$. 
+
+\item 
+Assume
+	$\track{(x, D\ \overline{y})\tsub{}}{x}
+	\hookrightarrow
+	\track{(x, D\ \overline{y})\tsub{}}{D\ \overline{y}}$.
+Thus  
+  $(x,\smapp{D}{\overline{y}})\bmodel 
+    \models x = \smapp{D}{\overline{y}}$. 
+
+\item 
+Assume
+	$\track{(x, D\ \overline{e})\tsub{}}{x}
+	\hookrightarrow
+	\track{(x, D\ \overline{y}), \overline{(y_i, e_i)}\tsub{}}{D\ \overline{y}}$.
+Assume 
+  $\tologicshort{\Gamma}{\refa_i}{}{\pred_i}{}{}{}$.
+Thus  
+  $(x,\smapp{D}{\overline{y}}), \overline{(y_i, \pred_i)}\bmodel 
+    \models x = \smapp{D}{\overline{y}}$. 
+\end{itemize}
+\end{proof}
+
+\subsection{Soundness of Approximation}
+%
+\begin{theorem}[Soundness of Algorithmic]
+If \ahastype{\env}{e}{\typ} then \hastype{\env}{e}{\typ}.
+\end{theorem}
+%
+\begin{proof}
+To prove soundness it suffices to prove that subtyping is appropriately approximated, 
+as stated by the following lemma.
+\end{proof}
+
+\begin{lemma}
+If \aissubtype{\env}{\tref{v}{\btyp}{e_1}}{\tref{v}{\btyp}{e_2}}
+then \issubtype{\env}{\tref{v}{\btyp}{e_1}}{\tref{v}{\btyp}{e_2}}.
+\end{lemma}
+\begin{proof}
+By rule \rsubbase, we need to show that
+$\forall \sub\in\interp{\env}.
+  \interp{\applysub{\sub}{\tref{v}{\btyp}{\refa_1}}}
+  \subseteq
+  \interp{\applysub{\sub}{\tref{v}{\btyp}{\refa_2}}}$.
+%
+We fix a $\sub\in\interp{\env}$.
+and get that forall bindings
+$(\tbind{x_i}{\tref{v}{\btyp^{\downarrow}}{\refa_i}}) \in \env$,
+$\evalsto{\applysub{\sub}{e_i\subst{v}{x_i}}}{\etrue}$.
+
+Then need to show that for each $e$,
+if $e \in \interp{\applysub{\sub}{\tref{v}{\btyp}{\refa_1}}}$,
+then $e \in \interp{\applysub{\sub}{\tref{v}{\btyp}{\refa_2}}}$.
+
+If $e$ diverges then the statement trivially holds.
+Assume $\evalsto{e}{w}$.
+We need to show that
+if $\evalsto{\applysub{\sub}{e_1\subst{v}{w}}}{\etrue}$
+then $\evalsto{\applysub{\sub}{e_2\subst{v}{w}}}{\etrue}$.
+
+Let \vsub the lifted substitution that satisfies the above.
+Then  by Lemma~\ref{thm:embedding}
+for each model $\bmodel \in \interp{\vsub}$,
+$\bmodel\models\pred_i$, and $\bmodel\models q_1$
+for
+$\tologicshort{\env}{e_i\subst{v}{x_i}}{\btyp}{\pred_i}{\embed{\btyp}}{\smtenv_i}{\axioms_i}$
+$\tologicshort{\env}{e_i\subst{v}{w}}{\btyp}{q_i}{\embed{\btyp}}{\smtenv_i}{\beta_i}$.
+%
+Since \aissubtype{\env}{\tref{v}{\btyp}{e_1}}{\tref{v}{\btyp}{e_2}} we get
+$$
+\bigwedge_i \pred_i
+\Rightarrow q_1 \Rightarrow q_2
+$$
+thus $\bmodel\models q_2$.
+%
+By Theorem~\ref{thm:embedding} we get $\evalsto{\applysub{\sub}{\refa_2\subst{v}{w}}}{\etrue}$.
+\end{proof}
+

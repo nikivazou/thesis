@@ -1,0 +1,51 @@
+\section{Conclusions \& Future Directions}
+
+We have shown how refinement reflection -- namely
+reflecting the definitions of functions in their
+output refinements -- can be used to convert a
+language into a proof assistant, while ensuring
+(refinement) type checking stays decidable and
+predictable via careful design of the logic and
+proof combinators.
+
+Our evaluation shows that refinement reflection
+lets us prove deep specifications of a variety
+of implementations, and identifies
+important avenues for research.
+%
+First, while proofs are \emph{possible}, they can
+sometimes be \emph{cumbersome}. For example, in
+the proof of associativity of the monadic bind
+operator for the @Reader@ monad three of eight
+(extensional) equalities required explanations,
+some nested under multiple $\lambda$-abstractions.
+%
+Thus, it would be valuable to use recent
+advances in refinement-based synthesis~\cite{polikarpova16}
+to automate proof construction.
+%
+Second, while our approach to $\alpha$- and
+$\beta$-equivalence is sound, we do not know
+if it is \emph{complete}. We conjecture it is,
+due to the fact that our refinement terms
+are from the simply typed lambda calculus (STLC).
+%
+Thus, it would be interesting to use the
+normalization of STLC to develop a sound
+and complete SMT axiomatization, thereby
+automating proofs predictably.
+
+%% We extended Liquid Types to allow reasoning about program functions.
+%% %
+%% We represent program functions into logic as uninterpreted functions
+%% and
+%% capture the behavior of functions in the result of the function's
+%% types.
+%% %
+%% We preserved decidable type checking by requiring the user,
+%% to explicitly invoke functions,
+%% instead of the solver to instantiate functional axioms.
+%%
+%% In the future we plan to embed existing heuristics and tactics
+%% from dependent type languages, like Coq and Adga,
+%% to automate common proof procedures.

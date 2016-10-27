@@ -1,0 +1,410 @@
+
+\section{Reasoning About Lambdas}\label{sec:lambdas}
+
+
+Though \smtlan, as presented so far, is sound and decidable,
+it is \emph{imprecise}: our encoding of $\lambda$-abstractions
+and applications via uninterpreted functions makes it impossible
+to prove theorems that require $\alpha$- and $\beta$-equivalence,
+or extensional equality. Next, we show how to address the former
+by strengthening the VCs with equalities~\S~\ref{subsec:equivalences},
+and the latter by introducing a combinator for safely asserting
+extensional equality~\S~\ref{subsec:extensionality}.
+%
+In the rest of this section, 
+for clarity we omit $\smtappname{}{}$ when it is clear from the context.
+
+\subsection{Equivalence}\label{subsec:equivalences}
+
+As soundness relies on satisfiability under a
+\bmodel  (see Definition~\ref{def:beta-model}),
+we can safely \emph{instantiate} the axioms of
+$\alpha$- and $\beta$-equivalence on any set of
+terms of our choosing and still preserve soundness
+(Theorem~\ref{thm:soundness-smt}).
+%
+That is, instead of checking the validity
+of a VC
+${p \Rightarrow q}$,
+we check the validity of a \emph{strengthened VC},
+${a \Rightarrow p \Rightarrow q}$,
+where $a$ is a (finite) conjunction
+of \emph{equivalence instances}
+derived from $p$ and $q$,
+as discussed below.
+
+% Since it is unclear how to reify this axiomatization
+% while preserving decidability, we choose (once again)
+% to syntactically instantiate the axioms of $\alpha$-,
+% $\beta$- and normal form equivalence on the relevant
+% candidates.
+
+\mypara{Representation Invariant}
+%
+The lambda binders,
+for each SMT sort, are drawn from a
+pool of names $x_i$ where the index
+$i=1,2,\ldots$.
+%
+When representing
+$\lambda$ terms we enforce
+a \emph{normalization invariant}
+that for each lambda term
+$\slam{x_i}{e}$, the index $i$
+% $x_i$
+is greater than any lambda
+argument appearing in $e$.
+
+\mypara{$\alpha$-instances}
+For each syntactic term
+${\slam{x_i}{e}}$, and $\lambda$-binder
+$x_j$ such that $i < j$ appearing in the VC,
+we generate an \emph{$\alpha$-equivalence instance predicate}
+(or \emph{$\alpha$-instance}):
+$$\slam{x_i}{e} = \slam{x_j}{e \subst{x_i}{x_j}}$$
+
+% , x_i < x_j \leq \maxlamarg$$
+%\leq \maxlamarg$
+% that follow the ordering
+% $i < j \Leftrightarrow x_i < x_j$.
+%
+% The number of distinct valid lambda
+% arguments is determined by the
+% maximum number of $\lambda$s
+% syntactically in program's refinements.
+% In the implementation, we bound
+% this number by $\maxlamarg = 7$.
+% %
+% In practice we only encountered
+% 4 nested lambdas when verifying
+% monadic left identity of the
+% reader monad.
+
+The conjunction of $\alpha$-instances
+can be more precise than De Bruijn
+representation, as they let the SMT
+solver deduce more equalities via
+congruence.
+%
+For example, consider the VC needed
+to prove the applicative laws for @Reader@:
+%
+\begin{align*}
+d & = \slam{x_1}{(\sapp{x}{x_1})} \\
+  & \Rightarrow \slam{x_2}{(\sapp{(\slam{x_1}{(\sapp{x}{x_1})})}{x_2})}
+              = \slam{x_1}{(\sapp{d}{x_1})}
+\end{align*}
+%
+The $\alpha$ instance
+%
+${\slam{x_1}{(\sapp{d}{x_1})} = \slam{x_2}{(\sapp{d}{x_2})}}$
+%
+derived from the VC's hypothesis,
+combined with congruence immediately
+yields the VC's consequence.
+
+\mypara{$\beta$-instances}
+%
+For each syntactic term $\smapp{(\slam{x}{e})}{e_x}$,
+with $e_x$ not containing any $\lambda$-abstractions,
+appearing in the VC,
+we generate an \emph{$\beta$-equivalence instance predicate}
+(or \emph{$\beta$-instance}):
+$$
+\smapp{(\slam{x_i}{e})}{e_x} = \SUBST{e}{x_i}{e_x},
+  \mbox{ s.t. } e_x \mbox{ is $\lambda$-free}
+$$
+%
+We require the $\lambda$-free restriction as
+a simple way to enforce that the reduced
+term ${\SUBST{e}{x_i}{e'}}$ enjoys the
+representation invariant.
+%
+%%\NV{This restriction is not implemented, but neither has a normalization function}
+%%\RJ{Then why are we discussing it?}
+
+For example, consider the following VC
+needed to prove that the bind operator for
+lists satisfies the monadic associativity law.
+%
+$$(\sapp{f}{x} \ebind g) = \smapp{(\slam{y}{(\sapp{f}{y} \ebind g)})}{x}$$
+%
+The right-hand side of the above VC generates
+a $\beta$-instance that corresponds directly
+to the equality, allowing the SMT solver to
+prove the (strengthened) VC.
+
+%% immediately yields
+%% $\beta$-equivalence is required in our benchmarks to for example prove
+%% monadic associativity for lists.
+%% %
+%% An intermediate step in the proof is to verify that
+%%
+%% Assuming that @h x = f x >>= g@ the above
+%% translates to the logical query
+%% $$
+%% \sapp{h}{x} = \sapp{(\slam{x_1}{(\sapp{h}{x_1})})}{x}
+%% $$
+%%
+%% The right hand side of the query will fire a
+%% $\beta$-equivalence instantiation
+%% and the assumption
+%% $
+%% \sapp{(\slam{x_1}{(\sapp{h}{x_1})})}{x} = \sapp{h}{x}
+%% $
+%% will be added in the environment, allowing SMT to prove the equivalence.
+
+\mypara{Normalization}
+%
+The combination of $\alpha$- and $\beta$-instances
+is often required to discharge proof obligations.
+%
+For example, when proving that the bind operator
+for the @Reader@ monad is associative, we need
+to prove the VC:
+%
+$$\slam{x_2}{(\slam{x_1}{w})} =
+  \slam{x_3}{(\smapp{(\slam{x_2}{(\slam{x_1}{w})})}{w})}$$
+%
+The SMT solver proves the VC via the equalities
+corresponding to an $\alpha$ and then $\beta$-instance:
+%
+\begin{align*}
+\slam{x_2}{(\slam{x_1}{w})}
+  \ =_{\alpha}\ & \slam{x_3}{(\slam{x_1}{w})} \\
+  \ =_{\beta}\ & \slam{x_3}{(\smapp{(\slam{x_2}{(\slam{x_1}{w})})}{w})}
+\end{align*}
+
+%%% of monadic
+%%% associativity for the reader monad requires to prove a $\lambda$ equality
+%%% simplified to
+%%% %
+%%% \begin{code}
+  %%% w:a -> {(\x y -> w) = (\x -> (\z y -> w) w)}
+%%% \end{code}
+%%% %
+%%% The proof for the above code is @trivial@ as
+%%% in the logic, the $\lambda$ arguments are renamed to
+%%% @(\x2 x1 -> w) = (\x3 -> (\x2 x1 -> w) w)@.
+%%% Due to $\alpha$- equivalence the
+%%% right hand side is equal to
+%%% @\x3 x1 -> w@.
+%%% Due to $\beta$-equivalence we get
+%%% @((\x2 x1 -> w) w) = \x1 -> w@,
+%%% by which and due to congruence axiom
+%%% we get the desired equality,
+%%% \begin{code}
+  %%% \x y -> w               -- lhs
+  %%% \x2 x1 -> w             -- representation
+  %%% \x3 x1 -> w             -- alpha
+  %%% \x3 ->((\x2 x1 -> w) w) -- beta
+  %%% \x -> ((\z y -> w) w)   -- rhs
+%%% \end{code}
+
+\subsection{Extensionality} \label{subsec:extensionality}
+
+Often, we need to prove that two
+functions are equal, given the
+definitions of reflected binders.
+%
+For example, consider
+%
+\begin{code}
+ reflect id
+ id x = x
+\end{code}
+%
+\toolname accepts the proof that
+@id x = x@ for all @x@:
+%
+\begin{code}
+ id_x_eq_x :: x:a -> {id x = x}
+ id_x_eq_x = \x -> #id# x =. x ** QED
+\end{code}
+%
+as ``calling'' @id@ unfolds its definition,
+completing the proof.
+%
+However, consider this $\eta$-expanded variant of
+the above proposition:
+%
+\begin{code}
+ type Id_eq_id = {(\x -> id x) = (\y -> y)}
+\end{code}
+%
+\toolname \emph{rejects} the proof:
+%
+\begin{code}
+ fails :: Id_eq_id
+ fails =  (\x -> #id# x) =. (\y -> y) ** QED
+\end{code}
+%
+The invocation of @id@ unfolds the
+definition, but the resulting equality
+refinement @{id x = x}@ is \emph{trapped}
+under the $\lambda$-abstraction.
+%
+That is, the equality is absent from the
+typing environment at the \emph{top} level,
+where the left-hand side term is compared to @\y -> y@.
+%
+% NV LHS reads like LiquidHaskell
+Note that the above equality requires
+the definition of @id@ and hence is
+outside the scope of purely the
+$\alpha$- and $\beta$-instances.
+
+\newcommand\eqfun{\ensuremath{\texttt{=}\forall}}
+
+\mypara{An Exensionality Operator}
+%
+To allow function equality via
+extensionality, we provide the
+user with a (family of)
+%
+\emph{function comparison operator(s)}
+that transform an \emph{explanation} @p@
+which is a proof that @f x = g x@ for every
+argument @x@, into a proof that @f = g@.
+%
+\begin{mcode}
+  =* :: f:(a -> b) -> g:(a -> b)
+     -> exp:(x:a -> {f x = g x})
+     -> {f = g}
+\end{mcode}
+%
+Of course, @=*@ cannot be implemented;
+its type is \emph{assumed}. We can use
+@=*@ to prove @Id_eq_id@ by providing
+a suitable explanation:
+%
+\begin{mcode}
+pf_id_id :: Id_eq_id
+pf_id_id = (\y -> y) =* (\x -> id x) $\because$ expl ** QED
+  where
+    expl = (\x -> #id# x =. x ** QED)
+\end{mcode}
+%
+%   =* (\x -> id x) $\because$ exp
+%   where
+%    exp   :: x:a -> {(\x -> id x) x = (\x -> x) x}
+%    exp x = #id# x =. x ** QED
+%
+The explanation is
+% the proof passed as
+the second argument to $\because$ which has
+the following type that syntactically fires $\beta$-instances:
+\begin{code}
+  x:a -> {(\x -> id x) x = ((\x -> x) x}
+\end{code}
+
+\begin{comment}
+While the above operator makes proving function
+equality via extensionality \emph{possible}
+it can be somewhat \emph{cumbersome}.
+%
+For example, in the proof of associativity of
+the monadic bind operator for the @Reader@
+monad three of eight equalities required
+such explanations, some of which were under
+nested $\lambda$-abstractions.
+
+In future work, it would be interesting to
+explore wheth
+
+This proof style made verification of monadic associativity
+in reader monad too big as out of the 8 equalities used in
+the proof three required extentional equality
+one of which was double wrapped in lambdas.
+
+is requires a cumbersome indirect proof.
+%
+%% Extentional function equality requires
+%% as argument an equality on such redexes.
+%% %
+%% Via $\beta$ equality instantiations,
+%% both such redexes will automatically reduce,
+%% requiring @exp@ to prove @id x = x@,
+%% with is direct.
+
+
+For each function equality in the main proof
+one needs to define an explanation function
+that proves the equality for every argument.
+%
+This proof style made verification of monadic associativity
+in reader monad too big as out of the 8 equalities used in
+the proof three required extentional equality
+one of which was double wrapped in lambdas.
+
+\mypara{Soundly Enforcing Function Equality}
+%
+The class constraint @Arg a@ is needed
+to address the following subtle issue
+that arises due to the interaction of
+parametric polymorphism and subtyping.
+%
+Notice that type parameter @a@
+appears only in \emph{negative}
+positions.
+%
+At any \emph{use} site, we instantiate
+the signature with \emph{fresh} ref
+%
+Thus \emph{without} the class constraint,
+the signature holds \emph{for all} @a@.
+At a usage site, as the @a@ appears only
+negatively it has no ``lower bound'' (\ie
+is not the \emph{supertype} of any type)
+and can be instantiated to @{v:a | false}@.
+%
+Consequently, via function subtyping,
+the crucial fact that @f x = g x@ is
+\emph{unsoundly} checked (to trivially hold)
+under the assumption that @x:{a | False}@
+which would let us unsoundly prove that
+\emph{any} two functions are equal!
+
+We solve the above problem via the class constraint
+@(Arg a)@ which.
+%
+The constraint forces @a@ to appear \emph{positively}
+in the signature, by stipulating that methods of the
+type class @Arg a@ can \emph{create}
+new values of type @a@.
+%
+This forces constrains @a@ to be instantiated as
+@{a | True}@~\citep{Vazou13}.
+\end{comment}
+
+%%% Liquid type inference is smart enough to infer that
+%%% since @a@ appears only negative @(=..)@ cannot use any @a@
+%%% and thus will not call any of its argument arguments @f@, @g@, nor the @p@.
+%%% %
+%%% Thus, at each call site of @(=..)@ the type variable `a`
+%%%
+%%% indicating dead-code (since `a`s will not be used by the callee.)
+%%% %
+%%% Refining the argument @x:a@ with false at each call-site though
+%%% leads to unsoundness, as each proof argument @p@ is a valid proof under
+%%% the false assumption.
+%%% %
+%%% What Liquid inference cannot predict is our intention to call
+%%% @f@, @g@ and @p@ at \textit{every possible argument}.
+
+%% But soundness of its usage requires
+%% the argument type variable @a@ to be
+%% constrained by a type class constraint
+%% @Arg a@. for both operational and type theoretic reasons.
+%%
+%% From \textit{operational} point of view,
+%% an implementation of @(=..)@ would require checking
+%% equality of @f x = g x@ \textit{forall} arguments @x@ of type @a@.
+%% %
+%% This equality would hold due to the proof argument @p@.
+%% %
+%% The only missing point is a way to enumerate all the argument @a@,
+%% but this could be provided by a method of the type clas @Arg a@.
+%% %
+%% Yet, we have not implement @(==.)@ because we do not know how to
+%% provide such an implementation that can provably satisfy @(=..)@'s type.

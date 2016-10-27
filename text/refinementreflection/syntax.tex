@@ -1,0 +1,109 @@
+
+\begin{figure}[t!]
+\centering
+$$
+\begin{array}{rrcl}
+\emphbf{Operators} \quad
+  & \odot
+  & ::= & = \spmid  <
+\\[0.03in]
+
+\emphbf{Constants} \quad
+  & c
+  & ::=
+  & \land \spmid \lnot \spmid \odot \spmid +,-,\dots  \\
+  && \spmid & \etrue\spmid \efalse \spmid 0, 1,-1, \dots
+\\[0.03in]
+
+\emphbf{Values} \quad
+  & w & ::=&  c
+             \spmid \efun{x}{\typ}{e} \spmid D\ \overline{w}
+\\[0.03in]
+
+\emphbf{Expressions} \quad
+  & e & ::=    & w \spmid x \spmid \eapp{e}{e}      \\
+  &   & \spmid & \ecase{x}{e}{\dc}{\overline{x}}{e}
+  %% &   & \spmid & \eletb{x}{\gtyp}{e}{e}
+\\[0.03in]
+
+\emphbf{Binders} \quad
+  & \bd & ::= & e \spmid \eletb{x}{\gtyp}{\bd}{\bd}
+\\[0.03in]
+
+\emphbf{Program} \quad
+  & \prog & ::= & \bd \spmid \erefb{x}{\gtyp}{e}{\prog}
+\\[0.03in]
+
+% \emphbf{Logical Labels} \quad
+%  & L & ::= & \la \spmid \lm
+%\\[0.03in]
+
+\emphbf{Basic Types} \quad
+  & \btyp
+  & ::=
+  & \tint \spmid \tbool \spmid T
+\\[0.03in]
+
+\emphbf{Refined Types} \quad
+  & \typ
+  & ::=      & \tref{v}{\btyp}{\reft} \spmid \tfun{x}{\typ}{\typ}
+\\[0.05in]
+\end{array}
+$$
+\caption{\textbf{Syntax of \corelan}}
+\label{fig:syntax}
+\end{figure}
+
+\begin{figure}[t!]
+\centering
+
+\emphbf{Contexts}\hfill{{$\fbox{\textit{C}}$}}
+$$
+\begin{array}{rcl}
+  C & ::=    & \bullet \\
+    & \spmid & C\ e \spmid c\ C \spmid D\ \overline{e}\ C\ \overline{e}\\
+    & \spmid & \ecase{y}{C}{\dc_i}{\overline{x}}{e_i}
+  \\[0.03in]
+\end{array}
+$$
+
+\emphbf{Reductions}\hfill{{$\fbox{\goesto{\prog}{\prog'}}$}}
+$$
+\begin{array}{rcl}
+C[\prog]
+  & \hookrightarrow
+  & C[\prog'],\quad \text{if}\ \goesto{\prog}{\prog'}
+  \\
+{c\ v}
+  & \hookrightarrow
+  & {\ceval{c}{v}}
+  \\
+{({\efun{x}{\typ}{e})}\ {e'}}
+  & \hookrightarrow
+  & {\SUBST{e}{x}{e'}}
+  \\
+{\ecase{y}{\dc_j\ \overline{e}}{\dc_i}{\overline{x_i}}{e_i}}
+  & \hookrightarrow
+  & {\SUBST{\SUBST{e_j}{y}{\dc_j\ \overline{e}}}{\overline{x_i}}{\overline{e}}}
+  \\
+{\erefb{x}{\gtyp}{e}{\prog}}
+  & \hookrightarrow
+  & {\SUBST{\prog}{x}{\efix{(\efun{x}{\gtyp}{e})}}}
+  \\
+{\eletb{x}{\gtyp}{\bd_x}{\bd}}
+  & \hookrightarrow
+  % & {\SUBST{\prog}{x}{e}}
+  & {\SUBST{\bd}{x}{\efix{(\efun{x}{\gtyp}{\bd_x})}}}
+  \\
+%% {\eletrec{x}{e_x}{\gtyp}{[L]}{\prog}}
+  %% & \hookrightarrow
+  %% & {\SUBST{\prog}{x}{\efix{\efun{x}{\gtyp}{e_x}}}}
+  %% \\
+{\efix{\prog}}
+  & \hookrightarrow
+  & {\prog\ (\efix{\prog})}
+\end{array}
+$$
+\caption{\textbf{Operational Semantics of \corelan}}
+\label{fig:semantics}
+\end{figure}

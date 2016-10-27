@@ -1,0 +1,608 @@
+\section{Overview}
+\label{sec:overview}
+\label{sec:examples}
+
+We begin with a fast overview of refinement reflection and
+how it allows us to write proofs \emph{of} and \emph{by}
+Haskell functions.
+
+\subsection{Refinement Types}
+
+First, we recall some preliminaries about refinement types
+and how they enable shallow specification and verification.
+
+\mypara{Refinement types} are the source program's (here
+Haskell's) types decorated with logical predicates drawn
+from a(n SMT decidable) logic~\citep{ConstableS87,Rushby98}.
+%
+For example, we can refine Haskell's @Int@ datatype with a
+predicate @0 <= v@, to get a @Nat@ type:
+%
+\begin{code}
+  type Nat = {v:Int | 0 <= v}
+\end{code}
+%
+The variable @v@ names the value described by the type,
+hence the above can be read as the
+``set of @Int@ values @v@ that are greater than 0".
+The refinement is drawn from the logic of quantifier
+free linear arithmetic and uninterpreted functions
+(QF-UFLIA~\cite{SMTLIB2}).
+
+\mypara{Specification \& Verification}
+%
+We can use refinements to define and type the
+textbook Fibonacci function as:
+%
+\begin{code}
+  fib   :: Nat -> Nat
+  fib 0 = 0
+  fib 1 = 1
+  fib n = fib (n-1) + fib (n-2)
+\end{code}
+%
+Here, the input type's refinement specifies a
+\emph{pre-condition} that the parameters must
+be @Nat@, which is needed to ensure termination,
+and the output types's refinement specifies a
+\emph{post-condition} that the result is also a @Nat@.
+%
+Thus refinement type checking, lets us specify
+and (automatically) verify the shallow property
+that if @fib@ is invoked with non-negative
+@Int@ values, then it (terminates) and yields
+a non-negative value.
+
+\mypara{Propositions}
+%
+We can use refinements to define a data type
+representing propositions simply as an alias
+for unit, a data type that carries no run-time
+information:
+%
+\begin{mcode}
+  type $\typp$ = ()
+\end{mcode}
+%
+but which can be \emph{refined} with desired
+propositions about the code.
+%
+For example, the following states the proposition
+$2 + 2$ equals $4$.
+%
+\begin{mcode}
+  type Plus_2_2_eq_4 = {v: $\typp$ | 2 + 2 = 4}
+\end{mcode}
+%
+For clarity, we abbreviate the above type by omitting
+the irrelevant basic type $\typp$ and variable @v@:
+%
+\begin{mcode}
+  type Plus_2_2_eq_4 = {2 + 2 = 4}
+\end{mcode}
+%
+We represent universally quantified propositions as function types:
+%
+\begin{mcode}
+  type Plus_com = x:Int->y:Int->{x+y = y+x}
+\end{mcode}
+%
+Here, the parameters @x@ and @y@ refer to input
+values; any inhabitant of the above type is a
+proof that @Int@ addition is commutative.
+
+\mypara{Proofs}
+%
+We can now \emph{prove} the above theorems simply by
+writing Haskell programs. To ease this task \toolname
+provides primitives to construct proof terms by
+``casting'' expressions to \typp.
+%
+\begin{mcode}
+  data QED = QED
+
+  (**) :: a -> QED -> $\typp$
+  _ ** _  = ()
+\end{mcode}
+%
+To resemble mathematical proofs, we make this casting post-fix.
+Thus, we can write @e ** QED@ to cast @e@ to a value of \typp.
+%
+For example, we can prove the above propositions simply by writing
+%
+\begin{code}
+  pf_plus_2_2 :: Plus_2_2_eq_4
+  pf_plus_2_2 = trivial ** QED
+
+  pf_plus_comm :: Plus_comm
+  pf_plus_comm = \x y -> trivial ** QED
+
+  trivial = ()
+\end{code}
+%
+Via standard refinement type checking, the above code yields
+the respective verification conditions (VCs),
+%
+\begin{align*}
+                   2 + 2 & = 4 \\
+\forall \ x\ y\ .\ x + y & = y + x
+\end{align*}
+%
+which are easily proved valid by the SMT solver, allowing us
+to prove the respective propositions.
+
+\mypara{A Note on Bottom:} Readers familiar with Haskell's
+semantics may be feeling a bit anxious about whether the
+dreaded ``bottom", which inhabits all types, makes our
+proofs suspect.
+%
+Fortunately, as described in \cite{Vazou14}, \toolname
+ensures that all terms with non-trivial refinements
+provably evaluate to (non-bottom) values, thereby making
+our proofs sound.
+
+\subsection{Refinement Reflection}
+
+Suppose that we wish to prove properties about the @fib@
+function, \eg that @fib 2@ equals @1@.
+%
+\begin{code}
+  type fib2_eq_1 = { fib 2 = 1 }
+\end{code}
+%
+%% \NV{By Standard refinement type checking, you mean liquid types, not FStar}
+Standard refinement type checking runs into two problems.
+%
+First, for decidability and soundness, arbitrary user-defined
+functions do not belong the refinement logic, \ie we cannot even
+\emph{refer} to @fib@ in a refinement.
+%
+Second, the only information that a refinement type checker
+has about the behavior of @fib@ is its shallow type
+specification @Nat -> Nat@ which is far too weak to verify
+@fib2_eq_1@.
+%
+To address both problems, we use the following annotation,
+which sets in motion the three steps of refinement reflection:
+%
+\begin{code}
+  reflect fib
+\end{code}
+
+\mypara{Step 1: Definition}
+%
+The annotation tells \toolname to declare an
+\emph{uninterpreted function} @fib :: Int -> Int@
+in the refinement logic.
+%
+By uninterpreted, we mean that the logical @fib@
+is \emph{not} connected to the program function
+@fib@; as far as the logic is concerned, @fib@
+only satisfies the \emph{congruence axiom}
+%
+$$\forall n, m.\ n = m\ \Rightarrow\ \fib{n} = \fib{m}$$
+%
+On its own, the uninterpreted function is not
+terribly useful, as it does not let us prove
+% It lets us prove theorems like
+% $$\forall m,\ n.\ m = n \Rightarrow \fib{m} = \fib{n}$$
+%
+%% \begin{code}
+  %% fib_cong :: n:Nat -> m:Nat -> {m=n => fib m = fib n}
+  %% fib_cong = trivial ** QED
+%% \end{code}
+%% %
+%but not
+@fib2_eq_1@ which requires reasoning about the
+\emph{definition} of @fib@.
+
+\mypara{Step 2: Reflection}
+%
+In the next key step, \toolname reflects the
+definition into the refinement type of @fib@
+by automatically strengthening the user defined
+type for @fib@ to:
+%
+\begin{code}
+  fib :: n:Nat -> {v:Nat | fibP v n}
+\end{code}
+%
+where @fibP@ is an alias for a refinement
+\emph{automatically derived} from the
+function's definition:
+%
+\begin{mcode}
+  predicate fibP v n =
+    v = if n = 0 then 0 else
+        if n = 1 then 1 else
+        fib(n-1) + fib(n-2)
+\end{mcode}
+
+\mypara{Step 3: Application}
+%
+With the reflected refinement type,
+each application of @fib@ in the code
+automatically unfolds the @fib@ definition
+\textit{once} during refinement type checking.
+%
+We prove @fib2_eq_1@ by:
+%
+\begin{code}
+  pf_fib2 :: { fib 2 = 1 }
+  pf_fib2 = #fib# 2 == #fib# 1 + #fib# 0 ** QED
+\end{code}
+%
+We write @#f#@ to denote places where the
+unfolding of @f@'s definition is important.
+%
+The proof is verified as the above is A-normalized to
+%
+\begin{code}
+  let { t0 = fib 0; t1 = fib 1; t2 = fib 2 }
+  in  ( t2 == t1 + t0 ) ** QED
+\end{code}
+%
+Which via standard refinement typing, yields the
+following verification condition that is easily
+discharged by the SMT solver, even though @fib@
+is uninterpreted:
+%
+\begin{align*}
+   & (\fibdef\ (\fib\ 0)\ 0) \ \wedge\ (\fibdef\ (\fib\ 1)\ 1) \ \wedge\ (\fibdef\ (\fib\ 2)\ 2) \\
+   & \Rightarrow\ (\fib{2} = 1)
+\end{align*}
+%
+Note that the verification of @pf_fib2@ relies
+merely on the fact that @fib@ was applied
+to (\ie unfolded at) @0@, @1@ and @2@.
+%
+The SMT solver can automatically \emph{combine}
+the facts, once they are in the antecedent.
+Hence, the following would also be verified:
+%
+\begin{code}
+  pf_fib2' :: { fib 2 = 1 }
+  pf_fib2' = [#fib# 0, #fib# 1, #fib# 2] ** QED
+\end{code}
+%
+%
+Thus, unlike classical dependent typing, refinement
+reflection \emph{does not} perform any type-level
+computation.
+
+\mypara{Reflection vs. Axiomatization}
+%
+An alternative \emph{axiomatic} approach, used by Dafny,
+\fstar and HALO, is to encode the definition of @fib@ as
+a universally quantified SMT formula (or axiom):
+$$\forall n.\ \fibdef\ (\fib\ n)\ n$$
+%
+Axiomatization offers greater automation than
+reflection. Unlike \toolname, Dafny
+%and \fstar
+will verify the equivalent of the following by
+\emph{automatically instantiating} the above
+axiom at @2@, @1@ and @0@:
+%
+\begin{code}
+  axPf_fib2 :: { fib 2 = 1 }
+  axPf_fib2 = trivial ** QED
+\end{code}
+
+However, the presence of such axioms renders checking
+the VCs undecidable. In practice, automatic axiom
+instantation can easily lead to infinite ``matching loops''.
+%
+For example, the existence of a term \fib{n} in a VC
+can trigger the above axiom, which may then produce
+the terms \fib{(n-1)} and \fib{(n-2)}, which may then
+recursively give rise to further instantiations
+\emph{ad infinitum}.
+%
+To prevent matching loops an expert must carefully
+craft ``triggers'' and provide a ``fuel''
+parameter~\citep{Amin2014ComputingWA} that can be
+used to restrict the numbers of the SMT unfoldings,
+which ensure termination, but can cause the axiom
+to not be instantiated at the right places.
+%
+In short, the undecidability of the VC checking
+and its attendant heuristics makes verification
+unpredictable~\citep{Leino16}.
+
+\subsection{Structuring Proofs}
+
+In contrast to the axiomatic approach,
+with refinement reflection, the VCs are
+deliberately designed to always fall in
+an SMT-decidable logic, as function symbols
+are uninterpreted.
+%
+It is upto the programmer to unfold the
+definitions at the appropriate places,
+which we have found, with careful design
+of proof combinators, to be quite
+a natural and pleasant experience.
+%
+To this end, we have developed a library
+of proof combinators that permits reasoning
+about equalities and linear arithmetic,
+inspired by Agda~\citep{agdaequational}.
+
+\mypara{``Equation'' Combinators}
+%
+We equip \toolname with a a family of
+equation combinators @op.@ for each
+logical operator @op@ in
+$\{=, \not =, \leq, <, \geq, > \}$,
+the operators in the theory QF-UFLIA.
+%
+The refinement type of @op.@  \emph{requires}
+that $x \odot y$ holds and then \emph{ensures}
+that the returned value is equal to @x@.
+%
+For example, we define @=.@ as:
+%
+\begin{code}
+  (=.) :: x:a -> y:{a| x=y} -> {v:a| v=x}
+  x =. _ = x
+\end{code}
+%
+and use it to write the following ``equational" proof:
+%
+\begin{code}
+  eqPf_fib2 :: { fib 2 = 1 }
+  eqPf_fib2 =  #fib# 2
+            =. #fib# 1 + #fib# 0
+            =. 1
+            ** QED
+\end{code} %$
+
+\mypara{``Because'' Combinators}
+%
+Often, we need to compose ``lemmas'' into larger
+theorems. For example, to prove @fib 3 = 2@ we
+may wish to reuse @eqPf_fib2@ as a lemma.
+%
+To this end, \toolname has a ``because'' combinator:
+%
+\begin{mcode}
+  ($\because$) :: ($\typp$ -> a) -> $\typp$ -> a
+  f $\because$ y = f y
+\end{mcode}
+%
+The operator is simply an alias for function
+application that lets us write
+%
+@ x op. y $\because$ p@ (instead of @(op.) x y p@)
+where @(op.)@ is extended to accept an \textit{optional} third proof
+argument via Haskell's type class mechanisms.
+%
+We can use the because combinator to
+prove that @fib 3 = 2@ just by writing
+plain Haskell code:
+%
+\begin{mcode}
+  eqPf_fib3 :: {fib 3 = 2}
+  eqPf_fib3 =  #fib# 3
+            =. fib 2 + #fib# 1
+            =. 2              $\because$ eqPf_fib2
+            ** QED
+\end{mcode}
+
+\mypara{Arithmetic and Ordering}
+%
+SMT based refinements let us go well beyond just equational
+reasoning. Next, lets see how we can use arithmetic and
+ordering to prove that @fib@ is (locally) increasing,
+%
+\ie for all $n$, $\fib{n} \leq \fib{(n+1)}$
+%
+\begin{mcode}
+  fibUp :: n:Nat -> {fib n <= fib (n+1)}
+  fibUp n
+    | n == 0
+    =  #fib# 0 <. #fib# 1
+    ** QED
+
+    | n == 1
+    =  fib 1 <=. fib 1 + fib 0 <=. #fib# 2
+    ** QED
+
+    | otherwise
+    =  #fib# n
+    =. fib (n-1) + fib (n-2)
+    <=. fib n     + fib (n-2) $\because$ fibUp (n-1)
+    <=. fib n     + fib (n-1) $\because$ fibUp (n-2)
+    <=. #fib# (n+1)
+    ** QED
+\end{mcode} %$
+
+\mypara{Case Splitting and Induction}
+%
+The proof @fibUp@ works by induction on @n@.
+%
+In the \emph{base} cases @0@ and @1@, we simply assert
+the relevant inequalities. These are verified as the
+reflected refinement unfolds the definition of
+@fib@ at those inputs.
+%
+The derived VCs are (automatically) proved
+as the SMT solver concludes $0 < 1$ and $1 + 0 \leq 1$
+respectively.
+%
+In the \emph{inductive} case, @fib n@ is unfolded
+to  @fib (n-1) + fib (n-2)@, which, because of the
+induction hypothesis (applied by invoking @fibUp@
+at @n-1@ and @n-2@), and the SMT solvers arithmetic
+reasoning, completes the proof.
+
+\mypara{Higher Order Theorems}
+%
+Refinements smoothly accomodate higher-order reasoning.
+%
+For example, lets prove that every locally increasing
+function is monotonic, \ie
+if @f z <= f (z+1)@ for all @z@,
+then @f x <= f y@ for all @x < y@.
+%
+\begin{mcode}
+  fMono :: f:(Nat -> Int)
+        -> fUp:(z:Nat -> {f z <= f (z+1)})
+        -> x:Nat
+        -> y:{x < y}
+        -> {f x <= f y} / [y]
+  fMono f inc x y
+    | x + 1 == y
+    =  f x <=. f (x+1) $\because$ fUp x
+           <=. f y
+           ** QED
+
+    | x + 1 < y
+    =  f x <=. f (y-1) $\because$ fMono f fUp x (y-1)
+           <=. f y     $\because$ fUp (y-1)
+           ** QED
+\end{mcode}
+%
+We prove the theorem by induction
+on @y@, which is specified by the
+annotation @/ [y]@ which states
+that @y@ is a well-founded
+termination metric that decreases
+at each recursive call~\citep{Vazou14}.
+%
+% All reflected functions are proved terminating.
+% When the annotation metric is not explicit Liquid Haskell
+% successfully uses heuristics to automatically prove termination. 
+%
+If @x+1 == y@, then we use @fUp x@.
+%
+Otherwise, @x+1 < y@, and we use
+the induction hypothesis \ie apply
+@fMono@ at @y-1@, after which
+transitivity of the less-than
+ordering finishes the proof.
+%
+We can use the general @fMono@
+theorem to prove that @fib@
+increases monotonically:
+%
+\begin{code}
+  fibMono :: n:Nat -> m:{n<m} ->
+             {fib n <= fib m}
+  fibMono = fMono fib fibUp
+\end{code}
+
+\subsection{Case Study: Peano Numerals}
+
+Refinement reflection is not limited to programs
+operating on integers. We conclude the overview
+with a small library for Peano numerals, defined
+via the following algebraic data type:
+%
+\begin{code}
+  data Peano = Z | S Peano
+\end{code}
+%
+We can @add@ two @Peano@ numbers via:
+%
+\begin{code}
+  reflect add :: Peano -> Peano -> Peano
+  add Z     m = m
+  add (S n) m = S (add n m)
+\end{code}
+%
+In \S~\ref{subsec:measures} we will describe
+exactly how the reflection mechanism (illustrated
+via @fibP@) is extended to account for ADTs like @Peano@.
+%
+Note that \toolname automatically checks
+that @add@ is total~\citep{Vazou14}, which
+lets us safely @reflect@ it into the
+refinement logic.
+
+\mypara{Add Zero to Left}
+%
+As an easy warm up, lets show that
+adding zero to the left leaves the
+number unchanged:
+%
+\begin{code}
+  zeroL :: n:Peano -> { add Z n == n }
+  zeroL n =  #add# Z n
+          =. n
+          ** QED
+\end{code}
+
+\mypara{Add Zero to Right}
+%
+It is slightly more work to prove
+that adding zero to the right also
+leaves the number unchanged.
+%
+\begin{mcode}
+  zeroR :: n:Peano -> { add n Z == n }
+  zeroR Z     =  #add# Z Z
+              =. Z
+              ** QED
+
+  zeroR (S n) =  #add# (S n) Z
+              =. S (add n Z)
+              =. S n         $\because$     zeroR n
+              ** QED
+\end{mcode}
+%
+The proof goes by induction, splitting cases on
+whether the number is zero or non-zero. Consequently,
+we pattern match on the parameter @n@, and furnish
+separate proofs for each case.
+%
+In the ``zero" case, we simply unfold the definition
+of @add@.
+%
+In the ``successor" case, after unfolding we (literally)
+apply the induction hypothesis by using the because operator.
+%
+\toolname's termination and totality checker
+verifies that we are in fact doing induction
+properly, \ie the recursion in @zeroR@ is
+well-founded~(\S~\ref{sec:types-reflection}).
+
+\mypara{Commutativity}
+%
+Lets conclude by proving that @add@ is commutative:
+%
+\begin{mcode}
+add_com :: a:_ -> b:_ -> {add a b = add b a}
+
+add_com    Z  b =  #add# Z b
+                =. b
+                =. add b Z     $\because$ zeroR b
+                ** QED
+
+add_com (S a) b =  #add# (S a) b
+                =. S (add a b)
+                =. S (add b a) $\because$ add_com a b
+                =. add b (S a) $\because$ sucR b a
+                ** QED
+\end{mcode}
+%
+using a lemma @sucR@
+%
+\begin{code}
+  sucR :: n:Peano -> m:Peano ->
+                {add n (S m) = S (add n m)}
+  sucR = exercise_for_reader
+\end{code}
+
+%
+% Again, note how case-splitting, induction, and
+% lemma reuse are just pattern-matching, recursion and
+% function application, via the lemma @sucR@:
+
+Thus, refinement reflection lets us prove properties of Haskell programs
+just by writing Haskell programs: lemmas are just functions, case-splitting
+is just branching and pattern matching, and induction is just recursion.
+%
+Next, we formalize refinement reflection and describe
+how to keep type checking decidable and predictable.

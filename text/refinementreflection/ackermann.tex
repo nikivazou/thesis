@@ -1,0 +1,47 @@
+\begin{figure}
+\textbf{Definition}
+\[
+\begin{array}{lr}
+\ack{n}{x}
+ \left\{
+\begin{array}{l}
+\setlength\arraycolsep{0pt}
+\begin{array}{ll}
+      x+2 &\quad \text{, if}\ n=0 \\
+      2   &\quad \text{, if}\ x=0 \\
+\end{array} \\
+\ack{n-1}{\ack{n}{x-1}}
+\end{array}
+\right.
+&
+\iack{h}{n}{x}
+ \left\{
+\begin{array}{l}
+      x \quad \text{, if}\ h=0 \\
+      \ack{n}{\iack{h-1}{n}{x}}
+\end{array}
+\right.
+\end{array}
+ \]
+
+\textbf{Properties}
+$$
+\begin{array}{lrcrcl}
+1.&                &&            \ack{n+1}{x}   &=& \iack{x}{n}{2}\\
+2.&                &&            x + 1          &<& \ack{n}{x}\\
+3.&                &&            \ack{n}{x}     &<& \ack{n}{x+1}\\
+4.& x < y          &\Rightarrow& \ack{n}{x}     &<& \ack{n}{y}\\
+5.& 0 < x          &\Rightarrow& \ack{n}{x}     &<& \ack{n+1}{x}\\
+6.& 0 < x, n < m   &\Rightarrow& \ack{n}{x}     &<& \ack{m}{x}\\
+7.&                &&            \iack{h}{n}{x} &<& \iack{h+1}{n}{x}\\
+8.&                &&            \iack{h}{n}{x} &<& \iack{h}{n}{x+1}\\
+9.& x<y            &\Rightarrow& \iack{h}{n}{x} &<& \iack{h}{n}{y}\\
+10.&               &\Rightarrow& \iack{h}{n}{x} &<& \iack{h}{n+1}{x}\\
+11.& 0<n, l-2 < x  &\Rightarrow& x + l          &<& \ack{n}{x}\\
+12.& 0<n, l-2 < x  &\Rightarrow& \iack{l}{n}{x} &<& \ack{n+1}{x}\\
+13.&               &&            \iack{x}{n}{y} &<& \ack{n+1}{x+y}\\
+\end{array}
+$$
+\caption{Ackermann Properties~\citep{ackermann}, $\forall n, m, x, y, h, l \geq 0$}
+\label{fig:ackermann}
+\end{figure}

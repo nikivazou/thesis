@@ -1,0 +1,107 @@
+\documentclass[nocopyrightspace, preprint, 9pt]{sigplanconf}
+%%% \usepackage[top=1.5cm,bottom=1.5cm,left=2.3cm,right=2cm]{geometry}
+
+\pagestyle{plain}
+\usepackage{hyperref}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    urlcolor=blue,
+    citecolor=black
+}
+
+\usepackage{tipa}
+\usepackage{amsmath,amssymb,latexsym}
+%\usepackage[T1]{fontenc}
+
+\usepackage{amsmath}
+\usepackage{amsthm}
+
+\usepackage{comment}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{mathtools}
+\usepackage{commands}
+\usepackage{liquidHaskell}
+\usepackage{xspace}
+\usepackage{epsfig}
+\usepackage{booktabs}
+\usepackage{listings}
+\usepackage{comment}
+\usepackage{stmaryrd}
+\usepackage{flushend}
+\usepackage{ifthen}
+
+\renewcommand{\ttdefault}{pcr}
+
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{definition}{Definition}
+\newtheorem{corollary}{Corollary}
+
+\usepackage{thmtools}
+\declaretheoremstyle[%
+  spaceabove=-6pt,%
+  spacebelow=6pt,%
+  headfont=\normalfont\itshape,%
+  postheadspace=1em,%
+  qed=\qedsymbol,%
+  headpunct={}
+]{mystyle}
+\declaretheorem[name={Proof:},style=mystyle,unnumbered,
+]{myproof}
+
+\usepackage[inference]{semantic}
+
+\input{haskellListings}
+
+\newcommand{\isTechReport}{false} % true or false
+
+\begin{document}
+
+%\title{From Types to Proofs via Refinement Reflection}
+\title{\ifthenelse{\equal{\isTechReport}{true}}
+       {{Technical Report:}}
+        {}
+        Refinement Reflection
+       }
+\subtitle{\emph{(or, how to turn your favorite language into a proof assistant using SMT)}}
+
+% Utopia: Liquid Types as a Proof Assistant
+% HeLP:   Haskell as a Liquid Type Proof Assistant
+%	REPAIr:	REfinement Proof AssIstant
+
+% \authorinfo{OMITTED FOR BLIND REVIEW}{}
+\authorinfo{Niki Vazou \and Ranjit Jhala}{University of California, San Diego}{}
+
+\maketitle
+
+\input{abstract}
+\input{intro2}
+\input{overview}
+\input{theory}
+\input{algorithmic}
+\input{lambda}
+\input{evaluation2}
+\input{related}
+\input{conclusion}
+
+%% \subsection*{Acknowledgements}
+
+{
+\bibliographystyle{plain}
+\bibliography{sw}
+}
+
+\ifthenelse{\equal{\isTechReport}{true}}
+{
+\appendix
+   \input{implementation}
+   \input{soundness}
+   \input{soundness_algorithmic}
+}
+
+
+\end{document}

@@ -1,0 +1,467 @@
+%% New commands
+
+%% \newcommand\eseq{\ensuremath{<\!*\!>}\xspace}
+\newcommand\efmap{\ensuremath{\texttt{fmap}}\xspace}
+\newcommand\emap{\ensuremath{\texttt{map}}\xspace}
+\newcommand\ecompose{\ensuremath{\circ}\xspace}
+\newcommand\eseq{\ensuremath{\circledast}\xspace}
+\newcommand\eid{\ensuremath{\texttt{id}\ }\xspace}
+\newcommand\emempty{\ensuremath{\texttt{mempty}}\xspace}
+\newcommand\epure{\ensuremath{\texttt{pure}\ }\xspace}
+\newcommand\ereturn{\ensuremath{\texttt{return}\ }\xspace}
+% \newcommand\ebind{\ensuremath{\ $\gg=$\texttt{>>=}\ }\xspace}
+\newcommand\ebind{\ensuremath{\gg\!=}\xspace}
+\newcommand\eappend{\ensuremath{\ \texttt{++}\ }\xspace}
+\newcommand\emappend{\ensuremath{\diamondsuit}\xspace}
+
+\newcommand\ack[2]{\ensuremath{A_{#1}(#2)}\xspace}
+\newcommand\iack[3]{\ensuremath{A^{#1}_{#2}(#3)}\xspace}
+\newcommand\thingy[1]{{#1}}
+\newcommand{\tPeano}{\thingy{Peano}}
+\newcommand{\tMaybe}{\thingy{Maybe}}
+\newcommand{\tList}{\thingy{List}}
+\newcommand{\tReader}{\thingy{Reader}}
+\newcommand{\tId}{\thingy{Id}}
+
+\newcommand\econstt{\ensuremath{\texttt{:}}\xspace}
+\newcommand\eemp{\ensuremath{\texttt{[]}}\xspace}
+\newcommand\efoldr{\ensuremath{\texttt{foldr}}\xspace}
+
+
+
+\newcommand\tlabel{\ensuremath{\Downarrow}\xspace}
+\newcommand\binop{\ensuremath{\oplus_2}\xspace}
+\newcommand\unop{\ensuremath{\oplus_1}\xspace}
+
+\newcommand\trans{T}
+
+\newcommand\pred{\ensuremath{r}\xspace}
+\newcommand{\lgbool}{\rulename{\trans-Bool}}
+\newcommand{\lgtrue}{\rulename{\trans-True}}
+\newcommand{\lgfalse}{\rulename{\trans-False}}
+\newcommand{\lgint}{\rulename{\trans-Int}}
+\newcommand{\lgfun}{\rulename{\trans-Fun}}
+\newcommand{\lgbin}{\rulename{\trans-BinOp}}
+\newcommand{\lgbinGEN}{\rulename{\trans-Bin}}
+\newcommand{\lgbinBOOL}{\rulename{\trans-BinOp-Bool}}
+\newcommand{\lgbinEQ}{\rulename{\trans-Eq}}
+\newcommand{\lgbinINT}{\rulename{\trans-LS}}
+\newcommand{\lgun}{\rulename{\trans-Un}}
+\newcommand{\lgpop}{\rulename{\trans-Op}}
+\newcommand{\lgdc}{\rulename{\trans-DC}}
+\newcommand{\lgvar}{\rulename{\trans-Var}}
+\newcommand{\lgapp}{\rulename{\trans-App}}
+\newcommand{\lgcase}{\rulename{\trans-Case}}
+\newcommand{\lgcaseBool}{\rulename{\trans-If}}
+\newcommand{\lgenv}{\rulename{\trans-Env}}
+
+\newcommand\smtvar[1]{\ensuremath{\texttt{s}_{#1}}\xspace}
+
+%\newcommand\vcond[3]{\ensuremath{\embed{#1} \Rightarrow #2 \Rightarrow #3}\xspace}
+\newcommand\vcond[2]{\ensuremath{\embed{#1} \Rightarrow #2}\xspace}
+\newcommand\smtvalid[1]{\ensuremath{\mathsf{Valid}({#1})}\xspace}
+\newcommand\exacttype[2]{\ensuremath{\mathsf{Reflect}(#1, #2)}\xspace}
+\newcommand\exacttypefun[3]{\ensuremath{\mathtt{exactfun}(#1, #2, #3)}\xspace}
+\newcommand\inline[2]{\ensuremath{[#1 := #2]}\xspace}
+
+\newcommand\maxlamarg{\ensuremath{ {M_\lambda} }\xspace}
+\newcommand\maxlam[2]{\ensuremath{\texttt{MaxLam}({#1},{#2})}\xspace}
+\newcommand\slam[2]{\ensuremath{\smtlamname{}{}\ {#1}\ {#2}}\xspace}
+\newcommand\smlam[2]{\ensuremath{\smtlamname{}{}\ {#1}\ {#2}}\xspace}
+\newcommand\smapp[2]{\ensuremath{\smtappname{}{}\ {#1}\ {#2}}\xspace}
+\newcommand\sapp[2]{\ensuremath{{#1}\ {#2}}\xspace}
+
+\newcommand\lamnormalize[1]{\ensuremath{\texttt{normalize}(#1)}\xspace}
+\newcommand\smtapp[3]{\ensuremath{\texttt{smtapp}({#1}, {#2}, {#3})}\xspace}
+\newcommand\smtappname[2]{\ensuremath{\texttt{app}^{#1}_{#2}}\xspace}
+\newcommand\smtlamname[2]{\ensuremath{\texttt{lam}^{#1}_{#2}}\xspace}
+\newcommand\castuniv[1]{\ensuremath{\texttt{castU}_#1}\xspace}
+\newcommand\touniv[2]{\ensuremath{\texttt{touniv}(#1, #2)}\xspace}
+% \newcommand\haseq[1]{\ensuremath{\texttt{Eq}(#1)}\xspace}
+\newcommand\arity[1]{\ensuremath{\texttt{arity}(#1)}\xspace}
+\newcommand\result[1]{\ensuremath{\texttt{result}(#1)}\xspace}
+\newcommand\selector[2]{\ensuremath{\texttt{sel}_{{#1}_{#2}}}\xspace}
+\newcommand\checkdc[1]{\ensuremath{\texttt{is}_{#1}}\xspace}
+
+\newcommand\vsub{\ensuremath{\theta^\bot}\xspace}
+
+
+\newcommand\envtologic[4]{\ensuremath{#1 \rightsquigarrow {#2} \mid {#3} ; {#4} }\xspace}
+% \newcommand\tologic[7]{\ensuremath{{#2} \rightsquigarrow {#4} \mid  {#7} }\xspace}
+% \newcommand\tologic[7]{\ensuremath{#1 \vdash {#2} \rightsquigarrow {#4} \mid {#6} ; {#7} }\xspace}
+\newcommand\tologic[7]{\ensuremath{#1 \vdash \tbind{#2}{#3} \rightsquigarrow \tbind{#4}{#5} \mid {#6} ; {#7} }\xspace}
+
+% \newcommand\tologicshort[7]{\ensuremath{
+%   #1\vdash #2 \rightsquigarrow #4 \mid {#6} ; {#7}
+% }\xspace}
+
+\newcommand\tologicshort[7]{\ensuremath{
+  #1\vdash #2 \rightsquigarrow #4
+}\xspace}
+
+
+\newcommand\tologicshorttwolines[7]{\ensuremath{
+\begin{array}{rcl}
+  #1 &\vdash & #2 \\
+    & \rightsquigarrow & #4
+\end{array}
+}\xspace}
+
+\newcommand\sort{\ensuremath{s}\xspace}
+
+%% \newcommand{\embed}[1]{\ensuremath{(\!|#1|\!)}}
+\newcommand\isvalid[3]{\ensuremath{{#1 \vdash #2 \Rightarrow #3}}\xspace}
+
+\newcommand\corelan{\ensuremath{\lambda^{R}}\xspace}
+\newcommand\undeclang{\ensuremath{\lambda^{U}}\xspace}
+% \newcommand\smtlan{\ensuremath{\lambda^{\mathit{SMT}}}\xspace}
+\newcommand\smtlan{\ensuremath{\lambda^{\mathit{S}}}\xspace}
+
+\newcommand\length[1]{\ensuremath{\texttt{length}\ {#1}}\xspace}
+\newcommand\eisNull[1]{\ensuremath{\texttt{emp } {#1}}\xspace}
+\newcommand\preproc[1]{\ensuremath{#1}\xspace}
+\newcommand\replace{\ensuremath{\mapsfrom}}
+
+
+
+\newcommand\la{\ensuremath{A}\xspace}
+\newcommand\lm{\ensuremath{M}\xspace}
+\newcommand\li{\ensuremath{I}\xspace}
+
+\newcommand\etail{\ensuremath{\texttt{tail}}\xspace}
+\newcommand\isN{\ensuremath{\checkdc{\dnull}}\xspace}
+\newcommand\tintlist{\ensuremath{[\mathit{Int}]}\xspace}
+\newcommand\dnull{\ensuremath{[]}\xspace}
+\newcommand\dcons{\ensuremath{:}\xspace}
+
+\newcommand\imply[2]{\ensuremath{#1 \Rightarrow #2}}
+\newcommand\ite[3]{\ensuremath{\texttt{if}\ #1\ \texttt{then}\ #2\ \texttt{else}\ #3}}
+\newcommand\annotReflect{\ensuremath{\texttt{reflect}}\xspace}
+\newcommand\typp{\ensuremath{\texttt{Prop}}\xspace}
+\newcommand\fibdef{\ensuremath{\texttt{fibP}}\xspace}
+\newcommand\fibref{\ensuremath{\texttt{fibR}}\xspace}
+\newcommand\fib{\ensuremath{\texttt{fib}}\xspace}
+\newcommand\liquidHaskell{Liquid Haskell\xspace}
+\newcommand\toolname{\liquidHaskell}
+% \newcommand\liquidHaskell{\ensuremath{\texttt{liquidHaskell}}\xspace}
+\newcommand\libname{\ensuremath{\texttt{Utopia}}\xspace}
+
+
+\newcommand\freevars[1]{\ensuremath{\texttt{fv}({#1})}\xspace}
+\newcommand\domain[1]{\ensuremath{\texttt{Dom}({#1})}\xspace}
+
+\newcommand\bmodel{\ensuremath{\sigma^\beta}\xspace}
+
+\newcommand\env{\ensuremath{\Gamma}\xspace}
+\newcommand\smtenv{\ensuremath{\Delta}\xspace}
+\newcommand\smtenvinit{\ensuremath{\smtenv_0}\xspace}
+\newcommand\axioms{\ensuremath{a}\xspace}
+% \newcommand\aenv{\ensuremath{\mathcal{A}}\xspace}
+\newcommand\aenv{\env}
+\newcommand\decl{\ensuremath{d}\xspace}
+
+\newcommand\bd{\ensuremath{b}\xspace}
+\newcommand\prog{\ensuremath{p}\xspace}
+\newcommand\constty[1]{\ensuremath{\mathsf{Ty}({#1})}\xspace}
+\newcommand\dc{\ensuremath{D}\xspace}
+\newcommand\tycon{\ensuremath{T}\xspace}
+\newcommand\btyp{\ensuremath{B}\xspace}
+\newcommand\typ{\ensuremath{\tau}\xspace}
+\newcommand\gtyp{\ensuremath{\typ}}
+\newcommand\fibname{\ensuremath{\texttt{fib}}\xspace}
+\newcommand\eunit{\ensuremath{\texttt{unit}}}
+\newcommand\tunit{\ensuremath{\texttt{Unit}}}
+\newcommand\fibincrbody{\ensuremath{\lambda n . \eunit}}
+\renewcommand\fib[1]{\ensuremath{\fibname\ {#1}}}
+\newcommand\fibincrtyperes{\ensuremath{\ttreft{v}{\tunit}{\fib{n} \leq \fib{(n+1)}}}}
+\newcommand\fibtype{\ensuremath{\texttt{tfib}}}
+
+\newcommand\ppn{\ensuremath{\mathit{prop}}\xspace}
+\newcommand\defn{\ensuremath{d}\xspace}
+\newcommand\sto{\ensuremath{\theta}\xspace}
+\newcommand\emptysto{\ensuremath{[]}\xspace}
+% \newcommand\updatesto[3]{\ensuremath{{#1}\[ {#2} \mapsto {#3} \]}\xspace}
+\newcommand\extendsto[3]{\ensuremath{[\subst{#1}{#2},\ {#3}]}\xspace}
+
+\newcommand\thetasub[2]{\ensuremath{#1(#2)}}
+% \newcommand\sub[2]{\ensuremath{\left[#2/#1\right]}}
+%\newcommand\sub[2]{\ensuremath{\left[#1 \mapsto #2\right]}}
+
+\newcommand\sub{\ensuremath{\theta}}
+\newcommand\applysub[2]{\ensuremath{{#1} \cdot {#2} }}
+% \newcommand\subst[2]{\ensuremath{[{#2}/{#1}]}}
+
+\newcommand\assignto[2]{\ensuremath{{{#1} \mapsto {#2}}}}
+\newcommand\subst[2]{\ensuremath{[\assignto{#1}{#2}]}}
+\newcommand{\SUBST}[3]{{#1}\subst{#2}{#3}}
+\newcommand\fibincrname{\ensuremath{\texttt{fibUp}}\xspace}
+
+%% \newcommand\fibincrtype{\ensuremath{\tfun{n}{\tnat}{\refa{v}{\tunit}{\fib{n} \leq \fib{n+1}}}}}
+
+\newcommand{\defeq}{\ \doteq\ }
+\newcommand{\dcolon}{::}
+\newcommand\dbrkts[1]{[\![#1]\!]}
+\newcommand\interp[1]{\dbrkts{#1}}
+%\newcommand\interp[1]{\ensuremath{[\!|#1|\!]}}
+%\newcommand\embed[1]{\dbrkts{#1}}
+\newcommand{\embed}[1]{\ensuremath{(\!|#1|\!)}}
+\newcommand{\embedsort}[1]{\ensuremath{(\!|\!|#1|\!|\!)}}
+\newcommand{\embedexpr}[1]{\ensuremath{\{\!|#1|\!\}}}
+
+
+
+\newcommand\gbind[2]{{#1} \mapsto {#2}}
+\newcommand\ttbind[2]{\ensuremath{\mathtt{#1}:\mathtt{#2}}}
+\newcommand\tbind[2]{{#1} \ \colon\ {#2}}
+\newcommand\ttref[1]{\ensuremath{{\{#1\}}}}
+
+
+\newcommand\hastype[3]{\ensuremath{#1 \vdash #2 : #3}}
+\newcommand\ahastype[3]{\ensuremath{#1 \vdash_{S} #2 : #3}}
+\newcommand\bhastype[3]{\ensuremath{#2 : #3}}
+\newcommand\shape[1]{\ensuremath{\lfloor #1 \rfloor}}
+\newcommand\issubtype[3]{\ensuremath{#1 \vdash #2 \preceq #3}}
+\newcommand\aissubtype[3]{\ensuremath{#1 \vdash_{S} #2 \preceq #3}}
+\newcommand\iswellformed[2]{\ensuremath{#1 \vdash #2}}
+\newcommand\aiswellformed[2]{\ensuremath{#1 \vdash_{S} #2}}
+
+\newcommand\gissubref[4]{\ensuremath{#1 \vdash_{#4} #2 \Rightarrow #3}}
+\newcommand\issubref[3]{\gissubref{#1}{#2}{#3}{}}
+\newcommand\decissubref[3]{\ensuremath{#1 \vdash_{\sdec} #2 \Rightarrow #3}}
+\newcommand\undecissubref[3]{\ensuremath{#1 \vdash_{\sundec} #2 \Rightarrow #3}}
+
+\newcommand\evalj[3]{\ensuremath{{#1}\hookrightarrow^{#3}{#2}}}
+\newcommand\betaeq[2]{\ensuremath{{#1}{\ \approx_{\beta}\ }{#2}}}
+\newcommand\evalsto[2]{\ensuremath{{#1}\hookrightarrow^{\star}{#2}}}
+\newcommand\goesto[2]{\ensuremath{{#1}\hookrightarrow{#2}}}
+
+%TT
+\newcommand\Env{\Gamma}
+
+\newcommand\ttack{\mathtt{ack}}
+
+\newcommand\tttLen{\mathtt{tLen}}
+\newcommand\ttsz{\mathtt{sz}}
+\newcommand\ttt{\mathtt{t}}
+\newcommand\tttp{\mathtt{t'}}
+\newcommand\ttb{\mathtt{b}}
+\newcommand\tta{\mathtt{a}}
+\newcommand\ttm{\mathtt{m}}
+\newcommand\ttmp{\mathtt{m'}}
+\newcommand\ttnp{\mathtt{n'}}
+\newcommand\ttn{\mathtt{n}}
+\newcommand\ttp{\mathtt{p}}
+\newcommand\ttv{\mathtt{v}}
+\newcommand\ttx{\mathtt{x}}
+\newcommand\ttxs{\mathtt{xs}}
+\newcommand\tty{\mathtt{y}}
+\newcommand\ttz{\mathtt{z}}
+\newcommand\tte{\mathtt{e}}
+\newcommand\ttf{\mathtt{f}}
+\newcommand\ttg{\mathtt{g}}
+\newcommand\ttInt{\mathtt{Int}}
+\newcommand\ttNonzero{\mathtt{NonZero}}
+\newcommand\ttNat{\mathtt{Nat}}
+\newcommand\ttfib{\mathtt{fib}}
+\newcommand\tttrue{\mathtt{true}}
+\newcommand\ttfalse{\mathtt{false}}
+\newcommand\ttfoo{\mathtt{foo}}
+\newcommand\ttemp{\mathtt{emp}}
+
+\newcommand\op{\ensuremath{\odot}\xspace}
+
+\newcommand\fstar{\ensuremath{\text{F}^{\star}}\xspace}
+
+\newcommand\reft{\ensuremath{e}\xspace}
+
+% Expressions
+\newcommand\efun[3]{\ensuremath{\lambda #1. #3}}
+\newcommand\eapp[2]{\ensuremath{#1 \ #2}}
+\newcommand\edapp[2]{\ensuremath{#1 \ \overline{#2}}}
+\newcommand\eif[3]{\ensuremath{\mathtt{if}\ #1\ \mathtt{then}\ #2\ \mathtt{else}\ #3}}
+
+\newcommand\eletname{\ensuremath{\mathtt{let\ rec}}}
+\newcommand\erefname{\ensuremath{\mathtt{reflect}}}
+\newcommand\emeasname{\ensuremath{\mathtt{measure}}}
+
+\newcommand\ebinder[5]{\ensuremath{{#1}\ \tbind{#2}{#3} = #4}\ \mathtt{in}\ {#5}}
+\newcommand\erefb[4]{\ebinder{\erefname}{#1}{#2}{#3}{#4}}
+\newcommand\eletb[4]{\ebinder{\eletname}{#1}{#2}{#3}{#4}}
+\newcommand\emeasb[3]{\ensuremath{\emeasname\ \ttbind{#1}{#2} = #3}}
+
+\newcommand\elet[5]{\ensuremath{\eletname\ \ttbind{#1}{#3} = #2}\ \mathtt{in}\ {#5}}
+
+\newcommand\efix[1]{\ensuremath{\mathtt{fix}\ {#1}}\xspace}
+\newcommand\eletrec[5]{\ensuremath{\mathtt{let\ rec}\ \ttbind{#1}{#3} = #2}\ \mathtt{in}\ {#5}}
+
+\newcommand\eletind[5]{\ensuremath{\mathtt{let\ ind}^{#4}\ \ttbind{#1}{#3} = #2}\ \mathtt{in}\ {#5}}
+\newcommand\eletrecopt[5]{\ensuremath{\mathtt{let}^{#4}\ [\texttt{rec}]\ \ttbind{#1}{#3} = #2}\ \mathtt{in}\ {#5}}
+\newcommand\eletrecoptsmall[5]{
+	\ensuremath{\mathtt{let}^{#4}\ [\texttt{rec}]\ \ttbind{#1}{#3} = #2}
+}
+
+\newcommand\erec[3]{\ensuremath{\mu #1.\lambda #2. #3}}
+\newcommand\etabs[2]{\ensuremath{\left[\Lambda #1\right] #2}}
+\newcommand\etapp[2]{\ensuremath{#1 \left[ #2 \right]}}
+\newcommand\ecrash{\ensuremath{\mathtt{crash}}\xspace}
+\newcommand\etrue{\ensuremath{\mathtt{True}}\xspace}
+\newcommand\efalse{\ensuremath{\mathtt{False}}\xspace}
+\newcommand\enil{\ensuremath{\mathtt{N}}\xspace}
+\newcommand\econs{\ensuremath{\mathtt{C}}\xspace}
+\newcommand\eletsub[2]{\ensuremath{#1 #2}}
+
+\newcommand\ecase[5]{\ensuremath{
+	\mathtt{case}\  #1=#2\ \mathtt{of}\ \{ #3\ #4 \rightarrow #5\}
+}}
+\newcommand\ecaseexp[3]{\ensuremath{
+	\mathtt{case}\  #1=#2\ \mathtt{of}\ \{ #3 \}
+}}
+\newcommand\ealt[2]{\ensuremath{#1 \rightarrow #2}}
+\newcommand\ecaseinstance[3]{\ensuremath{
+	\mathtt{case}\ #1 = #2\ \mathtt{of}\ \left\lbrace #3\right\rbrace
+}}
+
+
+%Labels
+\newcommand\ltop{\ensuremath{\downarrow}\xspace}
+\newcommand\lbot{\ensuremath{\uparrow}\xspace}
+
+% Types
+\newcommand\tuniv{\ensuremath{\mathtt{U}}\xspace}
+\newcommand\tsmtfun[2]{\ensuremath{\mathtt{Fun}\ {#1}\ {#2}}\xspace}
+\newcommand\tvar{\ensuremath{\alpha}\xspace}
+\newcommand\tbool{\ensuremath{\mathtt{Bool}}\xspace}
+\newcommand\tint{\ensuremath{\mathtt{Int}}\xspace}
+\newcommand\tlist{\ensuremath{\mathtt{L}}\xspace}
+\newcommand\tref[3]{\ensuremath{\{ \tbind{#1}{#2} \mid #3 \}}}
+\newcommand\ttreft[3]{\ensuremath{\{ \tbind{#1}{#2} \mid #3 \}}}
+\newcommand\tfunbasic[2]{\ensuremath{{#1} \rightarrow {#2}}}
+\newcommand\tfun[3]{\ensuremath{\tbind{#1}{#2} \rightarrow #3}}
+\newcommand\tabs[2]{\ensuremath{\forall #1 . #2}}
+
+
+%\newcommand\rimpl{\ensuremath{\Rightarrow}\rulename{-Base}}
+\newcommand{\rimpl}{\rulename{T-Imp}}
+\newcommand{\rtdimp}{\rulename{D-Imp}}
+\newcommand{\rtdsub}{\rulename{D-Sub}}
+
+\newcommand{\rtbot}{\rulename{T-Bot}}
+\newcommand{\rtcase}{\rulename{T-Case}}
+\newcommand{\rtvar}{\rulename{T-Var}}
+%Rule Names
+\newcommand\rulename[1]{\textsc{#1}\xspace}
+\newcommand{\rtsub}{\rulename{T-Sub}}
+\newcommand{\rtvara}{\rulename{T-$\ltop$}}
+\newcommand{\rtvarb}{\rulename{T-Var}}
+\newcommand{\rtconst}{\rulename{T-Con}}
+\newcommand{\rtfun}{\rulename{T-Fun}}
+\newcommand{\rtapp}{\rulename{T-App}}
+\newcommand{\rtexact}{\rulename{T-Exact}}
+\newcommand{\rtreflect}{\rulename{T-Reflect}}
+\newcommand{\rtappb}{\rulename{T-App-$\ltop$}}
+\newcommand{\rtif}{\rulename{T-If}}
+\newcommand{\rtlet}{\rulename{T-Let}}
+\newcommand{\rtletrec}{\rulename{T-LetRec}}
+\newcommand{\rtgen}{\rulename{T-Gen}}
+\newcommand{\rtfix}{\rulename{T-Fix}}
+\newcommand{\rtinst}{\rulename{T-Inst}}
+\newcommand{\rtrec}{\rulename{T-Rec}}
+\newcommand{\rtrecs}{\rulename{T-Rec-$\lbot$}}
+\newcommand{\rtrect}{\rulename{T-Rec-$\ltop$}}
+%% \newcommand{\rtrecs}{\rulename{TR-Ser}}
+%% \newcommand{\rtrect}{\rulename{TR-Tr}}
+
+\newcommand{\tbase}{B}
+
+\newcommand\rsubbase{\ensuremath{\preceq}\rulename{-Base}}
+\newcommand\rsubfun{\ensuremath{\preceq}\rulename{-Fun}}
+\newcommand\rsubcon{\ensuremath{\preceq}\rulename{-Con}}
+\newcommand{\rsbasetop}{\rulename{$\preceq$-$\ltop$}}
+\newcommand{\rsbasebot}{\rulename{$\preceq$-$\lbot$}}
+\newcommand{\rsvar}{\rulename{$\preceq$-Var}}
+\newcommand{\rsfun}{\rulename{$\preceq$-Fun}}
+\newcommand{\rspoly}{\rulename{$\preceq$-Poly}}
+\newcommand{\rwbasetop}{\rulename{WF-$\ltop$}}
+\newcommand{\rwbasebot}{\rulename{WF-$\lbot$}}
+\newcommand{\rwbase}{\rulename{WF-Base}}
+\newcommand{\rwvar}{\rulename{WF-Var}}
+\newcommand{\rwfun}{\rulename{WF-Fun}}
+\newcommand{\rwpoly}{\rulename{WF-Poly}}
+
+\newcommand{\rwsempty}{\rulename{WS-Empty}}
+\newcommand{\rwsext}{\rulename{WS-Ext}}
+\newcommand{\rwsgxt}{\rulename{WS-Gxt}}
+
+
+\newcommand{\reapp}{\rulename{E-AppL}}
+\newcommand{\reappb}{\rulename{E-App}}
+\newcommand{\reappc}{\rulename{E-AppT}}
+\newcommand{\reappd}{\rulename{E-AppTB}}
+\newcommand{\reconsta}{\rulename{E-ConstA}}
+\newcommand{\reconstb}{\rulename{E-Con}}
+\newcommand{\reif}{\rulename{E-If}}
+\newcommand{\reiftrue}{\rulename{E-If-True}}
+\newcommand{\reiffalse}{\rulename{E-If-False}}
+\newcommand{\rereca}{\rulename{E-Rec}}
+\newcommand{\rerecb}{\NV{UNIFIED}}
+\newcommand{\rerecc}{\rulename{E-RecC}}
+\newcommand{\reinst}{\NV{TODO}}
+\newcommand{\reinsta}{\rulename{E-InstA}}
+\newcommand{\reinstb}{\rulename{E-InstB}}
+\newcommand{\reinstc}{\rulename{E-InstC}}
+\newcommand{\releta}{\rulename{E-Let}}
+\newcommand{\reletb}{\rulename{E-LetX}}
+\newcommand{\recntx}{\rulename{E-Com}}
+\newcommand{\reletc}{\rulename{E-LetTB}}
+
+
+
+\newcommand\instance[1]{\ensuremath{\embed{#1}}}
+\newcommand\mkbot[1]{\ensuremath{\underline{#1}}}
+\newcommand\tarrow{\ensuremath{\leadsto}}
+\newcommand\tevals[4]{\ensuremath{\langle #1; #2\rangle \tarrow^\star\langle #3; #4\rangle}}
+\newcommand\teval[4]{\ensuremath{\langle #1; #2\rangle \tarrow\langle #3; #4\rangle}}
+
+\newcommand\evals[2]{\goesto{#1}{#2}}
+\newcommand\trackevals[2]{\trackgoesto{#1}{#2}}
+\newcommand\botv{\ensuremath{v^\ebot}\xspace}
+\newcommand\botsto{\ensuremath{\sto^\ebot}\xspace}
+\newcommand\ebot{\ensuremath{\perp}\xspace}
+\newcommand\dom{\ensuremath{\mathcal{D}}\xspace}
+\newcommand\smodels[3]{\ensuremath{#1 \models #2 \Rightarrow #3 }}
+\newcommand\lmodels[2]{\ensuremath{#1 \models #2}}
+\newcommand\umodels[2]{\ensuremath{#1 \models_D #2}}
+
+\newcommand\tfunref[5]{\tfun{#1}{#2}{#3}}
+
+\newcommand\hastypebase[3]{\ensuremath{#1 \vdash_B #2\text{:}#3}}
+\newcommand\smthastype[3]{\ensuremath{#1 \vdash_{S} #2\text{:}#3}}
+\newcommand\hastypebasesmall[3]{\ensuremath{#2\text{:}#3}}
+\newcommand\dechastype[3]{\ensuremath{#1 \vdash_\sdec #2:#3}}
+\newcommand\ghastype[4]{\ensuremath{#1 \vdash_{#4} #2:#3}}
+\newcommand\deciswellformed[2]{\ensuremath{#1 \vdash_\sdec #2}}
+\newcommand\decissubtype[3]{\ensuremath{#1 \vdash_\sdec #2 \preceq #3}}
+\newcommand\undechastype[3]{\ensuremath{#1 \vdash_\sundec #2:#3}}
+
+\newcommand\erepeat[1]{\ensuremath{\texttt{repeat}\ #1}}
+\newcommand\elenGEq[2]{\ensuremath{\texttt{lenGEq}\ #1\ #2}}
+
+
+
+\newcommand\tnat{\ensuremath{\mathtt{Nat}}\xspace}
+\newcommand\csem[1]{\ensuremath{\delta(#1)}}
+\newcommand\ceval[2]{\ensuremath{\csem{#1, #2}}}
+
+
+\newcommand\refa{\ensuremath{e}\xspace}
+
+\newcommand\lhaskell{Haskell\xspace}
+%\newcommand\lhaskell{\ensuremath{\mathtt{Haskell}}\xspace}
+\newcommand\splay{Splay}
+\newcommand\LH{\toolname}
+\newcommand\safe{\textsc{Safe}\space}
+
+
+\newcommand\generalconditionImpl[2]{\ensuremath{\evals{#1}{\etrue}\Rightarrow\evals{#2}{\etrue}}}
+\newcommand\iswellformedtheta[2]{\ensuremath{#2 \in \interp{#1}}}
+\newcommand\generalconditionInterp[2]{\ensuremath{\evals{#2}{\etrue}}}

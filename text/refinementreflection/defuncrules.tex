@@ -1,0 +1,116 @@
+\newcommand\emptyaxioms{\ensuremath{\emptyset}\xspace}
+\newcommand\andaxioms[2]{\ensuremath{{#1}\cup {#2}}\xspace}
+
+\begin{figure}
+\emphbf{Transformation}\hfill{\fbox{\tologicshort{\Gamma}{e}{\typ}{\pred}{\sort}{\smtenv}{\axioms}}}
+$$
+\inference{
+}{
+	\tologicshort{\env}{b}{\tbool}{b}{\tbool}{\emptyset}{\emptyaxioms}
+}[\lgbool]
+\qquad
+\inference{
+}{
+	\tologicshort{\env}{n}{\tint}{n}{\tint}{\emptyset}{\emptyaxioms}
+}[\lgint]
+$$
+
+$$
+\inference{
+    \tologicshort{\env}{e_1}{\typ}{\pred_1}{\embed{\typ}}{\smtenv}{\axioms_1} &
+    \tologicshort{\env}{e_2}{\typ}{\pred_2}{\embed{\typ}}{\smtenv}{\axioms_2}
+}{
+	\tologicshort{\env}{e_1\binop e_2}{\tbool}{\pred_1 \binop\pred_2}{\tbool}{\smtenv}{\andaxioms{\axioms_1}{\axioms_2}}
+}[\lgbinGEN]
+$$
+
+$$
+\inference{
+	\tologicshort{\env}{e}{\tbool}{\pred}{\tbool}{\smtenv}{\axioms}
+}{
+	\tologicshort{\env}{\unop e}{\tbool}{\unop\pred}{\tbool}{\smtenv}{\axioms}
+}[\lgun]
+\qquad
+\inference{
+}{
+	\tologicshort{\env}{x}{\env(x)}{x}{\embed{\env(x)}}{\emptyset}{\emptyaxioms}
+}[\lgvar]
+$$
+
+$$
+\inference{
+}{
+	\tologicshort{\env}{c}{\constty{\odot}}{\smtvar{c}}{\embed{\constty{\odot}}}{\emptyset}{\emptyaxioms}
+}[\lgpop]
+\qquad
+\inference{
+}{
+	\tologicshort{\env}{\dc}{\constty{\dc}}{\smtvar{\dc}}{\embed{\constty{\dc}}}{\emptyset}{\emptyaxioms}
+}[\lgdc]
+$$
+
+
+%%$$
+%%\inference{
+%%  	\axioms_{f_1} = \forall \tbind{x}{\sort_x}.\smtappname{\sort_x}{\sort}\ f\ x = \pred \\
+%%  	\axioms_{f_2} = \forall \tbind{g}{\sort'},\tbind{x}{\sort_x}.
+%%  	\smtappname{\sort_x}{\sort}\ f\ x = \smtappname{\sort_x}{\sort}\ g\ x \Rightarrow f = g \\
+%% 	f\ \text{fresh} &
+%% 	\sort' = \embed{\tfun{x}{\typ_x}{\typ}} &
+%% 	\sort  = \embed{\typ} &
+%% 	\sort_x = \embed{\typ_x} \\
+%% 	\tologicshort{\env,\tbind{x}{\typ_x}}{e}{\typ}{\pred}{\sort}{\smtenv, \tbind{x}{\sort_x}}{\axioms} &
+%% 	\hastype{\env}{(\efun{x}{}{e})}{(\tfun{x}{\typ_x}{\typ})}\\
+%%}{
+%%	\tologicshort{\env}{\efun{x}{}{e}}{(\tfun{x}{\typ_x}{\typ})}
+%%	        {f}{\sort'}{\smtenv, \tbind{f}{\sort'}}{\andaxioms{\{\axioms_{f_1}, \axioms_{f_2}\}}{\axioms}}
+%%}[\lgfun]
+%%$$
+
+$$
+\inference{
+    \tologicshort{\env, \tbind{x}{\typ_x}}{e}{}{\pred}{}{}{} &
+  	\hastype{\env}{(\efun{x}{}{e})}{(\tfun{x}{\typ_x}{\typ})}\\
+}{
+	\tologicshort{\env}{\efun{x}{}{e}}{(\tfun{x}{\typ_x}{\typ})}
+	        {\smtlamname{\embed{\typ_x}}{\embed{\typ}}\ {x}\ {\pred}}
+	        {\sort'}{\smtenv, \tbind{f}{\sort'}}{\andaxioms{\{\axioms_{f_1}, \axioms_{f_2}\}}{\axioms}}
+}[\lgfun]
+$$
+
+$$
+\inference{
+	\tologicshort{\env}{e'}{\typ_x}{\pred'}{\embed{\typ_x}}{\smtenv}{\axioms'}
+	&
+	\tologicshort{\env}{e}{\tfun{x}{\typ_x}{\typ}}{\pred}{\tsmtfun{\embed{\typ_x}}{\embed{\typ}}}{\smtenv}{\axioms}
+	& 
+	\hastype{\env}{e}{{\typ_x}\rightarrow{\typ}}
+}{
+	\tologicshort{\env}{e\ e'}{\typ}{\smtappname{\embed{\typ_x}}{\embed{\typ}}\ {\pred}\ {\pred'}}{\embed{\typ}}{\smtenv}{\andaxioms{\axioms}{\axioms'}}
+}[\lgapp]
+$$
+
+
+$$
+\inference{
+	\tologicshort{\env}{e}{\tbool}{\pred}{\tbool}{\smtenv}{\axioms} & 
+	\tologicshort{\env}{e_i\subst{x}{e}}{\typ}{\pred_i}{\embed{\typ}}{\smtenv}{\axioms_i}
+}{
+	\tologicshorttwolines{\env}{\ecaseexp{x}{e}{\etrue \rightarrow e_1; \efalse \rightarrow e_2}}{\typ}
+	 {\eif{\pred}{\pred_1}{\pred_2}}{\embed{\typ}}{\smtenv}{\andaxioms{\axioms}{\axioms_i}}
+}[\lgcaseBool]
+$$
+
+$$
+\inference{
+	\tologicshort{\env}{e}{\typ_e}{\pred}{\embed{\typ_e}}{\smtenv}{\axioms}\\
+	\tologicshort{\env}{e_i\subst{\overline{y_i}}{\overline{\selector{\dc_i}{}\ x}}\subst{x}{e}}{\typ}{\pred_i}{\embed{\typ}}{\smtenv}{\axioms_i}
+}{
+	\tologicshorttwolines{\env}{\ecase{x}{e}{\dc_i}{\overline{y_i}}{e_i}}{\typ}
+	 {\eif{\smtappname{}{}\ \checkdc{\dc_1}\ \pred}{\pred_1}{\ldots} \ \mathtt{else}\ \pred_n}{\embed{\typ}}{\smtenv}
+	 {\andaxioms{\axioms}{\axioms_i}}
+}[\lgcase]
+$$
+\caption{\textbf{Transforming \corelan terms into \smtlan.}}
+\label{fig:defunc}
+\end{figure}

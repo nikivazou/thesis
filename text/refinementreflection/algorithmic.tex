@@ -1,0 +1,619 @@
+\section{Algorithmic Verification}\label{sec:algorithmic}
+
+Next, we describe \smtlan, a conservative approximation
+of \corelan where the undecidable type subsumption rule
+is replaced with a decidable one, yielding an SMT-based
+algorithmic type system that enjoys the same soundness
+guarantees.
+
+\subsection{The SMT logic \smtlan}
+
+\input{text/refinementreflection/smtsyntax}
+
+\mypara{Syntax: Terms \& Sorts}
+%
+Figure~\ref{fig:smtsyntax} summarizes the syntax
+of \smtlan, the \emph{sorted} (SMT-)
+decidable logic of quantifier-free equality,
+uninterpreted functions and linear
+arithmetic (QF-EUFLIA) ~\citep{Nelson81,SMTLIB2}.
+%
+The \emph{terms} of \smtlan include
+integers $n$,
+booleans $b$,
+variables $x$,
+data constructors $\dc$ (encoded as constants),
+fully applied unary \unop and binary \binop operators,
+and application $x\ \overline{\pred}$ of an uninterpreted function $x$.
+%
+The \emph{sorts} of \smtlan include built-in
+integer \tint and \tbool for representing
+integers and booleans.
+%
+%% NV reflected functions and measures are first order
+%% NV because
+%% NV 1. they can be partially applied
+%% NV 2. they can be passed as arguments
+The interpreted functions of \smtlan, \eg
+the logical constants $=$ and $<$,
+%% NV and the uninterpreted functions app and lam
+%% NV but we have not introduced these yet
+have the function sort $\sort \rightarrow \sort$.
+%
+Other functional values in \corelan, \eg
+reflected \corelan functions and
+$\lambda$-expressions, are represented as
+first-order values with
+uninterpreted sort \tsmtfun{\sort}{\sort}.
+%
+%%The uninterpreted functions of \smtlan, which
+%%correspond to reflected \corelan functions,
+%%have the function sort $\sort \rightarrow \sort$.
+%%%
+%%Other functional values in \corelan, \eg
+%%$\lambda$-expressions, are represented as
+%%first-order values in \smtlan with
+%%uninterpreted sort \tsmtfun{\sort}{\sort}.
+%%%
+The universal sort \tuniv represents all other values.
+
+\mypara{Semantics: Satisfaction \& Validity}
+%
+An assignment $\sigma$ is a mapping from
+variables to terms
+%
+${\sigma \defeq \{ \assignto{x_1}{\pred_1}, \ldots, \assignto{x_n}{\pred_n} \}}$.
+%
+We write
+%
+${\sigma \models \pred}$
+%
+if the assignment $\sigma$ is a
+\emph{model of} $\pred$, intuitively
+if $\sigma\ \pred$ ``is true''~\cite{Nelson81}.
+%
+A predicate $\pred$ \emph{is satisfiable} if
+there exists ${\sigma\models\pred}$.
+%
+A predicate $\pred$ \emph{is valid} if
+for all assignments ${\sigma\models\pred}$.
+
+
+\subsection{Transforming \corelan into \smtlan}
+%
+\label{subsec:embedding}
+
+\input{text/refinementreflection/defuncrules}
+%
+The judgment
+\tologicshort{\env}{e}{\typ}{\pred}{\sort}{\smtenv}{\axioms}
+states that a $\corelan$ term $e$ is transformed,
+under an environment $\env$, into a
+$\smtlan$ term $\pred$.
+%
+The transformation rules are summarized in Figure~\ref{fig:defunc}.
+
+\mypara{Embedding Types}
+%
+We embed \corelan types into \smtlan sorts as:
+%
+$$
+\begin{array}{rclcrcl}
+\embed{\tint}                       & \defeq &  \tint &  &
+\embed{T}                           & \defeq &  \tuniv \\
+\embed{\tbool}                      & \defeq &  \tbool & &
+\embed{\tfun{x}{\typ_x}{\typ}} & \defeq & \tsmtfun{\embed{\typ_x}}{\embed{\typ}}
+\end{array}
+$$
+%%%The embedding extends to typing environments:
+%%%% by embedding the types of the environment
+%%%$$
+%%%\embedsort{\{\tbind{x_1}{\typ_1}, \dots, \tbind{x_n}{\typ_n}\}}
+%%%  \defeq
+%%%  \{\tbind{x_1}{\embed{\typ_1}}, \dots, \tbind{x_n}{\embed{\typ_n}}
+%%%  \}
+%%%$$
+
+\mypara{Embedding Constants}
+%
+Elements shared on both \corelan and \smtlan
+translate to themselves.
+%
+These elements include
+booleans (\lgbool),
+integers (\lgint),
+variables (\lgvar),
+binary (\lgbinGEN)
+and unary (\lgun)
+operators.
+%
+SMT solvers do not support currying,
+and so in \smtlan, all function symbols
+must be fully applied.
+%
+Thus, we assume that all applications
+to primitive constants and data
+constructors are \emph{saturated},
+%% NV eta converted
+\ie fully applied, \eg by converting
+source level terms like @(+ 1)@ to
+@(\z -> z + 1)@.
+%
+
+%%% Thus, to translate \corelan's partially applied operators,
+%%% we define an uninterpreted function
+%%% $$
+%%% \tbind{\smtvar{c}}{\embed{\constty{c}}}
+%%% $$
+%%% for every functional constant $c$ in \corelan.
+%%% %
+%%% For example, $+ 1$ will be translated to application of $\smtvar{+}$ to $1$, while
+%%% $1+2$ will be translated to the identical $1+2$.
+
+%%\spara{Lambda Lifting}
+%%%
+%%Since \smtlan does not support $\lambda$-functions.
+%%the translation lifts function to axiomatized variables.
+%%%
+%%Rule~\lgfun
+%%translates the term $\efun{x}{\typ}{e}$ to
+%%a fresh variable $f$ that satisfies two axioms:
+%%(1). $\beta$-reduction,
+%%that is $f$ applied to $x$ is equal to $e$, and
+%%(2). extentionality,
+%%that is for every other function $g$ and argument $x$,
+%%if $f$ applied to $x$ is equal to $g$ applied to $x$,
+%%then $f = g$.
+
+\mypara{Embedding Functions}
+%
+As \smtlan is a first-order logic, we
+embed $\lambda$-abstraction and application
+using the uninterpreted functions
+\smtlamname{}{} and \smtappname{}{}.
+%
+We embed $\lambda$-abstractions
+using $\smtlamname{}{}$ as shown in rule~\lgfun.
+%
+The term $\efun{x}{}{e}$ of type
+${\typ_x \rightarrow \typ}$ is transformed
+to
+${\smtlamname{\sort_x}{\sort}\ x\ \pred}$
+of sort
+${\tsmtfun{\sort_x}{\sort}}$, where
+%
+$\sort_x$ and $\sort$ are respectively
+$\embed{\typ_x}$ and $\embed{\typ}$,
+%
+${\smtlamname{\sort_x}{\sort}}$
+is a special uninterpreted function
+of sort
+${\sort_x \rightarrow \sort\rightarrow\tsmtfun{\sort_x}{\sort}}$,
+and
+$x$ of sort $\sort_x$ and $r$ of sort $\sort$ are
+the embedding of the binder and body, respectively.
+%
+As $\smtlamname{}{}$ is just an SMT-function,
+it \emph{does not} create a binding for $x$.
+%
+Instead, the binder $x$ is renamed to
+a \emph{fresh} name pre-declared in
+the SMT environment.
+
+
+\mypara{Embedding Applications}
+%
+Dually, we embed applications via
+defunctionalization~\citep{Reynolds72}
+using an uninterpreted \emph{apply}
+function
+$\smtappname{}{}$ as shown in rule~\lgapp.
+%
+The term ${e\ e'}$, where $e$ and $e'$ have
+types ${\typ_x \rightarrow \typ}$ and $\typ_x$,
+is transformed to
+${\tbind{\smtappname{\sort_x}{\sort}\ \pred\ \pred'}{\sort}}$
+where
+%
+$\sort$ and $\sort_x$ are respectively $\embed{\typ}$ and $\embed{\typ_x}$,
+the
+${\smtappname{\sort_x}{\sort}}$
+is a special uninterpreted function of sort
+${\tsmtfun{\sort_x}{\sort} \rightarrow \sort_x \rightarrow \sort}$,
+and
+$\pred$ and $\pred'$ are the respective translations of $e$ and $e'$.
+
+
+\mypara{Embedding Data Types}
+%
+Rule~\lgdc translates each data constructor to a
+predefined \smtlan constant ${\smtvar{\dc}}$ of
+sort ${\embed{\constty{\dc}}}$.
+%
+Let $\dc_i$ be a non-boolean data constructor such that
+$$
+\constty{\dc_i} \defeq \typ_{i,1} \rightarrow \dots \rightarrow \typ_{i,n} \rightarrow \typ
+$$
+Then the \emph{check function}
+${\checkdc{{\dc_i}}}$ has the sort
+$\tsmtfun{\embed{\typ}}{\tbool}$,
+and the \emph{select function}
+${\selector{\dc}{i,j}}$ has the sort
+$\tsmtfun{\embed{\typ}}{\embed{\typ_{i,j}}}$.
+%
+Rule~\lgcase translates case-expressions
+of \corelan into nested $\mathtt{if}$
+terms in \smtlan, by using the check
+functions in the guards, and the
+select functions for the binders
+of each case.
+%
+%\mypara{Reflecting DataTypes}
+%
+% The above approach  makes it straightforward
+% to reflect functions over datatypes into \smtlan.
+%
+For example, following the above, the body of the list append function
+%
+%%% reflect (++) :: xs:[Int] -> ys:[Int] -> [Int]
+\begin{code}
+  []     ++ ys = ys
+  (x:xs) ++ ys = x : (xs ++ ys)
+\end{code}
+%
+is reflected into the \smtlan refinement:
+%
+$$
+\ite{\mathtt{isNil}\ \mathit{xs}}
+    {\mathit{ys}}
+    {\mathtt{sel1}\ \mathit{xs}\
+       \dcons\
+       (\mathtt{sel2}\ \mathit{xs} \ \mathtt{++}\  \mathit{ys})}
+$$
+%
+We favor selectors to the axiomatic translation of
+HALO~\citep{HALO} and \fstar~\cite{fstar} to avoid
+universally quantified formulas and the resulting
+instantiation unpredictability.
+
+%% $$
+%% \tbind{\checkdc{\dc}}{\embed{\typ \rightarrow \tbool}}
+%% \ \text{with}\ \constty{\dc} = \typ_1 \rightarrow \dots \rightarrow \typ_n\rightarrow\typ
+%% $$
+%% and the field selector is used to substitute the data constructor quantified variables $\overline{y_i}$:
+%% eg. if \dc is [] then i == 0
+%%     if \dc is (:) :: a -> [a] -> [a] then
+%%         \dc_1 = head :: [a] -> a
+%%         \dc_2 = tail :: [a] -> [a]
+%% $$
+%% \tbind
+      %% {\embed{\typ \rightarrow \typ_i}}
+%% \ \text{with}\ \constty{\dc} = \typ_1 \rightarrow \dots \rightarrow \typ_n\rightarrow\typ, i \leq n
+%% $$
+%% %
+%% For example, the body of the @length@ function from~\S~\ref{sec:examples}
+%% translates to the condition $\eif{\isN\ xs}{0}{1+\texttt{length} (\etail\ xs)}$,
+%% as $\etail \defeq \selector{\dcons}{2}$.
+
+\subsection{Correctness of Translation}
+
+Informally, the translation relation $\tologicshort{\env}{e}{}{\pred}{}{}{}$
+is correct in the sense that if $e$ is a terminating boolean expression
+then $e$ reduces to \etrue \textit{iff} $\pred$ is SMT-satisfiable
+by a model that respects $\beta$-equivalence.
+
+%%\mypara{Type Preservation}
+%%%
+%%The \emph{initial environment} \smtenvinit
+%%maps the uninterpreted symbols used
+%%by the translation, namely
+%%%
+%%$\smtlamname{}{}$,
+%%$\smtappname{}{}$,
+%%$\smtvar{\dc}$,
+%%$\checkdc{{\dc_i}}$,
+%%$\selector{\dc}{{i,j}}$
+%%and fresh binder names $x$ used  in $\smtlamname{}{}$
+%%to their respective sorts.
+%%%
+%%The judgment $\smthastype{\smtenv}{\pred}{\sort}$ states
+%%that the term $\pred$ has sort $\sort$ in environment
+%%$\smtenv$. (We omit the standard derivation rules
+%%for brevity.)
+%%%
+%%The translation is type (sort) preserving.
+%%
+%%\begin{lemma}
+%%%  [Type Transformation]
+%%If \tologicshort{\env}{e}{\typ}{p}{\sort}{\smtenv}{\axioms},
+%%and \hastype{\env}{e}{\typ}, then
+%%\smthastype{\smtenvinit, \embedsort{\env}}{p}{\embed{\typ}}.
+%%\end{lemma}
+%%
+%%% are defined in the
+%%% %
+%%% Thus, \smtenvinit includes
+%%% $$
+%%% \begin{array}{rcll}
+%%% \smtvar{c}  &\colon &\embed{\constty{c}}
+  %%% &\forall c\in \corelan\\
+%%% \smtlamname{\sort_x}{\sort}&\colon&\sort_x \rightarrow \sort\rightarrow\tsmtfun{\sort_x}{\sort}
+  %%% &\forall \sort_x, \sort\in \smtlan\\
+%%% \smtappname{\sort_x}{\sort}&\colon&\tsmtfun{\sort_x}{\sort} \rightarrow \sort_x \rightarrow \sort
+  %%% &\forall \sort_x, \sort\in \smtlan\\
+%%% \smtvar{\dc}&\colon&\embed{\constty{\dc}}
+  %%% &\forall\dc\in\corelan\\
+%%% \checkdc{\dc}&\colon&\embed{T \rightarrow \tbool}
+  %%% &\forall \dc\in \corelan\ \text{of data type}\ T \\
+%%% \selector{\dc}{i}&\colon&\embed{T \rightarrow \typ_i}
+  %%% &\forall \dc\in \corelan\ \text{of data type}\ T \\
+  %%% &&&\text{and}\ i\text{-th argument}\ \typ_i \\
+%%% {x} & \colon&{\sort}&\text{for each lambda argument} \\
+%%% \end{array}
+%%% $$
+
+
+% \mypara{Lifted Substitutions}
+
+
+%
+%% as defined
+%% in~\citep{Vazou15} remove bottoms from expressions
+%% in substitutions and translate via
+%% \tologic{\emptyset}{\star}{}{\star}{}{}{}
+%% to a set of models $\sigma \in \theta^\perp$
+%% where each bottom maps to
+%% %
+%%
+%% Such models $\sigma \in \theta^\perp$
+%% map variables in $\theta$ to values
+%% in the logic, without providing
+%% interpretations for the
+%% $\smtlamname{}{}$ and $\smtappname{}{}$.
+
+\NV{below we use substitution in lambda s which is not formally defined}
+%
+\begin{definition}[$\beta$-Model]\label{def:beta-model}
+A $\beta-$model $\bmodel$ is an extension of a model $\sigma$
+where $\smtlamname{}{}$ and $\smtappname{}{}$
+satisfy the axioms of $\beta$-equivalence:
+$$
+\begin{array}{rcl}
+\forall x\ y\ e. \smtlamname{}{}\ x\ e
+  & = & \smtlamname{}{}\ y\ (e\subst{x}{y}) \\
+\forall x\ e_x\ e. (\smtappname{}{}\ (\smtlamname{}{}\ x\ e)\ e_x
+  & = &  e\subst{x}{e_x}
+\end{array}
+$$
+\end{definition}
+
+\mypara{Semantics Preservation}
+%
+We define the translation of a \corelan term
+into \smtlan under the empty environment as
+${\embed{e} \defeq \pred}$
+if ${\tologicshort{\emptyset}{\refa}{}{\pred}{}{}{}}$.
+%
+A \emph{lifted substitution}
+$\theta^\perp$ is a set of models $\sigma$
+where each ``bottom'' in the substitution
+$\theta$ is mapped to an arbitrary logical
+value of the respective sort~\citep{Vazou14}.
+%
+We connect the semantics of \corelan and translated
+\smtlan via the following theorems:
+% terms can connect evaluation of boolean
+% \corelan expression to \smtlan predicates.
+
+\begin{theorem}\label{thm:embedding-general}
+If ${\tologicshort{\env}{\refa}{}{\pred}{}{}{}}$,
+then for every ${\sub\in\interp{\env}}$
+and every ${\sigma\in {\sub^\perp}}$,
+if $\evalsto{\applysub{\sub^\perp}{\refa}}{v}$
+then $\sigma^\beta \models \pred = \embed{v}$.
+\end{theorem}
+
+% For Boolean expressions we specialize the above to
+
+\begin{corollary}\label{thm:embedding}
+If ${\hastype{\env}{\refa}{\tbool}}$, $e$ reduces to a value and
+${\tologicshort{\env}{\refa}{\tbool}{\pred}{\tbool}{\smtenv}{\axioms}}$,
+then for every ${\sub\in\interp{\env}}$
+and every ${\sigma\in {\sub^\perp}}$,
+$\evalsto{\applysub{\sub^\perp}{\refa}}{\etrue}$ iff
+$\sigma^\beta \models \pred$.
+\end{corollary}
+
+
+
+\subsection{Decidable Type Checking}
+\begin{figure}[t!]
+\centering
+$$
+\begin{array}{rrcl}
+\emphbf{Refined Types} \quad
+  & \typ
+  & ::=   & \tref{v}{\btyp^{[\tlabel]}}{\reft} \spmid \tfun{x}{\typ}{\typ}
+\\[0.10in]
+\end{array}
+$$
+\emphbf{Well Formedness}\hfill{\fbox{\aiswellformed{\env}{\typ}}}\\
+$$
+\inference{
+  \ahastype{\env,\tbind{v}{\btyp}}{\refa}{\tbool^{\tlabel}}
+}{
+  \aiswellformed{\env}{\tref{v}{\btyp}{\refa}}
+}[\rwbase]
+$$
+\emphbf{Subtyping}\hfill{\fbox{\aissubtype{\env}{\typ}{\typ'}}}\\
+$$
+\inference{
+\env' \defeq \env,\tbind{v}{\{\btyp^\tlabel | \refa\}} &
+\tologicshort{\env'}{\refa'}{\tbool}{\pred'}{}{}{} &
+\smtvalid{\vcond{\env'}{\pred'}}
+%
+}{
+ \aissubtype{\env}{\tref{v}{\btyp}{\refa}}{\tref{v}{\btyp}{\refa'}}
+}[\rsubbase]
+$$
+%%%% %\NV{REVERT TO OLD DEFINITIONS, what is e'?}
+%%%% $$
+%%%% \inference{
+%%%% \tologicshort{\env'}{\refa_1}{\tbool}{\pred_1}{\tbool}{\smtenv_1}{\axioms_1} &
+%%%% \tologicshort{\env'}{\refa_2}{\tbool}{\pred_2}{\tbool}{\smtenv_1}{\axioms_1} \\
+%%%% % \isvalid{\env,\tbind{v}{\btyp}}{\refa_1}{\refa_2}
+%%%% \env' \defeq \env,\tbind{v}{\btyp^\tlabel} &
+%%%% % \tologicshort{\env'}{\refa'}{\tbool}{\pred'}{\tbool}{\smtenv'}{\axioms'} &
+%%%% \smtvalid{\vcond{\env'}{\pred_1 \Rightarrow \pred_2}}
+%%%% %
+%%%% }{
+  %%%% \aissubtype{\env}{\tref{v}{\btyp}{\refa_1}}{\tref{v}{\btyp}{\refa_2}}
+%%%% }[\rsubbase]
+%%%% $$
+%%% \emphbf{Implication}\hfill{\isvalid{\env}{\refa_1}{\refa_2}}\\
+%%% $$
+%%% \inference{
+  %%% \tologicshort{\env}{\refa_1}{\tbool}{\pred_1}{\tbool}{\smtenv_1}{\axioms_1} &
+  %%% \tologicshort{\env}{\refa_2}{\tbool}{\pred_2}{\tbool}{\smtenv_2}{\axioms_i} \\
+  %%% \text{is SMT-valid}\ (\embedexpr{\env} \Rightarrow \pred_1 \Rightarrow \pred_2)
+%%% }{
+  %%% \isvalid{\env}{\refa_1}{\refa_2}
+%%% }
+%%% $$
+%%% \emphbf{Typing}\hfill{\ahastype{\env}{\prog}{\typ}}\\
+\caption{\textbf{Algorithmic Typing (other rules in Figs~\ref{fig:syntax} and \ref{fig:typing}.)}}
+\label{fig:modifications}
+\end{figure}
+
+Figure~\ref{fig:modifications} summarizes the modifications required
+to obtain decidable type checking.
+%
+Namely, basic types are extended with labels that track termination
+and subtyping is checked via an SMT solver.
+
+\mypara{Termination}
+%
+Under arbitrary beta-reduction semantics
+(which includes lazy evaluation), soundness
+of refinement type checking requires checking
+termination, for two reasons:
+%
+(1)~to ensure that refinements cannot diverge, and
+(2)~to account for the environment during subtyping~\citep{Vazou14}.
+%
+We use \tlabel to mark provably terminating
+computations, and extend the rules to use
+refinements to ensure that if
+${\ahastype{\env}{e}{\tref{v}{\btyp^\tlabel}{r}}}$,
+then $e$ terminates~\citep{Vazou14}.
+%
+%% Here we assume termination is checked by an oracle,
+%% but we can use refinement types themselves to prove
+%% correctness of the termination labeling
+
+
+\mypara{Verification Conditions}
+The \emph{verification condition} (VC)
+${\vcond{\env}{\pred}}$
+is \emph{valid} only if the set of values
+described by $\env$, is subsumed by
+the set of values described by $\pred$.
+%
+$\env$ is embedded into logic by conjoining
+(the embeddings of) the refinements of
+provably terminating binders~\cite{Vazou14}:
+%
+%% We only trust refinements of terminating
+%% expressions, as every diverging expression
+%% can be unsoundly refined \efalse.
+%% $$
+%% \embed{\env} \defeq
+  %% \bigwedge\{ p \mid \tbind{x}{\tref{v}{\btyp^{\tlabel}}{e}} \in \env
+   %% \land \tologicshort{\env}{e\subst{v}{x}}{\btyp}{p}{\embed{\btyp}}{\smtenv}{\axioms}
+   %% \}
+%% $$
+\begin{align*}
+\embed{\env} \defeq & \bigwedge_{x \in \env} \embed{\env, x} \\
+\intertext{where we embed each binder as}
+\embed{\env, x} \defeq & \begin{cases}
+                           \pred  & \text{if } \env(x)=\tref{v}{\btyp^{\tlabel}}{e},\
+                                    \tologicshort{\env}{e\subst{v}{x}}{\btyp}{\pred}{\embed{\btyp}}{\smtenv}{\axioms} \\
+                           \etrue & \text{otherwise}.
+                         \end{cases}
+\end{align*}
+
+%We use the embedding of environment to decidably check subtyping.
+%As defined in Figure~\ref{fig:modifications},
+%\tref{v}{\btyp}{\refa_1} is subtype of \tref{v}{\btyp}{\refa_1}
+%under the environment \env, when
+%$\refa_i$ transforms to $\pred_i$ with axioms $\axioms_i$
+%and assuming $\embedexpr{\env}$ and the axioms $\axioms_i$
+%$\pred_i$ implies $\pred_2$.
+
+\mypara{Subtyping via SMT Validity}
+%
+We make subtyping, and hence, typing decidable,
+by replacing the denotational base subtyping
+rule $\rsubbase$ with a conservative,
+algorithmic version that uses an SMT
+solver to check the validity of the subtyping VC.
+%
+We use Corollary~\ref{thm:embedding} to prove
+soundness of subtyping. 
+%
+\begin{lemma}\label{lem:subtyping} %[Conservative Subtyping]
+If {\aissubtype{\env}{\tref{v}{\btyp}{e_1}}{\tref{v}{\btyp}{e_2}}}
+then {\issubtype{\env}{\tref{v}{\btyp}{e_1}}{\tref{v}{\btyp}{e_2}}}.
+\end{lemma}
+
+%
+\mypara{Soundness of \smtlan}
+%
+Lemma~\ref{lem:subtyping} directly implies the soundness of \smtlan.
+%
+\begin{theorem}[Soundness of \smtlan]\label{thm:soundness-smt}
+If \ahastype{\env}{e}{\typ} then \hastype{\env}{e}{\typ}.
+\end{theorem}
+
+
+\begin{comment}
+\begin{proof}
+By rule \rsubbase, we need to show that
+$\forall \sub\in\interp{\env}.
+  \interp{\applysub{\sub}{\tref{v}{\btyp}{\refa_1}}}
+  \subseteq
+  \interp{\applysub{\sub}{\tref{v}{\btyp}{\refa_2}}}$.
+%
+We fix a $\sub\in\interp{\env}$.
+and get that forall bindings
+$(\tbind{x_i}{\tref{v}{\btyp^{\downarrow}}{\refa_i}}) \in \env$,
+$\evalsto{\applysub{\sub}{e_i\subst{v}{x_i}}}{\etrue}$.
+
+Then need to show that for each $e$,
+if $e \in \interp{\applysub{\sub}{\tref{v}{\btyp}{\refa_1}}}$,
+then $e \in \interp{\applysub{\sub}{\tref{v}{\btyp}{\refa_2}}}$.
+
+If $e$ diverges then the statement trivially holds.
+Assume $\evalsto{e}{w}$.
+We need to show that
+if $\evalsto{\applysub{\sub}{e_1\subst{v}{w}}}{\etrue}$
+then $\evalsto{\applysub{\sub}{e_2\subst{v}{w}}}{\etrue}$.
+
+Let \vsub the lifted substitution that satisfies the above.
+Then  by Lemma~\ref{thm:embedding}
+for each model $\bmodel \in \interp{\vsub}$,
+$\bmodel\models\pred_i$, and $\bmodel\models q_1$
+for
+$\tologicshort{\env}{e_i\subst{v}{x_i}}{\btyp}{\pred_i}{\embed{\btyp}}{\smtenv_i}{\axioms_i}$
+$\tologicshort{\env}{e_i\subst{v}{w}}{\btyp}{q_i}{\embed{\btyp}}{\smtenv_i}{\beta_i}$.
+%
+Since \aissubtype{\env}{\tref{v}{\btyp}{e_1}}{\tref{v}{\btyp}{e_2}} we get
+$$
+\bigwedge_i \pred_i
+\Rightarrow q_1 \Rightarrow q_2
+$$
+thus $\bmodel\models q_2$.
+%
+By Theorem~\ref{thm:embedding} we get $\evalsto{\applysub{\sub}{\refa_2\subst{v}{w}}}{\etrue}$.
+\end{proof}
+\end{comment}

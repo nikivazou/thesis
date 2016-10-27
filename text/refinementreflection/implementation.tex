@@ -1,0 +1,473 @@
+\section{Implementation: \href{https://github.com/ucsd-progsys/liquidhaskell/tree/popl17}{Liquid Haskell}}
+
+Refinement Reflection is fully implemented in 
+Liquid Haskell and will be included in the next release. 
+%
+The implementation can be found in the
+% 
+\href{https://github.com/ucsd-progsys/liquidhaskell/tree/popl17}{github repository}
+%
+and all the benchmarks of Sections~\ref{sec:overview} and~\ref{sec:evaluation}
+are included in our 
+%
+\href{https://github.com/ucsd-progsys/liquidhaskell/tree/popl17/benchmarks/popl17/pos}{tests}. 
+%
+Next, we describe the file 
+%
+\href{https://github.com/ucsd-progsys/liquidhaskell/blob/popl17/benchmarks/popl17/pos/Proves.hs}{Proves.hs}, 
+%
+the library of proof combinators used by our benchmarks
+and discuss known limitations of our implementation. 
+
+
+\renewcommand\libname{\ensuremath{\texttt{Proves}}\xspace}
+
+\subsection{\libname: The Proof Combinators Library}
+\label{subsec:library}
+
+In this section we present \libname,
+a Haskell library used to structure proof terms.
+%
+\libname is inspired by Equational Reasoning Data Types
+in Adga~\citep{agdaequational}, providing operators to
+construct proofs for equality and linear arithmetic in Haskell.
+%
+The constructed proofs are checked by an SMT-solver via Liquid Types.
+
+\spara{Proof terms} are defined in \libname as a type alias for unit,
+a data type that curries no run-time information
+%
+\begin{code}
+  type Proof = ()
+\end{code}
+%
+Proof types are refined to express theorems about program functions.
+%
+For example, the following @Proof@ type expresses that
+@fib 2 == 1@
+%
+\begin{code}
+  fib2 :: () -> {v:Proof | fib 2 == 1}
+\end{code}
+%
+We simplify the above type by omitting the irrelevant
+basic type @Proof@ and variable @v@
+%
+\begin{code}
+  fib2 :: () -> { fib 2 == 1 }
+\end{code}
+%
+
+\libname provides primitives to construct proof terms
+by casting expressions to proofs.
+%
+To resemble mathematical proofs,
+we make this casting post-fix.
+%
+We write @p *** QED@ to cast @p@ to a proof term,
+by defining two operators @QED@ and @***@ as
+%
+\begin{code}
+  data QED = QED
+
+  (***) :: a -> QED -> Proof
+  _ *** _  = ()
+\end{code}
+
+\spara{Proof construction.}
+%
+To construct proof terms, \libname
+provides a proof constructor @op.@
+for logical operators of the theory of
+linear arithmetic and equality:
+$\{=, \not =, \leq, <, \geq, > \} \in \odot$.
+@op. x y@ ensures that $x \odot y$ holds, and returns @x@
+%
+\begin{code}
+  op.:: x:a -> y:{a| x op y} -> {v:a| v==x}
+  op. x _ = x
+
+  -- for example
+  ==.:: x:a -> y:{a| x==y} -> {v:a| v==x}
+\end{code}
+%
+For instance, using @==.@
+we construct a proof, in terms of Haskell code,
+that @fib 2 == 1@:
+%
+\begin{code}
+  fib2 _
+    =   fib 2
+    ==. fib 1 + fib 0
+    ==. 1
+    *** QED
+\end{code} %$
+
+\spara{Reusing proofs: Proofs as optional arguments.}
+%
+Often, proofs require reusing existing proof terms.
+%
+For example, to prove @fib 3 == 2@ we can reuse the above
+@fib2@ proof.
+%
+We extend the proof combinators, to receive
+an \textit{optional} third argument of @Proof@ type.
+%
+\begin{code}
+  op.:: x:a -> y:a -> {x op y} -> {v:a|v==x}
+  op. x _ _ = x
+\end{code}
+%
+@op. x y p@ returns @x@ while the third argument @p@
+explicitly proves $x \odot y$.
+
+\spara{Optional Arguments.}
+%
+The proof term argument is optional.
+To implement optional arguments in Haskell we use the standard technique
+where for each operator @op!@ we define a type class @Optop@
+that takes as input two expressions @a@ and returns a result @r@,
+which will be instantiated with either the result value @r:=a@
+or a function form a proof to the result @r:=Proof ->  a@.
+%
+\begin{code}
+  class Optop a r where
+    (op.) :: a -> a -> r
+\end{code}
+%
+When no explicit proof argument is required,
+the result type is just an @y:a@ that curries the proof @x op y@
+%
+\begin{code}
+  instance Optop a a where
+  (op.) :: x:a->y:{a| x op y}->{v:a | v==x }
+  (op.) x _ = x
+\end{code}
+%
+Note that Haskell's type inference~\citep{Sulzmann06}
+requires both type class parameters @a@ and @r@ to be constrainted at class instance
+matching time.
+%
+In most our examples, the result type parameter @r@ is not constrained
+at instance matching time, thus
+due to the Open World Assumption
+the matching instance could not be determined.
+%
+To address the above, we used another common Haskell trick,
+of generalizing the instance to type arguments @a@ and @b@ and then
+constraint @a@ and @b@ to be equal @a~b@.
+%
+This generalization allows the instance to always match and
+imposed the equality constraint after matching.
+%
+\begin{code}
+  instance (a~b)=>Optop a b where
+  (op.) :: x:a->y:{x op y}->{v:b | v==x }
+  (op.) x _ = x
+\end{code}
+
+
+\begin{comment}
+Explanation of (a~b) requirement
+
+Function `foo` has the signature:
+
+  foo :: Foo a r => a -> r
+
+During type inference, the term `foo _5 True` gives rise to the wanted constraint:
+
+WC = Foo Int (Bool -> b)
+and the term has type: (foo _5 True) :: b
+
+The top-level instance gives you the bidirectional CHR (simplification rule, if you
+want to learn more about this check out "Understanding Functional Dependencies via
+Constraint Handling Rules"):
+
+  CHR: (a ~ b) <==> Foo a (Bool -> b)
+
+Now, using the rule, you can replace your wanted constraint with (Int ~ b). This you
+can now discharge by instantiating `b' to `Bool'. You may feel that instantiating `b'
+is "random" but it is not. At this point is like HM, where you generate equality
+constraints and search for a valid solution, and both `a' and `b' are universally
+quantified.
+
+The fact that the instance was picked is also not random: Your original instance head
+imposes a non-structural restriction (non-linear pattern), so it is too restrictive,
+but at the same time disallows you to give another similar instance to cover the
+remaining similar cases (Foo a (Bool -> b) which would match the rest of the cases
+where the `a's are not the same is no longer allowed, since they would overlap. Note
+that GHC allows them both --even without OverlappingInstances enabled-- but this is
+a bug #11605 :P). By being too restrictive, it cannot be picked (a and b have to be
+checked for equality when matching, and during inference, this information is not there.
+That is why the `bar' with signature `Int -> Bool' did not have this problem, indirectly
+it fixes `b' to `Int' --and `a' is already `Int'-- so it can match).
+
+  Foo a (Bool -> a) -- Your original instance head
+  Foo a (Bool -> b) -- The updated instance head
+
+Instead, your new instance head is the most general, and it matches ANYWAY, even without
+knowing `b'.
+\end{comment}
+%
+To explicitly provide a proof argument,
+the result type @r@ is instantiated to @r:= Proof -> a@.
+%
+For the same instance matching restrictions as above,
+the type is further generalized to return some @b@
+that is constraint to be equal to @a@.
+%
+\begin{code}
+  instance (a~b)=>Optop a (Proof->b) where
+  (op.) :: x:a->y:a->{x op y}->{v:b | v==x }
+  (op.) x _ _ = x
+\end{code}
+%
+As a concrete example, we define the equality operator @==.@
+via the type class @OptEq@ as
+\begin{code}
+  class OptEq a r where
+   (==.):: a -> a -> r
+
+  instance (a~b)=>OptEq a b where
+   (==.)::x:a->y:{a|x==y}->{v:b|v==x}
+   (==.) x _ = x
+
+  instance (a~b)=>OptEq a (Proof->b) where
+   (==.)::x:a->y:a->{x==y}->{v:b|v==x}
+   (==.) x _ _ = x
+\end{code}
+
+\spara{Explanation Operator.}
+%
+The ``explanation operator'' @(?)@, or @($\because$)@, 
+is used to better structure the proofs.
+%
+@(?)@ is an infix operator with same fixity as @(op.)@
+that allows for the equivalence
+%
+@ x op. y ? p == (op.) x y p@
+%
+\begin{code}
+  (?) :: (Proof -> a) -> Proof -> a
+  f ? y = f y
+\end{code}
+
+\spara{Putting it all together}
+%
+Using the above operators,
+we prove that @fib 3 == 2@,
+reusing the previous proof of @fib 2 == 1@,
+in a Haskell term that resembles mathematical proofs
+%
+\begin{code}
+  fib3 :: () ->  {fib 3 == 2}
+  fib3 _
+    =   fib 3
+    ==. fib 2 + fib 1
+    ==. 2             ? fib2 ()
+    *** QED
+\end{code}
+
+
+\spara{Unverified Operators}
+All operators in \libname, but two are implemented in Haskell
+with implementations verified by Liquid Haskell. 
+%
+The ''unsound`` operators are the assume 
+(1). @(==?)@ that eases proof construction by assuming equalities, to be proven later
+and (2). @(=*)@ extentional proof equality. 
+
+\spara{Assume Operator} @(==?)@ eases proof construction by 
+assuming equalities while the proof is in process. 
+%
+It is not implemented in that its body is @undefined@. 
+%
+Thus, if we run proof terms including assume operator, the proof will merely crash
+(instead of returning @()@). 
+%
+Proofs including the assume operator are not considered complete, 
+as via assume operator any statement can be proven, 
+
+\spara{Function Extensional Equality}
+Unlike the assume operator that is undefined and 
+included in unfinished thus unsound proofs, 
+the functions extensionality is included in valid proofs
+that assume function extensionality, an axioms that is assumed, 
+as it cannot be proven by our logic. 
+
+To allow function equality via extensionality, 
+we provide the user with a function comparison operator
+that for each function @f@ and @g@ it transforms a proof 
+that for every argument @x@, @f x = g x@ to a proof 
+on function equality @f = g@. 
+\begin{code}
+(=*) :: Arg a => f:(a -> b) -> g:(a -> b)
+     -> p:(x:a -> {f x = g x})
+     -> {f = g}
+\end{code}
+%
+The function @(=*)@ is not implemented in the library: 
+it returns () and its type is assumed. 
+%
+But soundness of its usage requires the argument type variable @a@
+to be constrained by a type class constraint @Arg a@, 
+for both operational and type theoretic reasons.
+%
+
+From \textit{operational} point of view,
+an implementation of @(=*)@ would require checking 
+equality of @f x = g x@ \textit{forall} arguments @x@ of type @a@. 
+%
+This equality would hold due to the proof argument @p@. 
+%
+The only missing point is a way to enumerate all the argument @a@, 
+but this could be provided by a method of the type clas @Arg a@. 
+%
+Yet, we have not implement @(=*)@ because we do not know how to 
+provide such an implementation that can provably satisfy @(=*)@'s type.
+
+From \textit{type theoretic} point of view, 
+the type variable argument @a@
+appears only on negative positions. 
+%
+Liquid type inference is smart enough to infer that 
+since @a@ appears only negative @(=*)@ cannot use any @a@
+and thus will not call any of its argument arguments @f@, @g@, nor the @p@. 
+%
+Thus, at each call site of @(=*)@ the type variable `a` is instantiated
+with the refinement type @{v:a | false}@ indicating dead-code 
+(since @a@s will not be used by the callee.)
+%
+Refining the argument @x:a@ with false at each call-site though
+leads to unsoundness, as each proof argument @p@ is a valid proof under 
+the false assumption. 
+%
+What Liquid inference cannot predict is our intention to call 
+@f@, @g@ and @p@ at \textit{every possible argument}. 
+%
+This information is capture by the type class constraint @Arg a@
+that (as discussed before~\citep{Vazou13}) states that methods of 
+the type class 
+@Arg a@ may create values of type @a@, thus, 
+due to lack of information on the values that are created by the
+methods of @Arg a@, @a@ can only be refined with @True@.
+
+With extensional equality, we can prove 
+that @\x -> x@ is equal to @\x -> id x@, 
+by providing an explicit explanation that 
+if we call both these functions with the same 
+argument @x@, they return the same result, for each @x@.
+%
+\begin{mcode}
+ safe :: Arg a => a 
+       -> {(\x -> id x) = (\x -> x)}
+ safe _  = (\x -> x) 
+         =*(\x -> id x) $\because$ (exp ())
+ 
+ exp :: Arg a => a -> x:a 
+     -> {(\x -> id x) x = (\x -> x) x}
+ exp _ x =  id x 
+         ==. x
+         *** QED
+\end{mcode} 
+%
+Note that the result of @exp@ 
+is an equality of the redexes 
+@(\x -> id x) x@ and @((\x -> x) x@. 
+%
+Extentional function equality requires 
+as argument an equality on such redexes. 
+%
+Via $\beta$ equality instantiations, 
+both such redexes will automatically reduce, 
+requiring @exp@ to prove @id x = x@, 
+with is direct.  
+
+Admittedly, proving function equality via extensionality
+is requires a cumbersome indirect proof. 
+%
+For each function equality in the main proof
+one needs to define an explanation function 
+that proves the equality for every argument.
+
+
+\subsection{Engineering Limitations}
+The theory of refinement reflection is fully implemented in Liquid Haskell. 
+%
+Yet, to make this extension \textit{usable} in \textit{real world applications}
+there are four known engineering limitations that need to be addressed. 
+% 
+All these limitations seem straightforward to address 
+and we plan to fix them soon.
+
+\spara{The language of refinements}
+is typed lambda calculus. That is the types of the lambda arguments are 
+explicitly specified 
+instead of being inferred. 
+%
+As another minor limitation, the refinement language parser 
+requires the argument to be enclosed in parenthesis
+in applications where the function is not a variable. 
+%
+Thus the Haskell expression 
+@(\x -> x) e@ should be written as @(\x:a -> x) (e)@
+in the refinement logic, 
+
+\spara{Class instances methods} can not be reflected. 
+%
+Instead, the methods we want to use in the theorems/propositions
+should be defined as Haskell functions. 
+%
+This restriction has two major implications. 
+%
+Firstly, we can not verify correctness of library provided 
+instances but we need to redifine them ourselves. 
+%
+Secondly, we cannot really verify class instances with class preconditions. 
+%
+For example, during verification of monoid associativity of the Maybe instance
+\begin{code}
+  instance (Monoid a) => Monoid (Maybe a)
+\end{code}
+%
+there is this @Monoid a@ class constraint assumption we needed to raise to 
+proceed verification.
+
+\spara{Only user defined data types}
+can currently used in verification. 
+%
+The reason for this limitation is that 
+reflection of case expressions 
+requires checker and projector measures for each 
+data type used in reflected functions. 
+%
+Thus, not only should these data types be defined in 
+the verified module, but also should be 
+be injected in the logic by providing a refined version of 
+the definition that can (or may not) be trivially refined. 
+
+For example, to reflect a function that uses 
+@Peano@ numbers, the Haskell \textit{and} the refined @Peano@ 
+definitions should be provided
+%
+\begin{code}
+data Peano = Z | S Peano
+
+{-@ data Peano [toInt] 
+     = Z 
+     | S {prev :: Peano} 
+  @-}
+\end{code}
+%
+Note that the termination function @toInt@ 
+that maps @Peano@ numbers to natural numbers 
+is also crucial for soundness of reflection. 
+
+\spara{There is no module support.}
+All reflected definitions, 
+including, measures (automatically generated checkers and selector, 
+but also the classic lifted Haskell functions to measures) 
+and the reflected types of the reflected functions, 
+are not exposed outside of the module they are defined. 
+%
+Thus all definitions and propositions should exist in the same module. 

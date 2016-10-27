@@ -1,0 +1,286 @@
+
+
+
+Initial environment: Sort
+
+$$
+\begin{array}{rrcl}
+\emphbf{SMT Sorts} \quad 
+  & \sort
+  & ::=   & \tint \spmid \tbool \spmid \tuniv \spmid \tsmtfun{\sort}{\sort}
+\\[0.05in]
+\end{array}
+$$
+
+Free Variables-Initial Environment $\smtenv_I$
+\begin{align*}
+\text{uvar}_c&:\embed{\constty{c}}, \text{for every functional constant}\ c \\
+\dc&:\embed{\constty{c}}, \text{for every data constructor}\ \dc\\
+\smtappname{\sort_x}{\sort}&: \tsmtfun{\sort_x}{\sort} \rightarrow \sort_x \rightarrow \sort , 
+\text{for every SMT sorts}\ \sort, \sort_x\\
+\selector{\dc}{i} &: \embed{\constty{\dc} \rightarrow \typ_i}, 
+\text{with}\ \constty{\dc} = \typ_1 \rightarrow \dots \rightarrow \typ_n\rightarrow\typ\\
+& \text{for every data con}\ \dc\ \text{with arity}\ i
+\end{align*}
+
+
+
+
+Embedding of Types
+\begin{align*}
+\embed{\tint} &=\tint\\
+\embed{\tbool} &=\tbool\\
+\embed{T}     &= \tuniv\\
+\embed{\tfunbasic{x}{\typ_x}{\typ}} &= \tsmtfun{\embed{\typ_x}}{\embed{\typ}}
+\end{align*}
+
+
+Embedding of Environments
+\begin{align*}
+\embed{\emptyset} &= \emptyset \\
+\embed{\env, \tbind{x}{\typ}} &= \embed{\env}, \tbind{x}{\embed{\typ}}
+\end{align*}
+
+\NV{What happens with polymorphic functions?}
+
+
+
+\begin{align*}
+\smtapp{\tsmtfun{\sort_x}{\sort}}{p_f}{p_x} 
+   = \smtappname{\sort_x}{\sort}\ {p_f}\ p_x
+\end{align*}
+
+
+
+
+\emphbf{Defunctionalization}\hfill{\tologic{\Gamma}{e}{\typ}{p}{\sort}{\smtenv}{\axioms}}
+$$
+\inference{
+}{
+	\tologic{\env}{\etrue}{\tbool}{\etrue}{\tbool}{\emptyset}{\etrue}
+}[\lgtrue]
+$$
+$$
+\inference{
+}{
+	\tologic{\env}{\efalse}{\tbool}{\efalse}{\tbool}{\emptyset}{\etrue}
+}[\lgfalse]
+$$
+$$
+\inference{
+}{
+	\tologic{\env}{n}{\tint}{n}{\tint}{\emptyset}{\etrue}
+}[\lgint]
+$$
+
+Binary operators
+$$
+\inference{
+    \tologic{\env}{e_1}{\typ}{p_1}{\embed{\typ}}{\smtenv}{\axioms_1} \\
+    \tologic{\env}{e_1}{\typ}{p_1}{\embed{\typ}}{\smtenv}{\axioms_2}
+}{
+	\tologic{\env}{e_1 = e_2}{\tbool}{p_1 = p_2}{\tbool}{\smtenv}{\axioms_1\land \axioms_2}  
+}[\lgbinEQ]
+$$
+$$
+\inference{
+    \tologic{\env}{e_1}{\tint}{p_1}{\tint}{\smtenv}{\axioms_1} \\
+    \tologic{\env}{e_1}{\tint}{p_1}{\tint}{\smtenv}{\axioms_2}
+}{
+	\tologic{\env}{e_1 < e_2}{\tbool}{p_1 < p_2}{\tbool}{\smtenv}{\axioms_1\land \axioms_2}  
+}[\lgbinINT]
+$$
+$$
+\inference{
+    \tologic{\env}{e_1}{\tbool}{p_1}{\tbool}{\smtenv}{\axioms_1} \\ 
+    \tologic{\env}{e_1}{\tbool}{p_1}{\tbool}{\smtenv}{\axioms_2}
+}{
+	\tologic{\env}{e_1 \land e_2}{\tbool}{p_1 \land p_2}{\tbool}{\smtenv}{\axioms_1\land \axioms_2}  
+}[\lgbinBOOL]
+$$
+
+$$
+\inference{
+    \tologic{\env}{e_1}{\typ}{p_1}{\embed{\typ}}{\smtenv}{\axioms_1} \\
+    \tologic{\env}{e_1}{\typ}{p_1}{\embed{\typ}}{\smtenv}{\axioms_2}
+}{
+	\tologic{\env}{\odot\ e_1 \ e_2}{\tbool}{\odot\ p_1 \ p_2}{\tbool}{\smtenv}{\axioms_1\land \axioms_2}  
+}[\lgbinGEN]
+$$
+
+Unary Operators
+$$
+\inference{
+	\tologic{\env}{e}{\tbool}{p}{\tbool}{\smtenv}{\axioms}
+}{
+	\tologic{\env}{\lnot e}{\tbool}{\lnot p}{\tbool}{\smtenv}{\axioms}
+}[\lgun]
+$$
+$$
+\inference{
+	\tologic{\env}{e}{\tbool}{p}{\tbool}{\smtenv}{\axioms}
+}{
+	\tologic{\env}{\odot\ e}{\tbool}{\odot\ p}{\tbool}{\smtenv}{\axioms}
+}[\lgun]
+$$
+
+Partially applied operators
+$$
+\inference{
+}{
+	\tologic{\env}{\odot}{\constty{\odot}}{\text{uvar}_\odot}{\embed{\constty{\odot}}}{\emptyset}{\etrue}  
+}[\lgpop]
+$$
+
+$$
+\inference{
+}{
+	\tologic{\env}{\dc}{\constty{\dc}}{\dc}{\embed{\constty{\dc}}}{\emptyset}{\etrue}
+}[\lgdc]
+$$
+
+$$
+\inference{
+}{
+	\tologic{\env}{x}{\env(x)}{x}{\embed{\env(x)}}{\emptyset}{\etrue}
+}[\lgvar]
+$$
+
+$$
+\inference{
+ 	f \not \in \smtenv & f \not \in \env & 
+ 	\sort' = \embed{\tfun{x}{\typ_x}{\typ}} & 
+ 	\sort  = \embed{\typ} & 
+ 	\sort_x = \embed{\typ_x} \\
+ 	\tologic{\env,\tbind{x}{\typ_x}}{e}{\typ}{p}{\sort}{\smtenv, \tbind{x}{\embed{\typ_x}}}{\axioms} \\
+  	\axioms_{f_1} = \forall \tbind{x}{\sort_x}.\smtappname{\sort_x}{\sort}\ f\ x = p \\
+  	\axioms_{f_2} = \forall \tbind{g}{\sort'}. 
+  	(\forall \tbind{x}{\sort_x}. \smtappname{\sort_x}{\sort}\ f\ x = \smtappname{\sort_x}{\sort}\ g\ x) \Rightarrow f = g
+}{
+	\tologic{\env}{(\efun{x}{}{e})}{(\tfun{x}{\typ_x}{\typ})}
+	        {f}{\sort'}{\smtenv, \tbind{f}{\sort'}}{\axioms \land \axioms_{f_1} \land \axioms_{f_2}}
+}[\lgfun]
+$$
+
+$$
+\inference{
+	\tologic{\env}{e_1}{\tfun{x}{\typ_x}{\typ}}{p_1}{\tsmtfun{\embed{\typ_x}}{\embed{\typ}}}{\smtenv}{\axioms_1} \\
+	\tologic{\env}{e_2}{\typ_x}{p_2}{\embed{\typ_x}}{\smtenv}{\axioms_2}
+}{
+	\tologic{\env}{e_1\ e_2}{\typ}{\smtapp{\embed{\tfun{x}{\typ_x}{\typ}}}{p_1}{p_2}}{\embed{\typ}}{\smtenv}{\axioms_1 \land \axioms_2}
+}[\lgapp]
+$$
+
+
+$$
+\inference{
+	\tologic{\env}{e}{\tbool}{p}{\tbool}{\smtenv}{\axioms}\\
+	\tologic{\env}{e_i\subst{x}{e}}{\typ}{p_i}{\embed{\typ}}{\smtenv}{\axioms_i}
+}{
+	\tologic{\env}{\ecaseexp{x}{e}{\etrue \rightarrow e_1; \efalse \rightarrow e_2}}{\typ}
+	 {\eif{p}{p_1}{p_2}}{\embed{\typ}}{\smtenv}{\axioms\land\wedge_i\axioms_i}
+}[\lgcaseBool]
+$$
+
+$$
+\inference{
+	\tologic{\env}{e}{\typ_e}{p}{\embed{\typ_e}}{\smtenv}{\axioms}\\
+	\tologic{\env}{e_i\subst{\overline{y_i}}{\overline{\selector{\dc_i}{}\ x}}\subst{x}{e}}{\typ}{p_i}{\embed{\typ}}{\smtenv}{\axioms_i}
+}{
+	\tologic{\env}{\ecase{x}{e}{\dc_i}{\overline{y_i}}{e_i}}{\typ}
+	 {\texttt{if}\ \checkdc{\dc_i}\ p\ \texttt{then}\ p_i}{\embed{\typ}}{\smtenv}{\axioms\land\wedge_i\axioms_i}
+}[\lgcase]
+$$
+
+$$
+\inference{
+	\tologic{\env}{e}{\typ}{p}{\embed{\typ}}{\smtenv}{\axioms}
+}{
+	\tologic{\env}{e}{\typ}{p}{\embed{\typ}}{\smtenv, \tbind{x}{\sort}}{\axioms}
+}[\lgenv]
+$$
+
+
+
+\begin{lemma}[Type Preservation]
+If \tologic{\env}{e}{\typ}{p}{\sort}{\smtenv}{\axioms}, 
+then $\sort = \embed{\typ}$.
+\end{lemma}
+
+
+\begin{lemma}[Well Formedness]
+If \tologic{\env}{e}{\typ}{p}{\sort}{\smtenv}{\axioms}, 
+then \smthastype{\smtenv_I, \embed{\env}, \smtenv}{p}{\embed{\typ}}
+and \smthastype{\smtenv_I, \embed{\env}, \smtenv}{\axioms}{\tbool}.
+\end{lemma}
+
+% \newcommand\bot{\ensuremath{\perp}}
+
+\begin{theorem}\label{thm:embedding}
+If \hastype{\env}{e}{\tbool^{\downarrow}} and 
+\tologic{\env}{e}{\tbool}{p}{\tbool}{\smtenv}{\axioms}, 
+then 
+$\forall \vsub\in\interp{\env}$
+there always exists an extension $\embed{\vsub} \subseteq\sigma$ such that
+$\sigma \models \axioms$ and 
+%% axioms are local 
+%
+$\evalsto{\applysub{\vsub}{p}}{\etrue}$ $\iff$ $\sigma \models p$.
+\end{theorem}
+
+
+\begin{align*}
+\embedexpr{\env} \defeq
+  \bigwedge\{ \axioms \land p \mid \tbind{x}{\tref{v}{\btyp^{\downarrow}}{e}} \in \env
+   \land \tologic{\env}{e\subst{v}{x}}{\btyp}{p}{\embed{\btyp}}{\smtenv_i}{\axioms}  
+   \}
+\end{align*}
+
+
+
+
+$$
+\inference{
+  \tologic{\env}{e_i}{\tbool}{p_i}{\tbool}{\smtenv_i}{\axioms_i}
+}{
+\embedexpr{\env \Rightarrow e_1 \Rightarrow e_2 } \defeq
+  \embedexpr{\env} \land \axioms_1 \land \axioms_2 \Rightarrow p_1 \Rightarrow p_2 
+}
+$$
+
+
+\begin{theorem}
+If \aissubtype{\env}{\tref{v}{\btyp}{e_1}}{\tref{v}{\btyp}{e_2}} 
+then \issubtype{\env}{\tref{v}{\btyp}{e_1}}{\tref{v}{\btyp}{e_2}}
+\end{theorem}
+\begin{proof}
+We fix a $\sub\in\interp{\env}$.
+Then forall $(\tbind{x_i}{\tref{v}{\btyp^{\downarrow}}{e_i}}) \in \env$ 
+$\evalsto{\applysub{\sub}{e_i\subst{v}{x_i}}}{\etrue}$
+ 
+Then need to show that for each $e$, 
+if $e \in \interp{\applysub{\sub}{\tref{v}{\btyp}{e_1}}}$,
+then $e \in \interp{\applysub{\sub}{\tref{v}{\btyp}{e_2}}}$.
+
+If $e$ diverges then the statement trivially holds. 
+Assume $\evalsto{e}{w}$. 
+We need to show that 
+If $\evalsto{\applysub{\sub}{e_1\subst{v}{w}}}{\etrue}$ then $\evalsto{\applysub{\sub}{e_2\subst{v}{w}}}{\etrue}$.
+
+Let \vsub the lifted substitution that satisfies the above. 
+Then there is an extension $\sigma$, such that 
+$\sigma \models \beta_i$, $\sigma \models \alpha_i$, $\sigma\models p_i$, and $\sigma\models q_1$
+for 
+$\tologic{\env}{e_i\subst{v}{x_i}}{\btyp}{p_i}{\embed{\btyp}}{\smtenv_i}{\axioms_i}$
+$\tologic{\env}{e_i\subst{v}{w}}{\btyp}{q_i}{\embed{\btyp}}{\smtenv_i}{\beta_i}$.
+%
+Since \aissubtype{\env}{\tref{v}{\btyp}{e_1}}{\tref{v}{\btyp}{e_2}} we get 
+$$
+\bigwedge_i (\axioms_i \land p_i) 
+\land \beta_1 \land \beta_2 
+\Rightarrow q_1 \Rightarrow q_2
+$$
+thus $\sigma\models q_2$.
+%
+By Theorem~\ref{thm:embedding} we get $\evalsto{\applysub{\sub}{e_2\subst{v}{w}}}{\etrue}$.
+\end{proof}

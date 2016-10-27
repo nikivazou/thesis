@@ -1,0 +1,151 @@
+\section{Soundness of Refinement Reflection}
+
+We prove Theorem~\ref{thm:safety}
+of \S~\ref{sec:types-reflection}
+by reduction to Soundness of \undeclang~\citep{Vazou14}. 
+
+\begin{theorem}{[Denotations]}~\label{tech:thm:denotations}
+If $\hastype{\env}{\prog}{\typ}$ then
+$\forall \sto\in \interp{\env}. \applysub{\sto}{\prog} \in \interp{\applysub{\sto}{\typ}}$.
+\end{theorem}
+\begin{proof}
+We use the proof from~\citep{Vazou14-tech} and specifically Lemma 4
+that is identical to the statement we need to prove. 
+%
+Since the proof proceeds by induction in the type derivation, 
+we need to ensure that all the modified rules satisfy the statement. 
+\begin{itemize}
+\item\rtexact
+ Assume 
+ 	\hastype{\env}{e}{\tref{v}{\btyp}{\reft_r\land v = e}}.
+ By inversion
+	\hastype{\env}{e}{\tref{v}{\btyp}{\reft_r}}(1). 
+ By (1) and IH we get 
+ $\forall \sto\in \interp{\env}. 
+   \applysub{\sto}{e} \in \interp{\applysub{\sto}{\tref{v}{\btyp}{\reft_r}}}$.
+ We fix a $\sto\in \interp{\env}$
+ We get that if \evalsto{\applysub{\sto}{e}}{w}, 
+ then $\evalsto{\applysub{\sto}{\reft_r}\subst{v}{w}}{\etrue}$.  
+ By the Definition of $=$ we get that 
+ $\evalsto{w = w}{\etrue}$. 
+ Since $\evalsto{\applysub{\sto}{(v = e)}\subst{v}{w}}{w = w}$, 
+ then $\evalsto{\applysub{\sto}{(\reft_r\land v = e)}\subst{v}{w}}{\etrue}$.  
+ Thus
+   $\applysub{\sto}{e} \in \interp{\applysub{\sto}{\tref{v}{\btyp}{\reft_r\land v = e}}}$
+  and since this holds for any fixed $\sto$,  
+ $\forall \sto\in \interp{\env}. 
+   \applysub{\sto}{e} \in \interp{\applysub{\sto}{\tref{v}{\btyp}{\reft_r\land v = e}}}$.
+\item\rtlet
+  Assume 
+	\hastype{\env}{\eletb{x}{\gtyp_x}{e_x}{\prog}}{\typ}.  
+  By inversion
+	\hastype{\env, \tbind{x}{\gtyp_x}}{e_x}{\gtyp_x} (1), 
+	\hastype{\env, \tbind{x}{\gtyp_x}}{\prog}{\gtyp} (2), and
+    \iswellformed{\env}{\typ} (3). 
+ By IH 
+	$\forall \sto\in \interp{\env, \tbind{x}{\gtyp_x}}. 
+	\applysub{\sto}{e_x} \in \interp{\applysub{\sto}{\gtyp_x}}$ (1')
+	$\forall \sto\in \interp{\env, \tbind{x}{\gtyp_x}}. 
+	\applysub{\sto}{\prog} \in \interp{\applysub{\sto}{\gtyp}}$ (2'). 
+ By (1') and by the type of $\efix{}$ 
+	$\forall \sto\in \interp{\env, \tbind{x}{\gtyp_x}}. 
+	\applysub{\sto}{\efix{x}\ e_x} \in \interp{\applysub{\sto}{\gtyp_x}}$. 
+ By which,  (2') and (3)
+	$\forall \sto\in \interp{\env}. 
+	\applysub{\sto}{\SUBST{\prog}{x}{\efix{x}\ {e_x}}} \in \interp{\applysub{\sto}{\gtyp}}$.  
+%% \NV{CHECK}
+\item\rtreflect
+  Assume 
+  \hastype{\env}{\erefb{f}{\gtyp_f}{e}{\prog}}
+			    {\typ}. 
+  By inversion, 
+    \hastype{\env}{\eletb{f}{\exacttype{\gtyp_f}{e}}{e}{\prog}}
+			     {\typ}. 
+  By IH, 
+ 	$\forall \sto\in \interp{\env}. 
+	\applysub{\sto}{\eletb{f}{\exacttype{\gtyp_f}{e}}{e}{\prog}} \in \interp{\applysub{\sto}{\gtyp}}$.  
+  Since denotations are closed under evaluation, 
+	$\forall \sto\in \interp{\env}. 
+	\applysub{\sto}{\erefb{f}{\exacttype{\gtyp_f}{e}}{e}{\prog}} \in \interp{\applysub{\sto}{\gtyp}}$.  
+
+\item\rtfix
+  In Theorem 8.3 from~\citep{Vazou14-tech} (and using the textbook proofs from~\citep{PLC})
+  we proved that for each type $\typ$, $\efix{}_\typ \in \interp{(\typ \rightarrow \typ) \rightarrow \typ}$.
+\end{itemize}
+\end{proof}
+
+\begin{theorem}{[Preservation]}
+If \hastype{\emptyset}{\prog}{\typ}
+       and $\evalsto{\prog}{w}$ then $\hastype{\emptyset}{w}{\typ}$.
+\end{theorem}
+\begin{proof}
+In~\citep{Vazou14-tech} proof proceeds by iterative application 
+of Type Preservation Lemma 7. 
+%
+Thus, it suffices to ensure Type Preservation in \corelan, which 
+it true by the following Lemma.
+\end{proof}
+
+\begin{lemma}
+If \hastype{\emptyset}{\prog}{\typ}
+       and $\evals{\prog}{\prog'}$ then $\hastype{\emptyset}{\prog'}{\typ}$.
+\end{lemma}
+\begin{proof}
+Since Type Preservation in \undeclang is proved by induction on the type derivation tree, 
+we need to ensure that all the modified rules satisfy the statement. 
+\begin{itemize}
+\item\rtexact
+ Assume 
+ 	\hastype{\emptyset}{\prog}{\tref{v}{\btyp}{\reft_r\land v = \prog}}.
+ By inversion
+	\hastype{\emptyset}{\prog}{\tref{v}{\btyp}{\reft_r}}.
+ By IH we get 
+	\hastype{\emptyset}{\prog'}{\tref{v}{\btyp}{\reft_r}}.
+ By rule \rtexact we get 
+ 	\hastype{\emptyset}{\prog'}{\tref{v}{\btyp}{\reft_r\land v = \prog'}}.
+ Since subtyping is closed under evaluation, we get 
+ 	\issubtype{\emptyset}{\tref{v}{\btyp}{\reft_r\land v = \prog'}}
+ 	                {\tref{v}{\btyp}{\reft_r\land v = \prog}}.
+ By rule \rtsub we get 
+ 	\hastype{\emptyset}{\prog'}{\tref{v}{\btyp}{\reft_r\land v = \prog}}.
+
+\item\rtlet
+  Assume 
+	\hastype{\emptyset}{\eletb{x}{\gtyp_x}{e_x}{\prog}}{\typ}.
+ By inversion, 
+   \hastype{\tbind{x}{\gtyp_x}}{e_x}{\gtyp_x}  (1), 
+   \hastype{\tbind{x}{\gtyp_x}}{\prog}{\gtyp} (2), and
+   \iswellformed{\env}{\typ} (3). 
+ By rule \rtfix
+   \hastype{\tbind{x}{\gtyp_x}}{\efix{x}\ {e_x}}{\gtyp_x}  (1').
+ By (1'), (2) and Lemma 6 of~\citep{Vazou14-tech}, we get 
+   \hastype{}{\SUBST{\prog}{x}{\efix{x}\ {e_x}}}{\SUBST{\gtyp}{x}{\efix{x}\ e_x}}. 
+ By (3)
+   $ \SUBST{\gtyp}{x}{\efix{x}\ e_x} \equiv \gtyp$.    
+ Since 
+   $\prog' \equiv \SUBST{\prog}{x}{\efix{x}\ {e_x}}$, 
+ we have 
+ \hastype{\emptyset}{\prog'}{\gtyp}. 
+
+\item\rtreflect
+  Assume 
+	\hastype{\emptyset}{\erefb{x}{\gtyp_x}{e_x}{\prog}}{\typ}.
+ By double inversion, with $\gtyp_x' \equiv \exacttype{\gtyp_x}{e_x} $; 
+   \hastype{\tbind{x}{\gtyp_x'}}{e_x}{\gtyp_x'}  (1), 
+   \hastype{\tbind{x}{\gtyp_x'}}{\prog}{\gtyp} (2), and
+   \iswellformed{\env}{\typ} (3). 
+ By rule \rtfix
+   \hastype{\tbind{x}{\gtyp_x'}}{\efix{x}\ {e_x}}{\gtyp_x'}  (1').
+ By (1'), (2) and Lemma 6 of~\citep{Vazou14-tech}, we get 
+   \hastype{}{\SUBST{\prog}{x}{\efix{x}\ {e_x}}}{\SUBST{\gtyp}{x}{\efix{x}\ e_x}}. 
+ By (3)
+   $ \SUBST{\gtyp}{x}{\efix{x}\ e_x} \equiv \gtyp$.    
+ Since 
+   $\prog' \equiv \SUBST{\prog}{x}{\efix{x}\ {e_x}}$, 
+ we have 
+ \hastype{\emptyset}{\prog'}{\gtyp}. 
+
+\item\rtfix
+  This case cannot occur, as $\efix{}$ does not evaluate to any program. 
+\end{itemize}
+\end{proof}

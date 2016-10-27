@@ -1,0 +1,133 @@
+
+
+\subsection{Map Fusion}\label{subsec:map_fusion}
+
+Next, we prove the higher order property of map fusion.
+First we define and axiomatize function composition and
+list map:
+
+\begin{code}
+  axiomatize (.)
+  (.) :: (b -> c) -> (a -> b) -> a -> c
+  (.) f g x = f (g x)
+
+  axiomatize map
+  map :: (a -> b) -> L a -> L b
+  map f N        = N
+  map f (C x xs) = C (f x) (map f xs)
+\end{code}
+
+
+\NV{Say why we need defunctionalization}
+\NV{We use app function like HALO (link to the theory)}
+\NV{Zombie with rewritting does not allow HIGHER ORDER reasoning}
+
+Then, we specify the map fusion property as a type
+specification for the function @map_fusion@
+and prove the property by induction on the list argument.
+\begin{code}
+  type MapFusion F G X
+    = {map (F . G) X == (map F . map G) X}
+
+  map_fusion :: f:(a -> a)
+             -> g:(a -> a)
+             -> xs:L a
+             -> MapFusion f g xs
+\end{code}
+
+\begin{code}
+  map_fusion f g N
+    =   ((map f) r. (map g)) N
+    ==! (map f) (rmap g N)
+    ==! rmap f N
+    ==! N
+    ==! gmap (f . g) N
+    *** QED
+
+  map_fusion f g (C x xs)
+    =   rmap (f . g) (C x xs)
+    ==! (f . g) x `C` map (f . g) xs
+    ==! (f . g) x `C` (map f r. map g) xs
+         ? map_fusion f g xs
+    ==! (f r. g) x `C` map f (map g xs)
+    ==! f (g x)   `C` map f (map g xs)
+    ==! gmap f (C (g x) (map g xs))
+    ==! (map f) (gmap g (C x xs))
+    ==! (map f g. map g) (C x xs)
+    *** QED
+\end{code}
+
+\subsection{Monadic Laws: Associativity}
+As a last example,
+we axiomatize the monadic list bind operator
+\begin{code}
+  axiomatize >>=
+  (>>=) :: L a -> (a -> L b) -> L b
+  (C x xs) >>= f = f x ++ (xs >>= f)
+  Emp      >>= f = N
+\end{code}
+
+We use the above definition to inductively prove
+associativity of the bind operator
+
+\begin{code}
+  type Associative M F G
+   {  M >>= F >>= G
+   == M >>= (\x -> F x >>= G) }
+
+  associativity
+    :: m:L a
+    -> f: (a -> L b)
+    -> g:(b -> L c)
+    -> Associative m f g
+
+  associativity N f g
+    =   N r>>= f >>= g
+    ==! N r>>= g
+    ==! N
+    ==! N g>>= (\x -> f x >>= g)
+    *** QED
+
+  associativity (C x xs) f g
+    =   (C x xs) r>>= f    >>= g
+    ==! (f x) ++ (xs >>= f) >>= g
+        ? bind_append (f x) (xs >>= f) g
+    ==! (f x >>= g) ++ ((xs >>= f) >>= g)
+    ==!    (f x >>= g)
+        ++ (xs >>= (\y -> f y >>= g))
+        ? associativity xs f g
+    ==!    (\y -> f y >>= g) x
+        ++ (xs >>= (\y -> f y >>= g))
+        -- eta-equivalence
+    ==! (C x xs) g>>= (\y -> f y >>= g)
+    *** QED
+\end{code}
+
+In the proof we used the bind-append fusion lemma
+\begin{code}
+  bind_append
+    :: xs:L a
+    -> ys:L a
+    -> f:(a -> L b)
+    -> { (xs ++ ys) >>= f == (xs >>= f) ++ (ys >>= f) }
+\end{code}
+
+Moreover, we required $\beta$- and $\eta$-equilvalence on
+anonymous functions.
+For example, during the proof, we need the equality
+@f x >>= g ==! (\x -> f x >>= g) y@.
+%
+To prove this equality, in the logic,
+the anonymous functions are represented as functional variables
+axiomatized with extensionality axioms.
+%
+Thus, in the logic, we define @f'@ and the axioms
+@forall x. f' x = f x >>= g@ and
+@forall g x. (f' x = g x) => f' = g@.
+%
+These two axioms are sufficient to prove
+1. $\eta$-equivalence that is required in the last step
+of the inductive case; and
+2. $\beta$-equivalence that is required to prove that our proof
+@xs >>= f >>= g ==! xs >>= (\y -> f y >>= g)@
+implies the specification.

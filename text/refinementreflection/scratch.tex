@@ -1,0 +1,239 @@
+%%% \footnote{Anecdotally, with proof-to-code ratios of 6:1
+%%% instead of 50:1 or 100:1 with classical proof assistants~\citep{Ironfleet}},
+
+%%% In present of lambda expressions in
+%%% the specifications, our translation
+%%% can (optionally) insert extensionality
+%%% axioms that express $\alpha$- and
+%%% $\beta$-equivalence in the logic,
+%%% but do not preserve undecidability
+%%% and thus unpredictability of type checking.
+
+Structure
+* Introduction
+* Overview
+* Refinement Reflection
+* Algorithmic Checking
+* Proof Combinator Library
+* Evaluation
+* Related Work
+--------------------------------------------------------------------------------
+Dependently typed languages like demonstrate the
+immense potential of writing proofs \emph{of}
+programs, \emph{by} programs.
+%
+They enable developers to \emph{specify} correctness
+properties and to \emph{verify} those properties, by
+writing both the propositions and the proofs as
+ordinary terms in the language, thereby uniting
+programming and proving into complementary parts
+of a whole.
+%
+Unfortunately, so far, these benefits require one
+to work in one of these specially designed languages.
+%
+Wouldn't it be great to program proofs and write
+proofs of programs in \emph{your} favorite language
+and libraries, and have them be built and executed
+using \emph{your} favorite compilers and run-times?
+
+
+
+We used \libname as an assistant
+to state and prove theorems
+of Haskell functions
+on Integers and inductive data types (Lists and Maybe).
+%
+In this section, we present by examples how \libname
+can be used to prove properties on linear arithmetic
+(\eg @fib@ is increasing), higher order properties on
+integers and inductive data types (\eg generalization
+of increasing property and map fusion), and interpretation
+of $\lambda$-terms (\eg associativity of monadic bind).
+
+\spara{Proving Strategies.}
+%
+The proofs reply on four main proving strategies.
+We use color notations to make the proofs more readable.
+%
+\begin{itemize}
+\item\textbf{Theorem application.}
+We prove
+@f op! g ?  thm e1 .. en@
+when the theorem @thm x1 ... xn@
+is of the form $(\ttf\ \op ! \ \ttg) \subst{\overline{x}}{\overline{e}}$.
+\item \textbf{Definition folding.}
+Folding the definition of @f e1 ... en == g@ once
+proves that
+@rf e1 ... e2 ==! g@
+(in which case we color @f@ with red).
+%
+\item \textbf{Definition unfolding.}
+Unfolding the definition of @f e1 ... en == g@ once
+proves that
+@g ==! gf e1 ... e2@
+(in which case we color @f@ with green).
+\item \textbf{SMT knowledge}
+We rely on SMT interpretations to prove
+linear arithmetic properties (\eg @1 < 2@)
+or $\eta$-reduction (\eg @e = (\x -> e) x@).
+\end{itemize}
+
+\subsection{Arithmetic Properties}
+%
+We start by proving arithmetic properties
+of Haskell functions.  @fib_incr@ states
+and proves that the @fib@ function
+from \S~\ref{sec:intro} is increasing.
+%
+\begin{code}
+  fib_incr :: n:Nat -> {fib n <= fib (n+1)}
+  fib_incr n
+    | n == 0
+    =   rfib 0
+    <!  gfib 1
+    *** QED
+    | n == 1
+    =   fib 1
+    <=! fib 1 + fib 0
+    <=! gfib 2
+    *** QED
+    | otherwise
+    =   rfib n
+    ==! fib (n-1) + fib (n-2)
+    <=! fib n + fib (n-2) ? fib_incr (n-1)
+    <=! fib n + fib (n-1) ? fib_incr (n-2)
+    <=! gfib (n+1)
+    *** QED
+\end{code} %$
+Proofs are total and terminating Haskell functions.
+@fib_incr@ proves that @fib n@ is increasing using three cases.
+1. If @n==0@,
+  then by unfolding @fib@ we get @fib 0 == 0@.
+  SMT proves that $0 < 1$, which in turn is folded to @1 == fib 1@.
+2. If @n==1@, since @fib@ always returns @Nat@, SMT proves that @fib 1 <= fib 1 + fib 0@
+ which is folded to @fib 2@.
+3. Otherwise,
+  @fib n@ is unfolded to @fib n = fib (n-1) + fib (n-2)@.
+  We recursively apply the theorem to the (provably) smaller arguments @n-1@ and @n-2@,
+  and fold the result to get @fib n + fib (n-1) = fib (n+1)@.
+
+\subsection{Higher Order Theorems}\label{subsec:higherorder}
+Next, we state and prove a generalization of increasing functions.
+Namely, that for every function @f@,
+if there is a proof that @f@ is increasing, that is,
+an expressions with type @z:Nat -> {f z <= f (z+1)}@,
+then, for every @x:Nat@ and @y@ greater than @x@,
+we prove that @f x <= f y@.
+%
+\begin{code}
+  type Greater N = {v:Int | N < v}
+
+  gen_incr :: f:(Nat -> Int)
+           -> (z:Nat -> {f z <= f (z+1)})
+           -> x:Nat
+           -> y:Greater x
+           -> {f x <= f y}
+           / [y]
+  gen_incr f thm x y
+    | x + 1 == y
+    =   f x
+    <=! f (x+1) ? thm x
+    <=! f y
+    *** QED
+    | x + 1 < y
+    =   f x
+    <=! f (y-1) ? gen_incr f thm x (y-1)
+    <=! f y     ? thm (y-1)
+    *** QED
+\end{code}
+%
+We prove the theorem by induction on @y@,
+which is stated by the termination metric~\citep{Vazou15} @[y]@.
+%
+If @x+1 == y@, then we apply the @thm@ argument.
+Otherwise, @x+1<y@ and the theorem holds by induction on @y@.
+
+We use the above theorem to directly prove
+that @fib@ in increasing with the generalized notion:
+%
+\begin{code}
+  fib_incr_gen :: n:Nat
+               -> m:Greater n
+               -> {fib n <= fib m}
+  fib_incr_gen = gen_incr_eq fib fib_incr
+\end{code}
+
+
+\RJ{FIXME, moved from examples}
+\subsection{Example: Reflecting Lists} \label{subsec:list}
+
+%
+In the rest of this section, we use \libname to prove
+properties about a user defined inductive List data type
+\begin{code}
+  data L [length] a = N | C a (L a)
+\end{code}
+%
+The annotation @[length]@ on the List definition
+states that \liquidHaskell will use the @length@ of lists
+as a default termination metric on functions inductive on lists.
+%
+Where @length@ is defined as expected to map lists to natural numbers
+\begin{code}
+  measure length
+  length :: L a -> Nat
+  length N        = 0
+  length (C _ xs) = 1 + length xs
+\end{code}
+%
+The @measure@ definition (as defined in~\citep{Vazou14})
+translates the @length@ function to refinements in the list's
+data constructors.
+%
+Specifically, the above definition strengthens list's data constructors
+as
+\begin{code}
+ N :: {v:L a | length v == 0 }
+ C :: x:a -> xs:L a
+   -> {v:L a | length v == 1 + length xs }
+\end{code}
+
+Moreover, the \liquidHaskell flag @exact-data-constructors@,
+automatically generates the
+logical record selectors and checkers for lists.
+%
+Specifically, the following measures will get generated:
+\begin{code}
+  is_N N          = True
+  is_N (C _ _)    = False
+
+  is_C (C _ _)    = True
+  is_C N          = False
+
+  sel_C_1 (C x _) = x
+  sel_C_2 (C _ x) = x
+\end{code}
+
+\subsection{Append Associativity}\label{subsec:append}
+Next we recursively define and axiomatize list append
+\begin{code}
+  axiomatize (++)
+  (++) :: L a -> L a -> L a
+  N        ++ ys = ys
+  (C x xs) ++ ys = C x (xs ++ ys)
+\end{code}
+%
+The above axiomatization, will automatically produce a type for append
+that exactly captures its implementation.
+%
+\begin{code}
+  (++) :: xs:L a -> ys:L a ->
+    {v:L a |
+       v == if (is_N xs) then ys
+            else C (sel_C_1 xs)
+                   (sel_C_2 xs ++ ys) }
+\end{code}
+%
+The formal translation of arbitrary terminating functions
+is formalized in \S~\ref{sec:algorithmic}.
