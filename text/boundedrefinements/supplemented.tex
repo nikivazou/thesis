@@ -1,0 +1,82 @@
+\paragraph{Implementation}
+We have implemented Bounded Refinement Types in \toolname.
+Our code and examples can be found on github at 
+\url{https://github.com/ucsd-progsys/liquidhaskell/tree/master/benchmarks/icfp15}.
+
+\paragraph{Soundness} 
+Below we prove soundness of \boundedcorelan by reduction to \corelan.
+
+\begin{theorem*}[Semantics Preservation]
+\label{theorem:operational}
+If $\txexpr{\emptyset}{\emptyset}{e}{e'}$ and
+   $e \boundedgoestostar{c}$ 
+then $e' \goestostar{c}$.
+\end{theorem*}
+
+\begin{proof}
+By assumption, there exists a sequence 
+$e \equiv e_1 \boundedgoesto{e_2} \boundedgoesto{} \dots
+\boundedgoesto{e_n\equiv c} $.
+%
+Let $i$ be the largest index in which rule \rtobound was applied.
+%
+Then, for some $\phi$ and $\phi'$, 
+$e_i$ contains a sub-expression of the form 
+$\econstantconstraint{(\econstraint{\phi}{e_i^0})}{\phi'}$.
+%
+Let $e_i^1$ be the expression we get if we replace 
+$\econstantconstraint{(\econstraint{\phi}{e_i^0})}{\phi'}$
+with $e_i^0$ in $e_i$.
+%
+By the way we choose $i$, there exist a sequence 
+$e_i^1 \goestostar{c}$.
+
+Let $e_i^2$
+be the expression we get if we replace 
+$\econstantconstraint{(\econstraint{\phi}{e_i^0})}{\phi'}$
+with $\eapp{(\efunt{f}{\txbound{\phi}}{e_i^0})}{(\ctofun{\phi'})}$ in $e_i$.
+%
+Then, since $f$ does not appear in $e_i^0$,
+$e_i^2 \goestostar{c}$.
+%
+Finally, 
+let $g \defeq \ctofun{\phi'}$, then
+by the definition of 
+$\ctofun{\cdot}$
+we have that  $\forall e_1 \dots e_n$ 
+if 
+there exists a type $\tau$ such that
+$\emptyset \vdash g \ e_1 \dots e_n : \tau $,
+then $g \ e_1 \dots e_n \goestostar{true}$.
+%
+Thus, for any expression, 
+if $e \goestostar{c}$, then $\elett{t}{f \ e_1 \dots e_n}{e}\goestostar{c}$
+
+From the above, by the way we choose $i$ we have that 
+there exists a sequence 
+%
+$\txex{e_i} \hookrightarrow \dots \hookrightarrow {c}$.
+
+Since $n$ is finite, we iteratively apply the above procedure to 
+$e \equiv e_1\boundedgoesto{} \dots \boundedgoesto{} \txex{e_i}\hookrightarrow \dots \hookrightarrow {c}$.
+until we get the sequence $ {\txex{e}}\goestostar{c}$.
+\end{proof}
+
+The soundness of \corelan as stated in~\cite{vazou13}:  
+
+\begin{theorem*}[Soundness of \corelan]
+\label{theorem:core} %\cite{vazou13}
+If   $\hastype{\emptyset}{e}{\sigma}$ 
+then $e \not \goestostar{\ecrash}$.
+\end{theorem*}
+
+\begin{theorem*}[Soundness]
+\label{theorem:bounded}
+If $\txexpr{\emptyset}{\emptyset}{e}{e'}$ and
+   $\hastype{\emptyset}{e'}{\sigma}$ 
+then $e \not \boundedgoestostar{\ecrash}$.
+\end{theorem*}
+\begin{proof}
+Since $\hastype{\emptyset}{e'}{\sigma}$ then by Soundness of \corelan
+$e' \not \goestostar{\ecrash}$ and thus by Semantics Preservation $e \not \boundedgoestostar{\ecrash}$. 
+\end{proof}

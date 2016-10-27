@@ -1,0 +1,337 @@
+\section{Capability Safe Scripting via \RIO}
+\label{sec:files}\label{subsec:state:files}
+\input{text/boundedrefinements/fsapi}
+%%%%\input{copycode}
+%%%%\input{findcode}
+
+% \section{Script Permissions}\label{sec:files}\label{subsec:state:files}
+Next, we describe how we use the \RIO monad to reason about shell
+scripting, inspired by the \shill~\citep{shill} programming language.
+%
+
+\paragraph{\shill} is a scripting language that restricts the
+privileges with which a script may execute by using
+\emph{capabilities} and \emph{dynamic contract checking}~\citep{shill} .
+%
+Capabilities are \emph{run-time values} 
+that witness the right to use a particular resource 
+(\eg a file).
+%
+A capability is associated with a set of privileges, 
+each denoting the permission to use the capability 
+in a particular way (such as the permission to write 
+to a file).
+%
+A contract for a \shill procedure describes the 
+required input capabilities and any output values.
+%
+The \shill runtime guarantees that system resources are accessed in
+the manner described by its contract.
+
+In this section, we turn to the problem of
+preventing \shill runtime failures.
+%
+(In general, the verification of file system resource usage is a rich
+topic outside the scope of this paper.)
+%
+That is, assuming the \shill runtime and an API as described in
+\cite{shill}, how can we use Bounded Refinement Types to encode
+scripting privileges and reason about them \emph{statically?}
+
+\paragraph{We use \RIO types} to specify \shill 's API operations
+%
+thereby providing \emph{compile-time} guarantees 
+about privilege and resource usage.
+%
+To achieve this, we:
+%
+connect the state (@World@) of the \RIO monad with a
+\emph{privilege specification} denoting the set of 
+privileges that a program may use~(\S~\ref{sec:privilege-spec});
+%
+specify the \emph{file system API} in terms of this
+abstraction~(\S~\ref{sec:fs-api});
+%
+and use the above to specify and verify the particular 
+privileges that a \emph{client} of the API uses~(\S~\ref{sec:fs-client}).
+
+\subsection{Privilege Specification}
+\label{sec:privilege-spec}
+%
+Figure~\ref{fig:fstypes} summarizes how we specify privileges 
+inside @RIO@. 
+%
+We use the type @FH@ to denote a file handles, analogous to \shill's
+capabilities. An abstract type @Priv@ denotes the sets of privileges
+that may be associated with a particular @FH@.
+
+\paragraph{To connect \texttt{World}s with Privileges} we assume 
+a set of uninterpreted functions of type @Priv ->  Bool@ 
+that act as predicates on values of type @Priv@, each 
+denoting a particular privilege.
+%
+For example, given a value @p :: Priv@, the proposition 
+@pread p@ denotes that @p@ includes the ``read'' privilege.
+%
+The function @caps@ associates each @World@ with a @Map FH Priv@,
+a table that associates each @FH@ with its privileges.
+% 
+The function @active@ maps each @World@ to the @Set@ of
+allocated @FH@s.
+%
+Given @x:FH@ and @w:World@, @pwrite (select (caps w) x)@
+denotes that in the state @w@, the file @x@ 
+may be written.
+%
+This pattern is generalized by the predicate @pset pwrite x w@.
+
+\subsection{File System API Specification}
+\label{sec:fs-api}
+%
+A privilege tracking file system API can be partitioned into the
+privilege \emph{preserving} operations and the privilege \emph{extending}
+operations.
+
+\paragraph{To type the privilege preserving} operations, we define a predicate
+@eqP w w'@ that says that the set of privileges and active handles
+in worlds @w@ and @w'@ are \emph{equivalent}.
+%
+\begin{code}
+  eqP = \w _ w' -> 
+    caps w == caps w' && active w == active w'
+\end{code}
+%
+We can now specify the privilege preserving operations that @read@ and @write@ files, 
+and list the @contents@ of a directory, all of which require the 
+capabilities to do so in their pre-conditions:
+%
+\begin{code}
+  read :: {- Read the contents of h -}
+    h:FH -> RIO<pset pread h, eqp> String
+  
+  write :: {- Write to the file h -}
+    h:FH -> String -> RIO<pset pwrite h, eqp> ()
+  
+  contents :: {- List the children of h -}
+    h:FH -> RIO<pset pcontents h, eqp> [Path]
+\end{code} 
+
+\paragraph{To type the privilege extending} operations, we define 
+predicates that say that the output world is suitably 
+extended. First, each such operation \emph{allocates} 
+a new handle, which is formalized as:
+%
+\begin{mcode}
+  alloc w' w x = 
+    (x $\not \in$ active w) && active w' == {x} $\cup$ active w
+\end{mcode}
+%
+which says that the active handles in (the new @World@) 
+@w'@ are those of (the old @World@) @w@ extended with the
+hitherto \emph{inactive} handle @x@.
+%
+Typically, after allocating a new handle, a script will
+want to add privileges to the handle that are obtained
+from existing privileges.
+
+\paragraph{To \texttt{create} a new file} in a directory with handle @h@ we
+want the new file to have the privileges \emph{derived} from
+@pcreateFP (select (caps w) h)@ (\ie the create privileges of @h@). We
+formalize this by defining the post-condition of @create@ as the predicate @derivP@:
+%
+\begin{code}
+  derivP h  = \w x w' -> 
+    alloc w' w x && 
+    caps w' == store (caps w) x 
+                  (pcreateFP (select (caps w)) h)
+
+  create :: {- Create a file -}
+    h:FH->Path->RIO<pset pcreateF h, derivP h> FH
+\end{code}
+%
+Thus, if @h@ is writable in the old @World w@ 
+(@pwrite (pcreateFP (select (caps w) h))@) and
+@x@ is derived from @h@ (@derivP w' w x h@ both hold),
+then we know that @x@ is writable in the new @World w'@
+(@pwrite (select (caps w') x)@).
+
+\paragraph{To \texttt{lookup} existing files} or create sub-directories,
+we want to directly \emph{copy} the privileges of the parent handle. 
+We do this by using a predicate @copyP@ as the post-condition for 
+the two functions:
+%
+\begin{code}
+  copyP h = \w x w' ->
+    alloc w' w x && 
+    caps w' == store (caps w) x 
+                     (select (caps w) y)
+
+  lookup :: {- Open a child of h -}
+    h:FH->Path->RIO<pset plookup h, copyP h> FH
+
+  createDir :: {- Create a directory -}
+    h:FH->Path->RIO<pset pcreateD h, copyP h> FH
+\end{code}
+  
+%%\rj{HEREHEREHERE}
+%%
+\subsection{Client Script Verification}
+\label{sec:fs-client}
+%
+We now turn to a client script,
+the program @copyRec@ % in Figure~\ref{fig:copysrc}
+that copies the contents of the directory @f@ to the
+directory @d@.
+%
+\begin{code}
+  copyRec recur s d = 
+    do cs <- contents s
+       forM_ cs $ \ p -> do
+         x <- flookup s p
+         when (isFile x) $ do
+           y <- create d p
+           s <- fread x
+           write y s
+         when (recur && (isDir x)) $ do
+           y <- createDir d p
+           copyRec recur x y
+\end{code}%$
+%
+@copyRec@ executes by first listing the contents of @f@, 
+and then opening each child path @p@ in @f@. 
+%
+If the result is a file, it is copied to the directory @d@.
+%
+Otherwise, @copyRec@ recurses on @p@, if @recur@ is true.
+
+In a first attempt to type @copyRec@ we give it the following type:
+\begin{code}
+  copyRec :: Bool -> s:FH -> d:FH ->
+             RIO<copySpec s d,
+                 \_ _ w -> copySpec s d w> () 
+
+ copySpec h d = \w ->
+   pset pcontents h w && pset plookup h     w &&
+   pset pread h     w && pset pcreateFile d w &&
+   pset pwrite d    w && pset pcreateF d    w &&
+   pwrite (pcreateFP (select (caps w) d)))
+\end{code}              
+%
+The above specification gives @copyRec@ a minimal set of privileges. 
+%
+Given a source directory handle @s@ and destination handle @d@, the
+@copyRec@ must at least:
+%
+\begin{inparaenum}[(1)]
+  \item list the contents of @s@ (@pcontents@),
+  \item open children of @s@ (@plookup@),
+  \item read from children of @s@ (@pread@),
+  \item create directories in @d@ (@pcreateD@),
+  \item create files in @d@ (@pcreateF@), an
+  \item write to (created) files in @d@ (@pwrite@).
+\end{inparaenum}
+%
+Furthermore, we want to restrict the privileges on newly created files
+to the write privilege, since @copyRec@ does not need to read from or
+otherwise modify these files.
+
+Even though the above type is sufficient to verify
+the various clients of @copySpec@ it
+is insufficient to verify @copySpec@'s implementation, 
+as the postcondition merely states that @copySpec s d w@ holds.
+%
+Looking at the recursive call in the last line of @copySpec@'s implementation,
+the output world @w@ is only known to satisfy @copySpec x y w@ (having
+substituted the formal parameters @s@ and @d@ with the actual @x@ and
+@y@), with no mention of @s@ or @d@!
+%
+Thus, it is impossible to satisfy the postcondition of @copyRec@, as
+information about @s@ and @d@ has been lost.
+
+\paragraph{Framing} is introduced to address the above problem.
+Intuitively, because no privileges are ever
+\emph{revoked}, if a privilege for a file existed \emph{before} the
+recursive call, then it exists \emph{after} as well.
+%
+We thus introduce a notion of \emph{framing} -- assertions about
+unmodified state that hold before calling @copyRec@ must hold after
+@copyRec@ returns.
+%
+Solidifying this intuition, we define a predicate @i@ to be @Stable@
+when assuming that the predicate @i@
+holds on @w@, if @i@ only depends on the allocated set of 
+privileges, then @i@ will hold on a world @w'@ so long as
+the set of priviliges in @w'@ contains those in @w@.
+%
+The definition of @Stable@ is derived precisely from the ways in which
+the file system API may modify the current set of privileges:
+%
+\begin{code}
+  bound Stable i = \x y w w' -> 
+   i w => ( eqP w () w' || copyP y w x w'
+           || derivP y w x w'
+          ) => i w'
+\end{code}
+%
+We thus parameterize @copyRec@ by a predicate @i@, bounded by @Stable i@, 
+which precisely describes the possible world transformations under which 
+@i@ should be stable:
+%
+\begin{code}
+  copyFrame i s d = \w -> i w && copySpec s d w
+
+  copyRec :: (Stable i) => 
+             Bool -> s:FH -> d:FH ->
+             RIO<copyFrame i s d,
+                 \_ _ w -> copyFrame i s d w> () 
+\end{code}              
+%
+Now, we can verify @copyRec@'s body, as
+at the recursive call that appears in the last line of the implementation,
+@i@ is instantiated with 
+%
+@\w -> copySpec s d w@.
+
+%%%%\mypara{Higher Order Scripts}
+%%%%%
+%%%%Using the same mechanism as @copyRec@, we can type higher-order
+%%%%privilege-typed programs.
+%%%%%
+%%%%In Figure~\ref{fig:findsrc} we use Bounded Refinement Types to type the 
+%%%%higher-order @findExec@, which recurses on a directory tree, executing its
+%%%%input @cmd@ on each encountered file.
+%%%%%
+%%%%The first constraint implements framing as in @copyRec@.
+%%%%%
+%%%%Since the input @cmd@ may require privileges beyond those mentioned in
+%%%%@findSpec f w@, we denote its precondition with the abstract
+%%%%refinement @p@.
+%%%%%
+%%%%We then partition the @FH@s for which @p@ must hold using the
+%%%%predicate @q@ -- thus, the bound @Cmd@ says that if @q@ holds for some
+%%%%@f@, then @i@ implies that @p@, the precondition for @cmd@, holds for
+%%%%@f@.
+%%%%%
+%%%%Finally, to allow @cmd@ to be applied to files \emph{derived} from
+%%%%@f@, the third bound, @Next@, says that for a given @f :: FH<q>@, if
+%%%%for some world @w@ @p f w@ holds, then @p g w@ holds for @g :: FH@
+%%%%whose privileges are equivalent to @f@ in @w@.
+%%%% 
+%%%%The script @prepend@ recurses on the contents of a directory @d@ and
+%%%%writes a string to each encountered file by calling @findExec@.
+%%%%%
+%%%%At the call to @findExec@, @i@ and @p@ are instantiated to:
+%%%%%
+%%%%\begin{mcode}
+%%%%  i $\mapsto$ \w -> findSpec d w && pset pwrite d w
+%%%%  p $\mapsto$ \w -> pset pwrite d w 
+%%%%\end{mcode}
+%%%%%
+%%%%The remaining obligations (@Stable i@, @Cmd q i p@, and @Next q i p@)
+%%%%are easily dispatched by the SMT solver, thus verifying @prepend@.
+
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End: 

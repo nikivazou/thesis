@@ -1,0 +1,521 @@
+\section{Overview}\label{sec:overview}
+
+We start with a high level overview of bounded refinement types.
+To make the paper self contained, we begin by recalling the notions
+of abstract refinement types. Next, we introduce bounded refinements,
+and show how they permit \emph{modular} higher-order specifications.
+Finally, we describe how they are implemented via an elaboration
+process that permits \emph{automatic} first-order verification.
+
+\subsection{Preliminaries} 
+
+\paragraph{Refinement Types} let us precisely specify subsets 
+of values, by conjoining base types with logical predicates 
+that constrain the values.  To ensure the decidability of 
+type checking, these predicates are limited to decidable, 
+quantifier-free, first-order logics, including the theory 
+of linear arithmetic, uninterpreted functions, arrays, 
+bit-vectors and so on. For example, we can write
+%
+\begin{code}
+    type Pos     = {v:Int | 0 < v}
+    type Neg     = {v:Int | v < 0}
+    type IntGE x = {v:Int | x <= v} 
+\end{code}
+%
+to specify subsets of @Int@ corresponding to values that are 
+positive, negative or larger than some other value @x@ respectively.
+We can specify contracts like pre- and post-conditions by 
+suitably refining the input and output types of functions. 
+
+\paragraph{We can specify preconditions} by refining input types.
+For example, we specify that the function @assert@ should 
+\emph{only} be called with @True@ via the type:
+%
+\begin{code}
+    assert         :: TRUE -> a -> a
+    assert True x  = x
+    assert False _ = error "Provably Dead Code"
+\end{code}
+%
+where the (input) refinement type @TRUE@ is the refinement 
+of @Bool@ containing only the singleton @True@:
+%
+\begin{code}
+    type TRUE = {v:Bool | Prop v}
+\end{code}
+%
+(Intuitively, @Prop True@ defined to be valid (and @Prop False@ not) 
+in the refinement logic.)
+
+\paragraph{We can specify post-conditions} by refining output types. 
+For example a primitive @Int@ comparison operator @leq@ can be 
+assigned a type that says that the output is @True@ iff the 
+first input is actually less than or equal to the second:
+%
+\begin{code}
+leq :: x:Int -> y:Int -> {v:Bool|Prop v<=>x <= y}
+\end{code}
+
+\paragraph{Refinement Type Checking} proceeds by checking that at each
+application, the types of the actual arguments are \emph{subtypes} 
+of those of the function inputs, in the environment (or context) in 
+which the call occurs. 
+%
+Consider the function:
+%
+\begin{code}
+    checkGE     :: a:Int -> b:IntGE x -> Int
+    checkGE a b = assert cmp b
+      where
+        cmp     = a `le` b
+\end{code}
+%
+To verify the call to @assert@ we check that in the environment 
+where @a:Int@, @b:IntGE x@, @cmp:Prop v <=> a <= b@ the type of the 
+actual parameter @cmp@ is a subtype of @TRUE@. 
+%
+This subtyping check reduces establishing the validity of the 
+\emph{verification condition}~(VC)
+%
+\begin{code}
+ a <= b => (Prop cmp <=> a <= b) => v=cmp => Prop v
+\end{code}
+%
+An SMT solver \cite{NelsonOppen} readily establishes the validity
+of the above VC, thereby verifying @checkGE@.
+
+% \subsection{Abstract Refinements}
+
+\paragraph{First order refinements prevent modular specifications.} 
+Consider the function that returns the largest element of a list:
+% 
+\begin{code}
+    maximum        :: List Int -> Int 
+    maximum [x]    = x
+    maximum (x:xs) = max x (maximum xs)
+      where
+        max a b    = if a < b then b else a 
+\end{code}
+%
+It is difficult to write a refinement type specification for 
+@maximum@ that will let us verify that:
+%
+\begin{code}
+    posMax :: List Pos -> Pos 
+    posMax = maximum
+    
+    negMax :: List Neg -> Neg 
+    negMax = maximum
+\end{code}
+%
+Any suitable specification would have to enumerate the 
+situations under which @maximum@ may be invoked 
+breaking modularity.
+
+\paragraph{Abstract Refinements} were introduced to 
+overcome the above modularity problems \cite{vazou13}.
+%
+The main idea is that we can type @maximum@ by observing
+that it returns \emph{one of} the elements in its input list.
+Thus, if every element of the list enjoyed some refinement @p@
+then the output value was also guaranteed to satisfy @p@.
+%
+Concretely, we can type the function as:
+%
+\begin{code}
+maximum :: forall<p::Int->Prop>. List Int<p> -> Int<p>
+\end{code}
+%
+where informally, @Int<p>@ stands for @{v:Int | p v}@,
+and @p@ is an \emph{uninterpreted function} in the refinement 
+logic~\cite{NelsonOppen}.
+% 
+Thus, the signature states that for any refinement @p@ of @Int@,
+the function takes as input a list of elements that satisfy @p@ 
+and returns as output an integer satisfying @p@. 
+
+\paragraph{Notation} In the sequel, we will drop the explicit
+quantification of abstract refinements; all free abstract 
+refinements will be \emph{implicitly} quantified at the 
+top-level (as with classical type parameters.)
+
+\paragraph{Abstract Refinements Permit Decidable Verification}
+Abstract refinements do not require the use of higher-order 
+logics. Instead, \cite{vazou13} demonstrates how  abstractly 
+refined signatures (like @maximum@) can be verified by viewing 
+the abstract refinements @p@ as uninterpreted functions that 
+only satisfy the axioms of congruence, namely:
+%
+\begin{code}
+    forall x y. x = y => p x <=> p y
+\end{code}
+%
+thereby preserving decidable checking \cite{NelsonOppen}.
+
+\paragraph{Abstract Refinements are Automatically Instantiated} at call-sites,
+via the abstract interpretation framework of Liquid Typing~\cite{vazou13}. 
+Each instantiation yields fresh refinement variables on
+which subtyping constraints are generated; these constraints
+are solved via abstract interpretation yielding the instantiations.
+%
+Hence, we verify @posMax@ and @negMax@ by instantiating:
+%
+\begin{code}
+    p |-> \ v -> 0 < v   -- at posMax
+    p |-> \ v -> v < 0   -- at negMax
+\end{code}
+
+\subsection{Bounded Refinements}
+
+Even with abstraction, refinement types hit various 
+expressiveness walls. Consider the following example 
+from~\cite{TerauchiPOPL13}. 
+%
+@find@ takes as input a predicate @p@, a continuation 
+@k@ and an starting number @i@; it proceeds to compute
+the smallest @Int@ (larger than @i@) that satisfies 
+@p@, and calls @k@ with that value.
+%
+@ex1@ is a wrapper that passes in a continuation that
+checks that the ``found'' value equals or exceeds @n@.
+
+\begin{code}
+    ex1 :: (Int -> Bool) -> Int -> ()
+    ex1 p n = find p (checkGE n) n
+    
+    find p k i 
+      | p i       = k i 
+      | otherwise = find p k (i + 1)
+\end{code}
+
+\paragraph{Verification fails} as there is no way to specify that
+@k@ is only called with arguments greater than @n@. 
+%
+First, the variable @n@ is not in scope at the function 
+definition and so we cannot refer to it. 
+%
+Second, we could try to say that @k@ is invoked with values 
+greater than or equal to @i@, which gets substituted with @n@
+at the call-site. Alas, due to the currying order, @i@ too is 
+not in scope at the point where @k@'s type is defined and so 
+the type for @k@ cannot depend upon @i@.
+
+\paragraph{Can Abstract Refinements Help?} Lets try to 
+abstract over the refinement that @i@ enjoys, and 
+type @find@ as:
+%
+\begin{code}
+  (Int -> Bool) -> (Int<p> -> a) -> Int<p> -> a
+\end{code}
+%
+which states that for any refinement @p@, the function takes 
+an input @i@ which satisfies @p@ and hence that the continuation 
+is also only invoked on a value which trivially enjoys @p@, namely @i@.
+%
+At the call-site in @ex1@ we can instantiate
+\begin{equation}
+\cc{p} \mapsto \lambda \cc{v} \rightarrow \cc{n} \leq \cc{v} \label{eq:inst:find}
+\end{equation}
+%
+This instantiated refinement is satisfied by the parameter @n@, and
+sufficient to verify, via function subtyping, that @checkGE n@ will
+only be called with values satisfying @p@, and hence larger than @n@.
+
+\paragraph{\cc{find} is ill-typed} as the signature requires that 
+at the recursive call site, the value @i+1@ \emph{also} 
+satisfy the abstract refinement @p@. While this holds 
+for~(\ref{eq:inst:find}), it does not hold \emph{for all} @p@. 
+Concretely, the recursive call generates the VC
+%
+\begin{code}
+    ... => p i => p (i+1)
+\end{code}
+%
+%\begin{equation}
+%p\ i \Rightarrow p\ (i + 1) \label{eq:vc:find}
+%\end{equation}
+%
+which is \emph{invalid} causing the checker to (soundly!) reject @find@.
+
+\paragraph{We must Bound the Quantification} of @p@ to limit 
+it to refinements that satisfy some constraint, in this case, 
+that that @p@ is \emph{upward closed}. In the dependent setting,
+where the refinements may refer to program values, these bounds 
+are naturally expressed as constraints between refinements.
+% Horn clauses over refinements.
+%
+For example we can define:
+%
+\begin{code} 
+    bound UpClosed (p :: Int -> Prop) 
+      = \x -> p x => p (x+1)
+\end{code}
+%
+which states that @p@ is a refinement that is \emph{upward closed}, 
+\ie satisfies @forall x. p x =>  p (x+1)@.
+
+\paragraph{Bound Constraints are Horn Clauses} over the refinements. 
+That is, they correspond to a series of implications of the 
+form: $$P_1 \Rightarrow \ldots \Rightarrow P_n$$ where each $P_i$ 
+is either
+%
+(1)~a \emph{concrete} formula from the refinement logic 
+   (with arbitrary boolean connectives), or,
+%
+(2)~an application of an \emph{abstract} refinement 
+   (with no boolean connectives).
+%
+This form of constraints is not arbitrary -- it corresponds 
+directly to the subtyping constraints that arise in refinement
+type checking~\cite{HMC}, and hence, crucially keeps checking
+and inference decidable.
+
+We can use the bound to type @find@ as:
+%
+\begin{code}
+    find :: (UpClosed p) => (Int -> Bool) 
+                         -> (Int<p> -> a) 
+                         ->  Int<p> -> a
+\end{code}
+%
+This time, the checker is able to use the bound to 
+verify the VC. We do so in a way that the VCs remain 
+quantifier free and hence, within the SMT solver's 
+decidability borders~(\S~\ref{sec:overview:implementation}).
+
+\paragraph{At the call to \cc{find}} inside @ex1@, we perform 
+the instantiation~(\ref{eq:inst:find}) which generates the 
+\emph{additional} VC generated by plugging in the concrete 
+refinements in the bound constraint:
+%
+\begin{code}
+    n <= x => n <= x + 1
+\end{code}
+%
+The SMT solver easily checks the validity of the VC 
+and hence this instantiation, thereby verifying @ex1@, 
+\ie statically verifying that the assertion inside 
+@checkGE@ cannot fail.
+%
+Crucially, we can also \emph{automatically synthesize} 
+instantiations that satisfy the (Horn) constraint via 
+the framework of Liquid Typing \cite{LiquidPLDI08}, 
+which makes using such bounds palatable in practice.
+
+\subsection{Bounds for Higher-Order Functions}
+
+% @find@ is an simple example that serves to illustrate how bounds work. 
+
+Next, we show how bounds drastically stretch the scope 
+of refinement typing by allowing precise specifications 
+for several canonical higher-order functions.
+
+\subsubsection*{Function Composition}\label{sec:compose}
+
+Our first example is the @compose@ function
+%
+\begin{code}
+    compose f g x = f (g x)
+\end{code}
+%
+What is a modular specification for @compose@ that lets us check @ex2@? 
+%
+\begin{code}
+    type Plus x y = {v:Int | v = x + y}
+    
+    ex2    :: n:Int -> Plus n 2
+    ex2    = incr `compose` incr 
+    
+    incr   :: n:Int -> Plus n 1
+    incr n = n + 1 
+\end{code}
+
+% \paragraph{Typing \texttt{compose}} The challenge here is \emph{chaining} the dependencies 
+
+\paragraph{The challenge is to chain the dependencies} between the
+input and output of @g@ and the input and output of @f@ to 
+obtain a relationship between the input and output of the 
+composition. We can capture the notion of chaining in a bound:
+%
+\begin{code}
+    bound Chain f g r = \x y z -> 
+      g x y => f y z => r x z
+\end{code}
+%
+which states that for any @x@, @y@ and @z@, if
+%
+(1) @x@ and @y@ are related by @g@, and
+(2) @y@ and @z@ are related by @f@, then
+(3) @x@ and @z@ are related by @r@.
+
+We can use this bound to type @compose@ using three abstract 
+refinements @f@, @g@ and @r@ respectively relating the inputs 
+and outputs of the arguments @f@ and @g@ and their composed 
+result. (Here, @c<r x>@ abbreviates @{v:c | r x v}@.)
+
+\begin{code}
+    compose :: (Chain f g r) => (y:b -> c<f y>) 
+                             -> (z:a -> b<g z>) 
+                             -> (x:a -> c<r x>)
+\end{code}
+
+\paragraph{To verify \cc{ex2}} we instantiate, at the call to @compose@,
+%
+\begin{code}
+    f, g |-> \x v -> v = x + 1
+       r |-> \x v -> v = x + 2
+\end{code}
+%
+The above instantiation satisfies the bound, as shown by the validity 
+of the derived substituted VC: 
+%
+\begin{code}
+    y = x + 1 => z = y + 1 => z = x + 2
+\end{code}
+%
+and hence, we can check that @ex2@ implements its specified type.
+
+Previously, \cite{vazou13} describes a way to type @compose@ 
+using abstract refinements and an ad-hoc form of existential 
+types. Bounds let us express chaining without any extra machinery.
+
+
+\subsubsection*{List Filtering}
+
+Next, consider the List @filter@ function:
+%
+\begin{code}
+    filter f (x:xs)
+      | f x         = x : filter f xs
+      | otherwise   = filter f xs
+    filter _ []     = []
+\end{code}
+%
+What type signature for @filter@ would let us check @positives@?
+%
+\begin{code}
+    positives :: [Int] -> [Pos]
+    positives = filter isPos  
+      where
+        isPos x = 0 < x
+\end{code}
+%
+Such a signature would have to relate the @Bool@ returned by 
+@f@ with the property of the @x@ that it checks for. 
+
+Typed Racket's latent predicates~\cite{typedracket} 
+account for this idiom, but are a special construct 
+limited to @Bool@-valued ``type'' tests, and not 
+arbitrary invariants.
+%
+Another, approach is to avoid the so-called 
+``Boolean Blindness'' that accompanies 
+@filter@ by instead using option types 
+and @mapMaybe@.
+
+\paragraph{We overcome blindness using a witness} bound:
+%
+\begin{code}
+   bound Witness p w = \x b -> 
+     Prop b => w x b => p x
+\end{code}
+%
+which says that the refinement @w@ \emph{witnesses} the 
+refinement @p@, meaning that for any boolean @b@ such 
+that @w x b@ holds, if @b@ is @True@ then @p x@ also holds. 
+
+\paragraph{\cc{filter} can be given a type} that says that the output values
+all enjoy a refinement @p@ as long as the test predicate @f@ returns
+a boolean that witnesses @p@:
+%
+\begin{code}
+   filter :: (Witness p w) => (x:a -> Bool<w x>) 
+                           -> List a 
+                           -> List a<p>
+\end{code}
+
+\paragraph{To verify \cc{positives}} we infer the following type and 
+instantiations for the abstract refinements @p@ and @w@ at the 
+call to @filter@:
+%
+\begin{code}
+    isPos :: x:Int -> {v:Bool | Prop v <=> 0 < v}
+    p     |-> \v   -> 0 < v
+    w     |-> \x b -> Prop b <=> 0 < x
+\end{code}
+
+\subsubsection*{List Folding}
+
+Next, consider the list fold-right function:
+%
+\begin{code}
+    foldr :: (a -> b -> b) -> b -> List a -> b
+    foldr op b []     = b
+    foldr op b (x:xs) = x `op` foldr op b xs
+\end{code}
+%
+Suppose that we wish to prove that:
+%
+\begin{code}
+    ex3 :: xs:List a -> {v:Int | v = len xs}
+    ex3 = foldr (\_ -> incr) 0
+\end{code}
+%
+where @len@ is a \emph{logical} or \emph{measure} 
+function used to represent the number of elements of
+the list in the refinement logic~\cite{LiquidICFP14}:
+%
+\begin{code}
+    measure len :: List a -> Nat
+    len []      = 0
+    len (x:xs)  = 1 + len xs
+\end{code}
+
+\paragraph{We specify induction as a bound.} Concretely, let
+(1)~@inv@ be an abstract refinement relating a list @xs@ 
+    and the result @b@ obtained by folding over it, and
+(2)~@step@ be an abstract refinement relating the 
+    inputs @x@, @b@ and output @b'@ passed to and 
+    obtained from the accumulator @op@ respectively.
+%
+Then
+%
+\begin{code}
+    bound Inductive inv step = \x xs b b' -> 
+      inv xs b => step x b b' => inv (x:xs) b'
+\end{code}
+%
+states that @inv@ is closed under @step@. 
+
+\paragraph{We can give \cc{foldr} at type} that says, that the 
+function \emph{outputs} a value that is built inductively
+over the entire \emph{input} list:
+%
+\begin{code}
+    foldr :: (Inductive inv step) 
+          => (x:a -> acc:b -> b<step x acc>)
+          -> b<inv []>
+          -> xs:List a
+          -> b<inv xs>
+\end{code}
+%
+That is, for any invariant @inv@ that is inductive 
+under @step@, if the initial value @b@ is @inv@-related
+to the empty list, then the folded output is @inv@-related
+to the input list @xs@.
+
+\paragraph{We verify \cc{ex3}} by inferring, at the call to @foldr@
+%
+\begin{code}
+    inv  |-> \xs v   -> v = len xs
+    step |-> \x b b' -> b' = b + 1
+\end{code}
+%
+The SMT solver validates the VC obtained by plugging the 
+above into the bound, and the final output type of the 
+instantiated signature for @foldr@ yields the desired 
+output type for @ex3@.
+
+%  LocalWords:  UpClosed IntGE ok Bool listMax xs Pos Neg posMax negMax forall
+%  LocalWords:  QuickSort incr mapMaybe

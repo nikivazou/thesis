@@ -1,0 +1,167 @@
+\begin{figure*}[ht!]
+\judgementHead{Well-Formedness}{\isWellFormed{\Gamma}{\sigma}}
+
+$$\inference
+    {\hastype{\Gamma, \vref:b}{\reft}{\tbbool}}
+    {\isWellFormed{\Gamma}{\tref{b}{\reft}}}
+    [\wtBase]
+\qquad
+\inference
+    {
+	%\hastype{\Gamma, v:\tfun{x}{\rtyp_x}{\rtyp}}{e}{\tbbool} &&
+	\hastype{\Gamma}{\reft}{\tbbool} &&
+    \isWellFormed{\Gamma}{\rtyp_x} &&
+	\isWellFormed{\Gamma, x:\rtyp_x}{\rtyp}
+    }
+    {\isWellFormed{\Gamma}{\trfun{x}{\rtyp_x}{\rtyp}{\reft}}}
+    [\wtFun]
+$$
+
+$$
+\inference
+  {\isWellFormed{\Gamma, \rvar:\rtyp}{\sigma}}
+  {\isWellFormed{\Gamma}{\tpabs{\rvar}{\rtyp}{\sigma}}}
+  [\wtPred]
+\quad
+\inference
+    {\isWellFormed{\Gamma}{\sigma}}
+    {\isWellFormed{\Gamma}{\ttabs{\alpha}{\sigma}}}
+    [\wtPoly]
+$$
+
+\medskip \judgementHead{Subtyping}{\isSubType{\Gamma}{\sigma_1}{\sigma_2}}
+
+$$
+\inference
+   {(\inter{\Gamma} \Rightarrow \inter{\reft_1} 
+                 \Rightarrow  \inter{\reft_2})
+                 \ \text{is valid}}
+   {\isSubType{\Gamma}{\tref{b}{\reft_1}}{\tref{b}{\reft_2}}}
+   [\tsubBase]
+\qquad
+\inference{
+	\isSubType{\Gamma}{\rtyp_2}{\rtyp_1} &
+	\isSubType{\Gamma, x_2:{\rtyp_2}}{\SUBST{\rtyp_1'}{x_1}{x_2}}{\rtyp_2'}	
+   }
+   {\isSubType{\Gamma}
+	  {\trfun{x_1}{\rtyp_1}{\rtyp_1'}{\reft_1}}
+	  {\trfun{x_2}{\rtyp_2}{\rtyp_2'}{\true}}
+}[\tsubFun]
+$$
+
+
+$$
+\begin{array}{c}
+\inference
+   {\isSubType{\Gamma, \rvar:\rtyp}{\sigma_1}{\sigma_2}}
+   {\isSubType{\Gamma}{\tpabs{\rvar}{\rtyp}{\sigma_1}}{\tpabs{\rvar}{\rtyp}{\sigma_2}}}
+   [\tsubPred]
+\qquad
+\inference
+   {\isSubType{\Gamma}{\sigma_1}{\sigma_2}}
+   {\isSubType{\Gamma}{\ttabs{\alpha}{\sigma_1}}{\ttabs{\alpha}{\sigma_2}}}
+   [\tsubPoly]
+\end{array}
+$$
+
+\medskip \judgementHead{Type Checking}{$\hastype{\Gamma}{e}{\sigma}$}
+
+$$
+\begin{array}{cc}
+\inference
+  {  \hastype{\Gamma}{e}{\sigma_2} && \isSubType{\Gamma}{\sigma_2}{\sigma_1} 
+  && \isWellFormed{\Gamma}{\sigma_1}
+  }
+  {\hastype{\Gamma}{e}{\sigma_1}}
+  [\tsub]
+& 
+\inference
+  {\hastype{\Gamma}{e_x}{\rtyp_x} && 
+   \hastype{\Gamma, x:\rtyp_x}{e}{\rtyp} && 
+   \isWellFormed{\Gamma}{\rtyp}
+  }
+  {\hastype{\Gamma}{\elet{x}{e_x}{e}{}}{\rtyp}}
+  [\tlet]
+\end{array}
+$$
+$$
+\begin{array}{ccc}
+
+\inference
+  {x: \tref{b}{r} \in \Gamma}
+  {\hastype{\Gamma}{x}{\tref{b}{\vref = x}}}
+  [\tbase]
+
+&
+
+\inference
+  {x:\rtyp \in \Gamma}
+  {\hastype{\Gamma}{x}{\rtyp}} 
+  [\tvariable]
+&
+\inference
+  {}
+  {\hastype{\Gamma}{c}{\tc{c}}}
+  [\tconst]
+
+\\[0.2in]
+
+\label{tapp}
+\inference
+   {\hastype{\Gamma}{e_1}{\tfun{x}{\rtyp_x}{\rtyp}} 
+   &&  \hastype{\Gamma}{e_2}{\rtyp_x}
+   }
+   {\hastype{\Gamma}{\eapp{e_1}{e_2}}{\SUBST{\rtyp}{x}{e_2}}}
+   [\tapp]
+
+&
+
+\inference
+   {\hastype{\Gamma, x:\rtyp_x}{e}{\rtyp} 
+    && \isWellFormed{\Gamma}{\rtyp_x}
+   }
+   {\hastype{\Gamma}{\efunt{x}{\rtyp_x}{e}}{\tfun{x}{\rtyp_x}{\rtyp}}}
+   [\tfunction]
+
+& 
+
+\inference
+  {\hastype{\Gamma, \alpha}{e}{\sigma}}
+  {\hastype{\Gamma}{\etabs{\alpha}{e}}{\ttabs{\alpha}{\sigma}}}
+  [\tgen]
+
+
+\\[0.2in]
+
+
+\inference
+    {\hastype{\Gamma}{e}{\tpabs{\rvar}{\rtyp}{\sigma}} && 
+     \hastype{\Gamma}{\efunbar{x:\rtyp_x}{\reft'}}{\rtyp}
+    }
+    {\hastype{\Gamma}
+             {\epapp{e}{\efunbar{x:\rtyp_x}{\reft'}}}
+             {\rpinst{\sigma}{\rvar}{\efunbar{x:\rtyp_x}{\reft'}}}
+    }
+    [\tpinst]
+&
+
+\inference
+    {\hastype{\Gamma, \rvar:\rtyp}{e}{\sigma} &&
+     \isWellFormed{\Gamma}{\rtyp} 
+    }
+    {\hastype{\Gamma}{\epabs{\rvar}{\rtyp}{e}}{\tpabs{\rvar}{\rtyp}{\sigma}}}
+    [\tpgen]
+
+&
+\inference
+  {\hastype{\Gamma}{e}{\ttabs{\alpha}{\sigma}} && 
+   \isWellFormed{\Gamma}{\rtyp}
+  }
+  {\hastype{\Gamma}{\etapp{e}{\tau}}{\SUBST{\sigma}{\alpha}{\rtyp}}}
+  [\tinst]
+
+\end{array}$$
+\caption{\textbf{Static Semantics: Well-formedness, Subtyping and Type Checking}}
+\label{fig:rules}
+\end{figure*}
+

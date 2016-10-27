@@ -1,0 +1,128 @@
+\newcommand{\ra}[1]{\renewcommand{\arraystretch}{#1}}
+\ra{0.9}
+\begin{figure}[t!]
+\centering
+$$
+\begin{array}{rrcl}
+\emphbf{Expressions} \quad 
+  & e & ::=     & x 
+                  \spmid c 
+                  \spmid \efunt{x}{\rtyp}{e} 
+                  \spmid \eapp{e}{x}      \\
+  &   &  \spmid & \elet{x}{e}{e}{\rtyp}   \\
+  &   &  \spmid & \etabs{\tvar}{e}  
+                  \spmid \etapp{e}{\rtyp} \\ 
+  &   &  \spmid & \epabs{\rvar}{\rtyp}{e}
+                  \spmid \epapp{e}{\constraint}     \\[0.03in] 
+  
+\emphbf{Constants} \quad
+  & c 
+  & ::= 
+  & \true \spmid \false \spmid \ecrash \\
+ %  && \spmid & \eunit \spmid \ecrash \\
+  && \spmid &  0 \spmid 1 \spmid -1 \spmid \dots
+  \\[0.05in] 
+  
+\emphbf{Parametric Refinements} \quad 
+& \constraint & ::= & \reft 
+                        \spmid \efunt{x}{b}{\constraint}  \\[0.03in]
+
+
+\emphbf{Predicates} \quad 
+  & \creft & ::= & c \spmid \lnot \creft 
+                   \spmid \creft = \creft 
+                   \spmid % \creft < \creft 
+                   \dots  \\[0.05in] 
+
+\emphbf{Atomic Refinements} \quad 
+  & \areft & ::= & \creft 
+                   \spmid \rvapp{\rvar}{x} \\[0.03in] 
+
+\emphbf{Refinements} \quad 
+  & \reft & ::= & \areft 
+                  \spmid \areft \wedge \reft 
+                  \spmid \areft \Rightarrow \reft \\[0.03in] 
+
+\emphbf{Basic Types} \quad 
+  & b 
+  & ::= & \texttt{Int}
+          \spmid \texttt{Bool}
+          \spmid \texttt{a}    \\[0.03in]
+
+%% \emphbf{Refined Basic Types} \quad 
+%%   & r 
+%%   & ::= 
+%%   % &      \tpref{b}{\areft}{\reft} 
+%%   \\[0.05in]
+
+\emphbf{Types} \quad 
+  & \rtyp
+  & ::=      & \tref{b}{\reft} \\
+  & & \spmid & \trfun{x}{\rtyp}{\rtyp}{\reft} \\[0.03in]
+
+\emphbf{Bounded Types} \quad 
+  & \bt
+  & ::= & \rtyp \\[0.05in]
+
+\emphbf{Schemata} \quad 
+  & \sigma
+  & ::= & \bt
+          \spmid \ttabs{\tvar}{\sigma}
+          \spmid \tpabs{\rvar}{\rtyp}{\sigma} \\[0.03in]
+\end{array}
+$$
+\caption{\textbf{Syntax of \corelan}}
+\label{fig:syntax}
+\end{figure}
+
+
+%%%% \begin{figure}[t!]
+%%%% $$
+%%%% \begin{array}{rrcl}
+%%%% \centering
+%%%% \emphbf{Expressions} \quad 
+%%%%   & e & ::=
+%%%%   &  \dots \spmid  \elet{x}{e}{e}{\rtyp}
+%%%%   \\[0.05in]
+%%%% 
+%%%% \end{array}
+%%%% $$
+%%%% \caption{\textbf{Syntactic extension from \corelan to \letcorelan}}
+%%%% \label{fig:letsyntax}
+%%%% \end{figure}
+
+\begin{figure}[t!]
+$$
+\begin{array}{rrcl}
+\centering
+%%% \emphbf{Environment} \quad 
+%%%   & \Gamma & ::=
+%%%   & \emptyset \spmid  x \colon r, \Gamma
+%%%   \\[0.05in]
+%%% 
+%%% \emphbf{Environment} \quad 
+%%%   & \Phi & ::=
+%%%   & \emptyset \spmid x\colon t, \Phi
+%%%    \\[0.05in]
+%%%
+%%% \emphbf{Function Type} \quad 
+%%%   & t & ::=
+%%%   &    x_1\colon b_1 \rightarrow \dots \rightarrow 
+%%%         x_n\colon b_n \rightarrow\tbunit
+%%%   \\[0.05in]
+
+\emphbf{Bounded Types} \quad 
+  & \bt         & ::= & \rtyp 
+                        \spmid \tconstraint{\constraint}{\bt} \\[0.03in]
+
+\emphbf{Expressions} \quad 
+  & e           & ::= & \dots 
+                        \spmid \econstraint{\constraint}{e} 
+                        \spmid \econstantconstraint{e}{\constraint} \\
+\end{array}
+$$
+\caption{\textbf{Extending Syntax of \corelan to \boundedcorelan}} 
+\label{fig:boundedsyntax}
+\end{figure}
+\ra{1.0}
+

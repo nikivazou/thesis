@@ -1,0 +1,454 @@
+\section{A Refined IO Monad}\label{sec:state}
+
+Next, we illustrate the expressiveness of Bounded Refinements by 
+showing how they enable the specification and verification of 
+stateful computations. We show how to 
+%
+(1)~implement a refined \emph{state transformer} 
+    (\RIO) monad, where the transformer is indexed by refinements 
+    corresponding to \emph{pre}- and \emph{post}-conditions 
+    on the state~(\S~\ref{subsec:state:definition}),
+%
+(2)~extend \RIO with a set of combinators for 
+    \emph{imperative} programming, \ie whose types 
+    precisely encode Floyd-Hoare style program 
+    logics~(\S~\ref{subsec:state:examples}) and
+%
+(3)~use the \RIO monad to write \emph{safe scripts}
+    where the type system precisely tracks capabilities
+    and statically ensures that functions only access 
+    specific resources~(\S~\ref{subsec:state:files}).
+
+%%% using a capability system as described in \shill~\citep{shill}.
+%%% Our method is inspired by the method of~\citep{Filliatre98} 
+%%% but unlike related techniques~\cite{ynot,dijkstramonad} we
+%%% require no special support from the type system, and yet 
+%%% ensure \emph{decidable checking} of verification conditions
+%%% and \emph{inference} of loop invariants and pre- and
+%%% post- conditions via liquid typing.
+
+\subsection{The \RIO Monad}
+\label{subsec:state:definition}
+
+\paragraph{The \RIO data type} describes stateful computations.
+Intuitively, a value of type @RIO a@ denotes a computation 
+that, when evaluated in an input @World@ produces a value 
+of type @a@ (or diverges) and a potentially transformed 
+output @World@. We implement @RIO a@ as an abstractly
+refined type (as described in ~\citep{vazou13})
+%%(cf. \S~\ref{sec:overview:data})
+%%\nv{TODO: compare with Vac from ART} 
+%
+%  data World
+%
+\begin{code}
+  type Pre    = World -> Bool 
+  type Post a = World -> a -> World -> Bool 
+
+  data RIO a <p :: Pre, q :: Post a> = RIO { 
+    runState :: w:World<p> -> (x:a, World<q w x>) 
+  }
+\end{code}
+%
+That is, @RIO a@ is a function @World-> (a, World)@, where
+@World@ is a primitive type that represents the state of 
+the machine \ie the console, file system, \etc
+%
+This indexing notion is directly inspired by the method 
+of~\citep{Filliatre98} (also used in \cite{ynot}).
+
+%%% but unlike related techniques~\cite{ynot,dijkstramonad} we
+%%% require no special support from the type system, and yet 
+%%% ensure \emph{decidable checking} of verification conditions
+%%% and \emph{inference} of loop invariants and pre- and
+%%% post- conditions via liquid typing.
+
+
+
+\paragraph{Our Post-conditions are Two-State Predicates}
+that relate the input- and output- world (as in~\cite{ynot}). 
+%
+Classical Floyd-Hoare logic, in contrast,
+uses assertions which are single-state 
+predicates.
+%
+We use two-states to smoothly account for 
+specifications for stateful procedures. 
+This increased expressiveness makes the 
+types slightly more complex than a direct
+one-state encoding which is, of course 
+also possible with bounded refinements.
+
+
+\paragraph{An \texttt{RIO} computation is parameterized} by two 
+abstract refinements:
+%
+\begin{inparaenum}[(1)]
+\item @p :: Pre@, which is a predicate over the \emph{input} 
+   world, \ie the input world @w@ satisfies the refinement 
+   @p w@; and
+%
+\item @q :: Post a@, which is a predicate relating the 
+   \emph{output} world with the input world and the 
+   value returned by the computation, \ie the output 
+   world @w'@ satisfies the refinement @q w x w'@ where 
+   @x@ is the value returned by the computation.
+\end{inparaenum}
+% 
+Next, to use @RIO@ as a monad, we define @bind@ and 
+@return@ functions for it, that satisfy the monad laws.
+%%like the ones defined 
+%%for Haskell's state monad.
+  
+\paragraph{The \return operator} yields a pair of the 
+supplied value @z@ and the input world unchanged:
+%
+\begin{code}
+  return   :: z:a -> RIO <p, ret z> a
+  return z = RIO $ \w -> (z, w)
+
+  ret z    = \w x w' -> w' == w && x == z
+\end{code}
+% $
+The type of \return states that for any 
+precondition @p@ and any supplied value 
+@z@ of type @a@, the expression @return z@ 
+is an \RIO computation with precondition
+@p@ and a post-condition @ret z@.
+The postcondition states that: 
+%
+(1)~the output @World@ is the same as the input, and 
+%
+(2)~the result equals to the supplied value @z@.
+%
+Note that as a consequence of the equality of the two worlds
+and congruence, the output world @w'@ trivially satisfies @p w'@.
+%
+%% CHECK (3)~the result world satisfies the precondition @p@.
+ 
+\paragraph{The \bind Operator} is defined in the usual way.
+However, to type it precisely, we require bounded refinements.
+%
+\begin{code}
+  (>>=) :: (Ret q1 r, Seq r q1 p2, Trans q1 q2 q)
+        => m:RIO <p, q1> a
+        -> k:(x:a<r> -> RIO <p2 x, q2 x> b)
+        -> RIO <p, q> b 
+
+  (RIO g) >>= f = RIO $ \x -> 
+    case g x of { (y, s) -> runState (f y) s } 
+\end{code}
+%
+The bounds capture various sequencing requirements 
+(c.f. the Floyd-Hoare rules of consequence).
+%
+First, the output of the first action @m@, 
+satisfies the refinement required by the 
+continuation @k@;
+%
+\begin{code}
+  bound Ret q1 r = \w x w' -> q1 w x w' => r x 
+\end{code}
+%
+Second, the computations may be sequenced,
+\ie the postcondition of the first action 
+@m@ implies the precondition of the 
+continuation @k@ (which may be dependent 
+upon the supplied value @x@):
+% 
+\begin{code}
+  bound Seq q1 p2 = \w x w' -> 
+        q1 w x w' => p2 x w'
+\end{code}%
+%
+Third, the transitive composition of the two 
+computations, implies the final postcondition:
+%
+\begin{code}
+  bound Trans q1 q2 q = \w x w' y w'' -> 
+        q1 w x w' => q2 x w' y w'' => q w y w''
+\end{code}
+  
+%%% \toolname verifies that the implementation of 
+%%% @return@ and @>>=@ satisfy their refined type 
+%%% signatures.
+%$
+Both type signatures would be impossible 
+to use if the programmer had to manually 
+instantiate the abstract refinements 
+(\ie pre- and post-conditions.) 
+%
+Fortunately, Liquid Type inference % automatically
+generates the instantiations making it practical
+to use \toolname to verify stateful computations
+written using @do@-notation.
+
+\subsection{Floyd-Hoare Logic in the \RIO Monad}
+\label{subsec:state:examples}
+
+Next, we use bounded refinements to derive an
+encoding of Floyd-Hoare logic, by showing how to 
+read and write (mutable) variables and
+typing higher order 
+@ifM@ and @whileM@ combinators.
+
+\paragraph{We Encode Mutable Variables} as fields of 
+the @World@ type. For example, we might encode
+a global counter as a field:
+%
+\begin{code}
+  data World = { ... , ctr :: Int, ... }
+\end{code}
+%
+We encode mutable variables in the refinement logic
+using McCarthy's @select@ and @update@ operators 
+for finite maps and the associated axiom:
+%
+\begin{code}
+  select :: Map k v -> k -> v
+  update :: Map k v -> k -> v -> Map k v
+
+  forall m, k1, k2, v.
+       select (update m k1 v) k2
+    == (if k1 == k2 then v else select m k2 v)
+\end{code}
+%
+The quantifier free theory of @select@ and @update@ is decidable
+and implemented in modern SMT solvers~\cite{SMTLIB2}.
+
+%%% which relates the two operators with
+%%% the axioms
+%%% %
+%%% \begin{mcode}
+%%% $\forall$wxe. select (update w x e) x = e
+%%% $\forall$wxye.x$\neq$y $\Rightarrow$ select (update w x e) y = select w y
+%%% \end{mcode}
+%%% %
+%%% %
+%%%  are SMT-decidable~\cite{NelsonOppen}
+%%% The operators are related by the axioms:
+%%% %
+%%% \begin{mcode}
+%%% $\forall$wxe. select (update w x e) x = e
+%%% $\forall$wxye.x$\neq$y $\Rightarrow$ select (update w x e) y = select w y
+%%% \end{mcode}
+%
+\paragraph{We Read and Write Mutable Variables} via 
+suitable ``get'' and ``set'' actions. For example,
+we can read and write @ctr@ via:
+%
+\begin{code}
+  getCtr   :: RIO <pTrue, rdCtr> Int
+  getCtr   = RIO $ \w -> (ctr w, w)
+    
+  setCtr   :: Int -> RIO <pTrue, wrCtr n> ()
+  setCtr n = RIO $ \w -> ((), w { ctr = n })
+\end{code}
+%$
+Here, the refinements are defined as:
+%
+\begin{code}
+  pTrue = \w -> True
+  rdCtr = \w x w' -> w' == w && x == select w ctr
+  wrCtr n = \w _ w' -> w' == update w ctr n 
+\end{code}
+%
+Hence, the post-condition of @getCtr@ states 
+that it returns the current value of @ctr@, 
+encoded in the refinement logic with McCarthy's 
+@select@ operator while leaving the world unchanged.
+%
+The post-condition of @setCtr@ states that @World@
+is updated at the address corresponding to @ctr@,
+encoded via McCarthy's @update@ operator. 
+
+\paragraph{The \texttt{ifM} combinator} 
+takes as input a @cond@ action that returns a @Bool@ and,
+depending upon the result, executes either
+the @then@ or @else@ actions. We type it as:
+%
+%% name the return state v to fit it in one line
+\begin{code}
+  bound Pure g = \w x v  ->(g w x v => v == w)
+  bound Then g p1 = \w v -> (g w True  v => p1 v)
+  bound Else g p2 = \w v -> (g w False v => p2 v)
+
+  ifM :: (Pure g, Then g p1, Else g p2)
+      => RIO <p , g> Bool       -- cond
+      -> RIO <p1, q> a          -- then
+      -> RIO <p2, q> a          -- else
+      -> RIO <p , q> a
+\end{code}
+%
+The abstract refinements and bounds 
+correspond exactly to the hypotheses in the 
+Floyd-Hoare rule for the @if@ statement.
+%
+The bound @Pure g@ states that the @cond@ 
+action may access but does not \emph{modify} 
+the @World@, \ie the output is the same 
+as the input @World@. (In classical Floyd-Hoare 
+formulations this is done by syntactically 
+separating terms into pure \emph{expressions} 
+and side effecting \emph{statements}).
+%
+The bound @Then g p1@ and @Else g p2@ respectively
+state that the preconditions of the @then@ and @else@
+actions are established when the @cond@ returns @True@
+and @False@ respectively. 
+
+%%% The @Then p qg p1@ bound states that 
+%%% under an environment where the @b == True@, 
+%%% the post-condition of the guard computation implies 
+%%% the precondition of 	@e1@, 
+%%% \hbox{\ie @qg w b v => p1 v@}
+%%% where \hbox{@prop b@} holds.
+%%% %
+%%% Similarly, 
+%%% the second bound states that 
+%%% under an environment where the variable @b@ is false, 
+%%% the post-condition of the guard computation implies 
+%%% the precondition of 	@e2@, \ie \hbox{@qg w b v => p2 v@}
+%%% where \hbox{@!(prop b)@} holds.
+%%% %
+%%% The final bound lifts the postcondition from the world @w'@
+%%% to the world @w@, much like the lifting that was required in the 
+%%% bind operator 
+%%% (\S~\ref{subsec:state:definition}).
+
+
+%% \NV{R B: types for product and ifM use many (separately defined) bounds.}
+%% \NV{  You should empasize that this is just syntactic restriction, since}
+%% \NV{  the implementations are synthesized automatically.}
+%% \NV{  This is in contrast with type classes, which require instances.}
+
+\paragraph{We can use \texttt{ifM}} to implement a stateful 
+computation that performs a division, after checking 
+the divisor is non-zero.
+%
+We specify that @div@ should not be called with a zero divisor. 
+Then, \toolname verifies that @div@ is called safely:
+%
+\begin{code}
+  div :: Int -> {v:Int | v /= 0} -> Int
+
+  ifTest :: RIO Int
+  ifTest = ifM nonZero divX (return 10)
+    where nonZero = getCtr >>= return . (/= 0)
+          divX    = getCtr >>= return . (div 42)
+\end{code}
+%
+Verification succeeds as the post-condition of @nonZero@
+is instantiated to 
+\hbox{@\_ b w -> b <=> select w ctr /= 0@}
+and the pre-condition of @divX@'s is instantiated to
+\hbox{@\w -> select w ctr /= 0@}, which suffices to 
+prove that @div@ is only called with non-zero values.
+
+\paragraph{The \texttt{whileM} combinator} 
+formalizes loops as @RIO@ computations:
+%
+\begin{code}
+  whileM :: (OneState q, Inv p g b, Exit p g q)  
+         => RIO <p, g> Bool      -- cond 
+         -> RIO <pTrue, b> ()    -- body
+         -> RIO <p, q> ()
+\end{code}
+%
+As with @ifM@, the hypotheses of the Floyd-Hoare derivation rule
+become bounds for the signature.
+%
+Given a @cond@ition with pre-condition @p@ and 
+post-condition @g@ and @body@ with a true 
+precondition and post-condition @b@, the computation 
+@whileM cond body@ has precondition @p@ and post-condition 
+@q@ as long as the bounds (corresponding to the Hypotheses
+in the Floyd-Hoare derivation rule) hold.
+%
+First, @p@ should be a loop invariant; \ie when 
+the @cond@ition returns @True@ the post-condition 
+of the body @b@ must imply the @p@:
+%
+\begin{code}
+  bound Inv p g b = \w w' w'' ->
+      p w => g w True w' => b w' () w'' => p w'' 
+\end{code}
+%
+Second, when the @cond@ition returns @False@ the invariant @p@
+should imply the loop's post-condition @q@:
+%
+\begin{code}
+  bound Exit p g q = \w w' ->
+        p w => g w False w' => q w () w'
+\end{code}
+%
+Third, to avoid having to transitively connect the guard and the body,
+we require that the loop post-condition be a one-state predicate,
+independent of the input world (as in Floyd-Hoare logic):
+%
+\begin{code}
+  bound OneState q = \w w' w'' ->
+        q w () w'' => q w' () w''
+\end{code}
+
+\paragraph{We can use \texttt{whileM}} to implement a loop that repeatedly
+decrements a counter while it is positive, and to then verify that
+if it was initially non-negative, then
+at the end the counter is equal to @0@.
+%
+\begin{code}
+  whileTest   :: RIO <posCtr, zeroCtr> ()
+  whileTest = whileM gtZeroX decr
+    where gtZeroX = getCtr >>= return . (> 0)
+  
+  posCtr  = \w -> 0 <= select w ctr
+  zeroCtr = \_ _ w' -> 0 == select w ctr 
+\end{code}
+%
+Where the decrement is implemented by @decr@ with type:
+%
+\begin{code}
+  decr :: RIO <pTrue, decCtr> ()
+  
+  decCtr = \w _ w' -> 
+    w' == update w ctr ((select ctr w) - 1)
+\end{code}
+% $
+\toolname verifies that at the end of @whileTest@ 
+the counter is zero (\ie the post-condition @zeroCtr@)
+by instantiating suitable (\ie inductive) refinements
+for this particular use of @whileM@.
+ 
+%%%  as the conditional  @gtZeroX@'s 
+%%% post-condition is instantiated to 
+%%% \hbox{@\_ b w -> 0 <= select w ctr && b <=> 0 < select ctr w@}
+%%% %
+%%% and @whileM@'s precondition, that assumes the guard @b@ to be false, will be solved to 
+%%% \hbox{@\w -> ctr w == 0@} that gives the specified postcondition.
+
+
+%%%% ZAP Note that in the above type for @whileM@
+%%%% ZAP the expression's precondition is set to true.
+%%%% ZAP %
+%%%% ZAP In theory we could set the expression's precondition 
+%%%% ZAP to any abstract precondition implied by the conditional's 
+%%%% ZAP post condition. 
+%%%% ZAP %
+%%%% ZAP By doing so, we would increase the precision of 
+%%%% ZAP @whileM@'s signature but we would also add one extra bound.
+%%%% ZAP %
+%%%% ZAP Generalizing tha above reasoning, the more complicated the bounds
+%%%% ZAP the more precise the type signature.
+%%%% ZAP %
+%%%% ZAP Since complex bounds drastically increase verification time, 
+%%%% ZAP it is up to the user to find the golden ratio between 
+%%%% ZAP precision and practicality.
+
+
+
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End: 
+%  LocalWords:  ret runState stateful

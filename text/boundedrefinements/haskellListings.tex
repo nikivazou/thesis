@@ -1,0 +1,164 @@
+\usepackage{listings}
+
+% uncomment next line to restore colors
+\def\withcolor{}
+
+\ifdefined\withcolor
+	 \definecolor{haskellblue}{rgb}{0.0, 0.0, 1.0}
+	 \definecolor{haskellstr}{rgb}{0.2, 0.2, 0.6}
+	 \definecolor{haskellred}{rgb}{1.0, 0.0, 0.0}
+  \definecolor{gray_ulisses}{gray}{0.55}
+  \definecolor{castanho_ulisses}{rgb}{0.71,0.33,0.14}
+  \definecolor{preto_ulisses}{rgb}{0.41,0.20,0.04}
+  \definecolor{green_ulises}{rgb}{0.2,0.75,0}
+\else
+	\definecolor{haskellblue}{gray}{0.1}
+	\definecolor{haskellstr}{gray}{0.1}
+	\definecolor{haskellred}{gray}{0.1}
+	\definecolor{gray_ulisses}{gray}{0.1}
+	\definecolor{castanho_ulisses}{gray}{0.1}
+	\definecolor{preto_ulisses}{gray}{0.1}
+	\definecolor{green_ulisses}{gray}{0.1}
+\fi
+
+
+\def\codesize{\small}
+
+\lstdefinelanguage{HaskellUlisses} {
+	basicstyle=\ttfamily\codesize,
+	sensitive=true,
+	morecomment=[l][\color{gray_ulisses}\ttfamily\codesize]{--},
+	morecomment=[s][\color{gray_ulisses}\ttfamily\codesize]{\{-}{-\}},
+	morestring=[b]",
+  escapeinside={(*}{*)},
+	stringstyle=\color{haskellstr},
+	showstringspaces=false,
+	numberstyle=\codesize,
+	numberblanklines=true,
+	showspaces=false,
+	breaklines=true,
+	showtabs=false,
+  %% whitespace hackery
+  %% lineskip=-2pt,
+  %% % aboveskip=\smallskipamount,
+  %% belowskip=0pt,
+  literate={<=}{{$\leq$}}1
+           {>>=}{{>>=}}3
+           {>=}{{$\geq$}}1
+          % {<}{{$<$}}1
+          % {>}{{$>$}}1
+           {\\}{{$\lambda$}}1
+           {!=}{{$\neq$}}1
+           {forall}{{$\forall$}}1
+           {->}{{$\rightarrow$}}2
+           {Set_mem}{{$\in$}}1
+           {Set_cup}{{$\cup$}}1
+           {Set_cap}{{$\cap$}}1
+           {Set_emp}{{$\emptyset$}}1
+           {Set_sub}{{$\subseteq$}}1
+           {<=>}{{$\Leftrightarrow$}}3
+           {=>}{{$\Rightarrow$}}2
+           {||-}{{$\vdash$}}1
+           {|->}{{$\mapsto$}}2
+           {<:}{{$\preceq$}}1
+           {Inarritu}{Inarritu}8,  
+%           {Inarritu}{I$\tilde{\text{n}}\acute{\text{a}}$rritu}8,  
+	emph=
+	{[1]
+		FilePath,IOError,abs,acos,acosh,all,and,any,appendFile,approxRational,asTypeOf,asin,
+		asinh,atan,atan2,atanh,basicIORun,break,catch,ceiling,chr,compare,concat,concatMap,
+		const,cos,cosh,curry,cycle,decodeFloat,denominator,digitToInt,div,divMod,drop,
+		dropWhile,either,elem,encodeFloat,enumFrom,enumFromThen,enumFromThenTo,enumFromTo,
+		error,even,exp,exponent,fail,mapMaybe,filter,flip,floatDigits,floatRadix,floatRange,floor,
+		fmap,foldl,foldl1,foldr,foldr1,fromDouble,fromEnum,fromInt,fromInteger,fromIntegral,
+		fromRational,fst,gcd,getChar,getContents,getLine,head,id,inRange,index,init,intToDigit,
+		interact,ioError,isAlpha,isAlphaNum,isAscii,isControl,isDenormalized,isDigit,isHexDigit,
+		isIEEE,isInfinite,isLower,isNaN,isNegativeZero,isOctDigit,isPrint,isSpace,isUpper,iterate,
+		last,lcm,length,lex,lexDigits,lexLitChar,lines,log,logBase,lookup,map,mapM,mapM_,max,
+		maxBound,posMax,negMax,maximum,maybe,min,minBound,minimum,mod,negate,not,notElem,null,numerator,odd,
+		or,ord,pi,pred,primExitWith,print,product,properFraction,putChar,putStr,putStrLn,quot,
+		quotRem,range,rangeSize,read,readDec,readFile,readFloat,readHex,readIO,readInt,readList,readLitChar,
+		readLn,readOct,readParen,readSigned,reads,readsPrec,realToFrac,recip,rem,repeat,replicate,return,
+		reverse,round,scaleFloat,scanl,scanl1,scanr,scanr1,seq,sequence,sequence_,show,showChar,showInt,
+		showList,showLitChar,showParen,showSigned,showString,shows,showsPrec,significand,signum,sin,
+		sinh,snd,span,splitAt,sqrt,subtract,succ,sum,tail,take,takeWhile,tan,tanh,threadToIOResult,toEnum,
+		toInt,toInteger,toLower,toRational,toUpper,truncate,uncurry,undefined,unlines,until,unwords,unzip,
+		unzip3,userError,words,writeFile,zip,zip3,zipWith,zipWith3,listArray,doParse,empty,for,initTo,
+        assert,compose,checkGE,maxEvens,empty,create,get,set,initialize,idVec,fastFib,fibMemo,
+        ex1,ex2,ex3,incr,inc,dec,isPos,positives,find,insert,len,size,union,fromList,initUpto,trim,
+        insertSort,decsort,qsort,reverse,append,upperCase, ifM, whileM, get, decrM, diff, 
+        project, select, leq, elts, keys, dkeys, dfun, addKey, pTrue, emptyRD, rFalse,
+        	dom, rng, isI, isD, isS, movie1, movie2,  toI, toS, toD, good_titles, runState, ret, 
+        	update, getCtr, setCtr, ctr, rdCtr, wrCtr, ifTest, whileTest, posCtr, zeroCtr, decr, decCtr, 
+        	pread , pwrite , plookup , pcontents, pcreateF , pcreateFP, pcreateD, active, caps, pset, eqP, 
+        	write, contents, alloc, derivP, copyP, createDir, store, copyRec, copySpec, 
+        	forM_, when, flookup, fread, createDir, pcreateFile, isFile, copyFrame
+	},
+	emphstyle={[1]\color{haskellblue}},
+	emph=
+	{[2] 	Show,Eq,Ord,Num,UpClosed,Comp,Wit,Witness,Inductive,Meet,Flip,TRUE,Nat,Pos,Neg,IntGE,Plus,List,
+        Bool,Char,Double,Either,Float,IO,Integer,Int,Maybe,
+        Ordering,Rational,Ratio,ReadS,ShowS,String,Word8,
+        InPacket,Tree,Vec,NullTerm,IncrList,DecrList,
+        UniqList,BST,MinHeap,MaxHeap,World,RIO,IO,HIO,Post,Pre,
+        Privilege, Prop, Chain, ChainTy, Range, Dict, RD, Dom, Set, P, Univ, Schema, MovieSchema, RT, 
+        TDom, TRange, MoviesTable, RTSubEqFlds, RTEqFlds, Disjoint, Union, Ret, Seq, Trans, Map, 
+        Pure, Then, Else, Exit, Inv, OneState, Priv, Path, FH, Stable
+	},
+	emphstyle={[2]\color{castanho_ulisses}},
+	emph=
+	{[3]
+		case,class,data,deriving,do,else,if,import,in,infixl,infixr,instance,let,
+		module,measure,of,primitive,then,refinement,type,where,forall,bound, otherwise
+	},
+	emphstyle={[3]\color{preto_ulisses}\textbf},
+	emph=
+	{[4]
+		quot,rem,div,mod,elem,notElem,seq
+	},
+	emphstyle={[4]\color{castanho_ulisses}\textbf},
+	emph=
+	{[5]
+		EQ,False,GT,Just,LT,Left,Nothing,Right,True, D, I, S
+	},
+	emphstyle={[5]\color{preto_ulisses}\textbf}
+}
+
+%%%ORIG
+%%%\lstnewenvironment{code}
+%%%{\textbf{Haskell Code} \hspace{1cm} \hrulefill \lstset{language=HaskellUlisses}}
+%%%{\hrule\smallskip}
+
+%V1
+%\lstnewenvironment{code}
+%{\smallskip \lstset{language=HaskellUlisses}}
+%{\smallskip}
+
+\lstnewenvironment{code}
+{\lstset{language=HaskellUlisses}}
+{}
+
+\lstnewenvironment{mcode}
+{\lstset{language=HaskellUlisses,mathescape}}
+{}
+
+\lstMakeShortInline[language=HaskellUlisses,basicstyle=\ttfamily\normalsize,breakatwhitespace]@
+
+
+
+
+\lstdefinelanguage{Pseudo} {
+	basicstyle=\ttfamily\codesize,
+	sensitive=true,
+  mathescape=true,
+	morecomment=[l][\color{gray_ulisses}\ttfamily\codesize]{--},
+	morecomment=[s][\color{gray_ulisses}\ttfamily\codesize]{\{-}{-\}},
+	morestring=[b]",
+	showstringspaces=false,
+	numberstyle=\codesize,
+	numberblanklines=true,
+	showspaces=false,
+	breaklines=true,
+	showtabs=false
+}
+

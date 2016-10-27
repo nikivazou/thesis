@@ -1,0 +1,114 @@
+\begin{figure}[t!]
+$$
+\begin{array}{rrcl}
+\centering
+ \emphbf{Variable Environment} \quad 
+   & \cenv & ::=
+   & \emptyset \spmid  \EXT{\cenv}{x}{\utyp}
+   \\[0.05in]
+ 
+ \emphbf{Bound Environment} \quad 
+   & \benv & ::=
+   & \emptyset \spmid  \EXT{\benv}{x}{\utyp}
+\end{array}
+$$
+
+\judgementHead{Translation}{\txexpr{\cenv}{\benv}{e}{e}}
+$$
+\inference{
+}{
+	\txexpr{\cenv}{\benv}{x}{x}
+}[\txVar]
+\qquad
+\inference{
+}{
+	\txexpr{\cenv}{\benv}{c}{c}
+}[\txCon]
+$$
+
+$$
+\inference{
+	\cenv' = \EXT{\cenv}{x}{\toshape{\rtyp}} && \txexpr{\cenv'}{\benv}{e}{e'} 
+}{
+	\txexpr{\cenv}{\benv}{\efunt{x}{\rtyp}{e}}{\efunt{x}{\rtyp}{\closure{\cenv'}{\benv}{e'}{x\colon\rtyp}}}
+}[\txFun]
+$$
+ 
+$$
+\inference{
+	\txexpr{\cenv}{\benv}{e_x}{e_x'} && \cenv' = \EXT{\cenv}{x}{\toshape{\rtyp}} &&
+	\txexpr{\cenv'}{\benv}{e}{e'}
+}{
+	\txexpr{\cenv}{\benv}{\elet{x}{e_x}{e}{\rtyp}}
+	{\elet{x}{e_x'}{\closure{\cenv'}{\benv}{e'}}{\tau}{x\colon\rtyp}}
+}[\txLet]
+$$
+
+$$
+\inference{
+	\txexpr{\cenv}{\benv}{e_1}{e_1'} &&
+	\txexpr{\cenv}{\benv}{e_2}{e_2'}
+}{
+	\txexpr{\cenv}{\benv}{\eapp{e_1}{e_2}}{\eapp{e_1'}{e_2'}}
+}[\txApp]
+$$
+
+$$
+\inference{
+	\txexpr{\cenv}{\benv}{e}{e'}
+}{
+	\txexpr{\cenv}{\benv}{\etabs{\alpha}{e}}{\etabs{\alpha}{e'}}
+}[\txTAbs]
+\
+\inference{
+	\txexpr{\cenv}{\benv}{e}{e'}
+}{
+	\txexpr{\cenv}{\benv}{\etapp{e}{\rtyp}}{\etapp{e'}{\rtyp}}
+}[\txTApp]
+$$
+
+$$
+\inference{
+	\txexpr{\cenv}{\benv}{e}{e'}
+}{
+	\txexpr{\cenv}{\benv}{\epabs{\rvar}{\rtyp}{e}}{\epabs{\rvar}{\rtyp}{e'}}
+}[\txPAbs]
+$$
+ 
+$$
+\inference{
+	\txexpr{\cenv}{\benv}{e_1}{e_2'} &&
+	\txexpr{\cenv}{\benv}{e_1}{e_2'}
+}{
+	\txexpr{\cenv}{\benv}{\epapp{e_1}{e_2}}{\epapp{e_1'}{e_2'}}
+}[\txPApp]
+$$
+ 
+$$
+\inference{
+	\text{fresh}\ f &&
+	\txexpr{\cenv}{\benv, f\colon\toshape{\txbound{\constraint}}}{e}{e'}
+}{
+	\txexpr{\cenv}{\benv}{\econstraint{\constraint}{e} }{\efunt{f}{\txbound{\constraint}}{e'}}
+}[\txCAbs]
+$$
+
+$$
+\inference{
+	\txexpr{\cenv}{\benv}{e}{e'}
+}{
+	\txexpr{\cenv}{\benv}{\econstantconstraint{e}{\constraint}}{\eapp{e'}{\ctofun{\constraint}}}
+}[\txCApp]
+$$
+%%\nv{Note that basic and function types (\ie $\tau$) cannot have}
+%%\nv{constraints,thus they do not require translation!}
+%%\rj{I don't understand the above comment}
+%%\nv{the above comment says that if type application had}
+%%\nv{type schema instead of t (basic or function types only)}
+%%\nv{then bounds could appear in the types inside expressions}
+%%\nv{so, our translation would have to translate types too}
+%%\nv{ie, e [t] translates to e' [t']}
+\caption{\textbf{Translation Rules from \boundedcorelan to  \corelan}}
+\label{fig:translation}
+\end{figure}
+

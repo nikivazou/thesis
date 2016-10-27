@@ -1,51 +1,54 @@
+%% These two lengths should be the same for consistency 
+%% the default is 1em
 
-\usepackage{xcolor}
-\definecolor{green}{rgb}{0,1,0}
-\definecolor{red}{rgb}{1,0,0}
-\definecolor{green}{rgb}{0,0,1}
-\definecolor{orange}{rgb}{1,0.5,0}
-\definecolor{dvcolor}{rgb}{1,0.5,0.5}
-\def\mynote#1{{\sf $\clubsuit$ #1$\clubsuit$}}
-\def\RJ#1{\textcolor{red}{\sf RJ:$\clubsuit$ #1$\clubsuit$}}
-\def\NV#1{\textcolor{green}{\sf NV:$\clubsuit$ #1$\clubsuit$}}
-\def\ES#1{\textcolor{blue}{\sf ES:$\clubsuit$ #1$\clubsuit$}}
-\def\SPJ#1{\textcolor{orange}{\sf SPJ:$\clubsuit$ #1$\clubsuit$}}
-\def\DV#1{\textcolor{dvcolor}{\sf DV:$\clubsuit$ #1$\clubsuit$}}
-
-\newcommand\citep[1]{\cite{#1}}
+% \renewcommand\paragraph[1]{\vspace{0.5em}\noindent\textbf{\textit{#1}}}
+\newcommand\myparagraph[1]{\smallskip\noindent\textbf{\textit{#1}}}
+% \setlength{\parskip}{0.5em}
+\setlength{\parskip}{\smallskipamount}
 
 
-\def\myex#1{\smallskip\noindent{\emphbf{Example: {#1}.}}}
-\newcommand\spara[1]{\smallskip\noindent\textbf{\emph{#1}}\xspace}
-\newcommand\mypara[1]{\spara{#1}}
-%\def\mypara#1{\smallskip\noindent\textbf{#1.}\ }
+%%\setlength{\parindent}{0pt}
+%%\setlength{\parskip}{0pt}
 
+\newcommand{\LLOC}{XXX}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\figbegin}{}
+\newcommand{\figend}{}
+%\newcommand{\defeq}[0]{\ensuremath{\stackrel{\triangle}{=}}\ }
+\newcommand{\defeq}{\ \doteq\ }
+\newcommand{\suchthat}{\; | \;}
+\newcommand{\fa}{\forall \,}
+\newcommand{\ex}{\exists \ }
 
-
-\newcommand\etc{\textit{etc.}\xspace}
-\newcommand\eg{\textit{e.g.}\xspace}
-\newcommand\ie{\textit{i.e.}\xspace}
-\newcommand\ala{\textit{a la}\xspace}
-\newcommand\etal{\textit{et al.}\xspace}
-\newcommand{\resp}{\textit{resp.}\xspace}
+%\newcommand{\bot}{\perp}
+\newcommand{\bottom}{\perp}
+\newcommand{\absref}{p}
 
 \def\emphbf#1{\textbf{\emph{#1}}}
-\def\spmid{\ \mid \ }
+\def\myexsh{\smallskip\noindent{\emphbf{Example.}\xspace}}
+\def\myex#1{\smallskip\noindent{\emphbf{Example: {#1}.}}}
+\def\mypara#1{\smallskip\noindent\textbf{#1.}\ }
 
-\def\colon{\ensuremath{\text{:}}}
+\def\mynote#1{{\sf $\clubsuit$ #1$\clubsuit$}}
 
-\newcommand{\relDescription}[1]{\ensuremath{\textrm{\textbf{#1}}}}
-\newcommand{\judgementHead}[2]{\ensuremath{\relDescription{#1}\hfill\fbox{#2}}}
-\newcommand{\judgementHeadNameOnly}[1]{\ensuremath{\relDescription{#1}\hfill}}
-
-%% begin ESOP 13 
+\def\abakst#1{{\sf AB:$\clubsuit$ #1$\clubsuit$}}
+\def\rupak#1{{\sf RM:$\clubsuit$ #1$\clubsuit$}}
+\def\andrey#1{{\sf AR:$\clubsuit$ #1$\clubsuit$}}
+\def\pmr#1{{\sf pmr:$\clubsuit$ #1$\clubsuit$}}
+\def\set#1{{\{ #1\}}}
 
 \def\ttcode#1{\texttt{#1}}
 \def\jtuple#1{{\mathtt{\langle}#1 \mathtt{\rangle}}}
 \def\tuple#1{{\langle #1 \rangle}}
 \def\explain#1{\text{\set{#1 \xspace}}}
 
-
+\newcommand{\blankrow}[1]{\multicolumn{#1}{c}{}}
+\newcommand{\zp}{{0 (0\%)}}
+\newcommand{\ie}{\textit{i.e.,}\xspace}
+\newcommand{\resp}{\textit{resp.}\xspace}
+\newcommand{\eg}{\textit{e.g.,}\xspace}
+\def\etc{{\it etc.}\xspace}
+\def\etal{{\it et. al.}\xspace}
 
 \def\T{{\mathcal{T}}} %check
 \def\G{{\mathcal{G}}} %check
@@ -63,17 +66,16 @@
 \newcommand{\Soln}{\Sigma}
 \newcommand{\state}{\sigma}
 \newcommand{\CSoln}[1]{\Soln_{\translate{C}}}
-\newcommand{\fstar}{\textsc{F*}\xspace}
-\newcommand{\catalyst}{\textsc{Catalyst}\xspace}
-\newcommand{\zombie}{\textsc{Zombie}\xspace}
-\newcommand{\haskell}{{Haskell}\xspace}
 
 
 
+\newcommand\safe{\ensuremath{\mathsf{Safe}}\xspace}
+\newcommand\unsafe{\ensuremath{\mathsf{Unsafe}}\xspace}
 
 \newcommand\scML{\textsc{ML}\xspace}
 \newcommand\scC{\textsc{C}\xspace}
 \newcommand\Java{\textsc{Java}\xspace}
+\newcommand\ynot{\textsc{Ynot}\xspace}
 \newcommand\ML{\textsc{ML}\xspace}
 \newcommand\yices{\textsc{Yices}\xspace}
 \newcommand\DML{\textsc{DML}\xspace}
@@ -104,6 +106,33 @@
 \newcommand{\ttloop}{\mathtt{loop}}
 \newcommand{\ttfun}{\mathtt{fun}}
 \newcommand{\ttlength}{\mathtt{length}}
+\newcommand{\ttf}{\mathtt{f}}
+\newcommand{\ttv}{\mathtt{v}}
+\newcommand{\ttg}{\mathtt{g}}
+\newcommand{\tts}{\mathtt{s}}
+\newcommand{\ttxs}{\mathtt{xs}}
+\newcommand{\ttxsp}{\mathtt{xs'}}
+\newcommand{\ttc}{\mathtt{c}}
+
+\newcommand{\ttt}{\mathtt{t}}
+\newcommand{\ttitr}{\mathtt{itr}}
+\newcommand{\ttvs}{\mathtt{vs}}
+\newcommand{\ttgetValidSamples}{\mathtt{getValidSamples}}
+\newcommand{\ttsumValidSamples}{\mathtt{sumValidSamples}}
+
+\newcommand{\ttz}{\mathtt{z}}
+\newcommand{\ttw}{\mathtt{w}}
+\newcommand{\ttx}{\mathtt{x}}
+\newcommand{\tty}{\mathtt{y}}
+\newcommand{\ttY}{\mathtt{Y}}
+\newcommand{\ttn}{\mathtt{n}}
+\newcommand{\ttm}{\mathtt{m}}
+\newcommand{\ttb}{\mathtt{b}}
+\newcommand{\tta}{\mathtt{a}}
+\newcommand{\tti}{\mathtt{i}}
+\newcommand{\ttj}{\mathtt{j}}
+\newcommand{\ttk}{\mathtt{k}}
+\newcommand{\ttmax}{\mathtt{max}}
 
 \newcommand{\ttfoldn}{\mathtt{foldn}}
 \newcommand{\ttArray}{\mathtt{Array}}
@@ -141,8 +170,16 @@
 \def\ttarr{\rightarrow}
 \def\ttasg{\mathtt{:=}}
 
-\newcommand{\ttfoldl}{\mathtt{List.fold\_left}}
 
+\newcommand{\ttfoldl}{\mathtt{List.fold\_left}}
+%\newcommand{\ttlenl}{\mathtt{List.length}}
+%\newcommand{\ttlena}{\ttArray.\ttlength}
+
+\newcommand{\ttlen}{\mathtt{len}}
+\newcommand{\ttlenl}{{\ttlen}\xspace}
+\newcommand{\ttlena}{{\ttlen}\xspace}
+
+% begin comment.sty ?
 \makeatletter
 \begingroup \catcode `|=0 \catcode `[= 1
 \catcode`]=2 \catcode `\{=12 \catcode `\}=12
@@ -207,7 +244,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%% Functional Stuff %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\def\colon{\smash{\stackrel{\circ}{\circ}}}
+\def\colon{\ensuremath{\text{:}}}
 
 
 \def\valu{\nu} 
@@ -217,15 +254,15 @@
 \newcommand{\qexp}[2]{[{#1}]{#2}}
 \newcommand{\qtyp}[2]{\forall {#1}.{#2}}
 \newcommand{\ftyp}[2]{{{#1}\!:\!{#2}}}
+\newcommand{\SUBST}[3]{{#1}[{#3}/{#2}]}
 
 
+\newcommand{\dom}[1]{{\mathsf{Dom}}(#1)}
 \newcommand{\rng}[1]{{\mathsf{Rng}}(#1)}
 \newcommand{\FV}[1]{{\mathsf{FreeVar}}(#1)}
 \newcommand{\AV}[1]{{\mathsf{Var}(#1)}}
 \newcommand{\KV}[1]{{\mathsf{LiquidVars}}(#1)}
 
-\newcommand{\EXT}[2]{{#1;\!#2}}
-\newcommand{\EXTT}[3]{\EXT{\EXT{#1}{#2}}{#3}}
 \newcommand{\UPD}[3]{{#1}[{#2} \mapsto {#3}]}
 \newcommand{\GUPD}[2]{\EXT{{#1}}{\langle{#2}\rangle}}
 \newcommand{\SOLUPD}[3]{{\mathsf{SolUpd}}({#1},{#2},{#3})}
@@ -249,6 +286,8 @@
 
 \newcommand{\error}{\ensuremath{\mathsf{Err}}\xspace}
 
+\newcommand{\tttrue}{{\mathtt{true}}}
+\newcommand{\ttfalse}{{\mathtt{false}}}
 \newcommand{\ttnot}{{\mathtt{not}}}
 \newcommand{\ttfix}{{\mathtt{fix}}}
 \newcommand{\emb}[1]{\dbrkts{#1}}
@@ -274,14 +313,16 @@
 \newcommand{\sol}{\mathcal{S}}
 \newcommand{\solstar}{\sol^{*}}
 
+\newcommand{\atomt}{\beta}
 \newcommand{\datat}{\delta}
 
 \newcommand{\hasty}{::}
 \newcommand{\tyvar}{\alpha\xspace}
 \newcommand{\tyvarb}{\beta}
 \newcommand{\rvar}{\pi}
+\newcommand{\tvar}{\alpha}
 
-\newcommand{\kvar}{\kappa}
+\newcommand{\kvar}{\ensuremath{\kappa}\xspace}
 \newcommand{\RPARAM}[2]{{#1}(#2)}
 \newcommand{\tyB}{B}
 \newcommand{\tyQ}{Q}
@@ -307,17 +348,19 @@
 \newcommand{\smeta}{\mathbb{S}}
 \newcommand{\tmeta}{\mathbb{T}}
 \newcommand{\bmeta}{\mathbb{B}}
+\newcommand{\typ}{\beta}
 \newcommand{\mtyp}{\tau}
 
 \newcommand{\tliqs}{T}
 \newcommand{\stliqs}{S}
 \newcommand{\styp}{\sigma}
-\newcommand{\rtyp}{\rho}
+% \newcommand{\rtyp}{\rho}
 
 \newcommand{\mkenv}[1]{\mathsf{Env}(#1)}
 \newcommand{\fresh}[2]{\mathsf{New}({#1},{#2})}
 \newcommand{\subty}[3]{\mathsf{Sub}({#1},\ {#2},\ {#3})}
 \newcommand{\cons}{\mathsf{Gen}}
+\newcommand{\embed}[1]{\mathsf{Emb}({#1})}
 \newcommand{\VALID}[2]{{#1} \models {#2}}
 
 %\newcommand{\shape}[1]{\mathsf{Shape}({#1})}
@@ -368,13 +411,15 @@
 %\newcommand{\ttsub}{\mathtt{sub}}
 %\newcommand{\ttarray}{\mathtt{intarray}}
 
-\def\set#1{{\{ #1\}}}
 \newcommand{\emptymap}{[\cdot]}
 \newcommand{\myabs}[1]{\mid\! {#1} \! \mid}
 \newcommand{\ssreftyp}[3]{\set{{#3}}}
 \newcommand{\reftyp}[3]{\set{\ftyp{{#1}}{{#2}} \mid {#3}}}
 \newcommand{\sreftyp}[1]{\set{{#1}}}
 
+\newcommand{\relDescription}[1]{\ensuremath{\textrm{\textbf{#1}}}}
+\newcommand{\judgementHead}[2]{\ensuremath{\relDescription{#1}\hfill\fbox{#2}}}
+\newcommand{\judgementHeadNameOnly}[1]{\ensuremath{\relDescription{#1}\hfill}}
 
 
 \newcommand{\cstr}[6]{{{#1} \deriv \reftyp{#3}{#2}{#4} \subt \reftyp{#5}{#2}{#6}}}
@@ -382,17 +427,29 @@
 %\newcommand{\transrel}{\hookrightarrow}
 %\newcommand{\trans}{{\delta}}
 
+\newcommand\tclos[1]{\ensuremath{#1^{\star}}}
+\newcommand\stepcore{\ensuremath{\hookrightarrow_P}}
+\newcommand\stepboundedcore{\ensuremath{\hookrightarrow_B}}
+\newcommand{\rtobound}{\rulename{O-Bnd}}
 
-\newcommand{\fgoesto}[2]{{#1}\ \leadsto\ {#2}}
-\newcommand{\fgoestostar}[2]{{#1}\ \smash{\stackrel{*}{\leadsto}}\ {#2}}
+\newcommand{\goesto}[1]{\ensuremath{\stepcore {#1}}}
+\newcommand{\boundedgoesto}[1]{\ensuremath{\stepboundedcore {#1}}}
+\newcommand{\goestostar}[1]{\ensuremath{\tclos{\stepcore} {#1}}}
+\newcommand{\boundedgoestostar}[1]{\ensuremath{\tclos{\stepboundedcore} {#1} }}
 
-\newcommand{\labarrow}[1]{\smash{\xrightarrow{#1}}}
+%\newcommand{\goesto}[1]{\smash{\stackrel{#1}{\hookrightarrow}}}
+%\newcommand{\labarrow}[1]{\smash{\xrightarrow{#1}}}
 \newcommand{\zug}[1]{{\langle #1 \rangle}}
-\newcommand{\bigstep}[4]{{{#1},{#2} \deriv {#3}\ \goesto{}\ {#4}}}
+%\newcommand{\bigstep}[4]{{{#1},{#2} \deriv {#3}\ \goesto{}\ {#4}}}
 \newcommand{\deriv}{\vdash}
 
+\newcommand{\toolname}{\textsc{LiquidHaskell}\xspace}
 \newcommand{\hmc}{\textsc{HMC}\xspace}
 \newcommand\HMC{\hmc}
+\newcommand{\fstar}{\textsc{F*}\xspace}
+\newcommand{\catalyst}{\textsc{Catalyst}\xspace}
+\newcommand{\zombie}{\textsc{Zombie}\xspace}
+\newcommand{\haskell}{{Haskell}\xspace}
 \newcommand{\slam}{\textsc{Slam}\xspace}
 \newcommand{\blast}{\textsc{Blast}\xspace}
 \newcommand{\saturn}{\textsc{Saturn}\xspace}
@@ -435,33 +492,20 @@
 \newcommand{\rrsortbow}[1]{\rrlist{{#1} \rela \valu}}
 \newcommand{\rrtop}{\rr_{\top}}
 
-\newcommand{\rrbal}{\rr_{\mathsf{bal}}}
-\newcommand{\rrcol}{\rr_{\mathsf{col}}}
-\newcommand{\rrleq}{\rr_{\leq}} 
-\newcommand{\rrbow}{\rr_{\rela}} 
-\newcommand{\rrebow}[1]{\rrbow^{#1}} 
-\newcommand{\rreleq}[1]{\rrleq^{#1}} 
-\newcommand{\tliqsleq}{\tliqs_{\leq}} 
-\newcommand{\polylist}{\qtyp{\tyvar}{\mu t.\ttnil\ +\ \ttcons \zug{\ftyp{x_1}{\tyvar},\ftyp{x_2}{t}}}}
 
 
 \newcommand{\sITE}[3]{{#1} ? {#2} : {#3}} 
-
 
 %Constructors
 \newcommand{\ttP}{\mathtt{P}}
 \newcommand{\ttPR}{\mathtt{PR}}
 \newcommand{\ttPL}{\mathtt{PL}}
+\newcommand{\ttemp}{\mathtt{E}}
 \newcommand{\ttnode}{\mathtt{N}}
 \newcommand{\ttR}{\mathtt{R}}
 \newcommand{\ttB}{\mathtt{B}}
 
 \newcommand{\salist}{\tyvar \ttlist}
-
-\def\NONDET{\mathtt{nondet}}
-
-\newcommand{\implang}{\ensuremath{\mathsf{\mu C}}\xspace}
-\newcommand{\funlang}{\ensuremath{\mathsf{\mu ML}}\xspace}
 
 %\newcommand{\istate}{s}
 %\newcommand{\istates}{\Sigma}
@@ -500,10 +544,21 @@
 \def\CHOOSE{{[\!]}}
 %\def\CHOOSE{{\mathrm{[\!]}}}
 \newcommand{\CHOICE}[2]{{{#1} \CHOOSE {#2}}}
-%\def\EXPAND{{\sf Expand}}
-%\def\CLONE{{\sf Clone}}
-%\def\rpost{\mathsf{Post}^{\sharp}}
-%\def\rreach{\mathsf{Reach}^{\sharp}}
-%\def\ipost{\mathsf{Post}}
-%\def\ireach{\mathsf{Reach}}
-%% end ESOP 13
+
+\newcommand\Haskell{{Haskell}\xspace}
+
+\newcommand\cc[1]{\ensuremath{\texttt{#1}}\xspace}
+\newcommand\shill{\cc{Shill}}
+\newcommand\RIO{\cc{RIO}}
+\newcommand\rIO[3]{\ensuremath{\RIO\ \langle{#1}, {#2}\rangle\ #3}}
+\newcommand\IO{\cc{IO}}
+\newcommand\HIO{\cc{HIO}}
+\newcommand\hworld{\cc{World}}
+\newcommand\bind{\cc{>>=}}
+\newcommand\return{\cc{return}}
+\newcommand\ta{\cc{a}}
+\newcommand\tb{\cc{b}}
+%% \newcommand\tc{\cc{c}}
+\newcommand\tcmp{\cc{cmp}}
+\newcommand\tprop{\cc{Prop}}
+

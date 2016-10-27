@@ -1,0 +1,135 @@
+\section{Introduction} \label{sec:intro}
+
+Must program verifiers always choose between expressiveness
+and automation?
+%
+On the one hand, tools based on higher order logics
+and full dependent types impose no limits on expressiveness,
+but require user-provided (perhaps, tactic-based) proofs.
+%
+On the other hand, tools based on Refinement Types~\cite{Rushby98,pfenningxi98}
+trade expressiveness for automation. For example, the refinement types
+%
+\begin{code}
+  type Pos     = {v:Int | 0 < v}
+  type IntGE x = {v:Int | x <= v}
+\end{code}
+%
+specify subsets of @Int@ corresponding to values
+that are positive or larger than some other value @x@
+respectively. By limiting the refinement predicates to
+SMT-decidable logics~\cite{NelsonOppen}, refinement type
+based verifiers eliminate the need for explicit proof terms,
+and thus automate verification.
+
+% We can specify contracts like pre- and post-conditions by
+% suitably refining the input and output types of functions.
+
+This high degree of automation has enabled the
+use of refinement types for a variety of verification
+tasks, ranging from array bounds checking~\cite{LiquidPLDI08},
+termination and totality checking~\cite{LiquidICFP14},
+protocol validation~\cite{GordonTOPLAS2011,FournetCCS11},
+and securing web applications~\cite{SwamyOAKLAND11}.
+%
+Unfortunately, this automation comes at a price.
+To ensure predictable and decidable type checking, we must
+limit the logical formulas appearing in specification types
+to decidable (typically quantifier free) first order theories,
+thereby precluding \emph{higher-order} specifications that
+are essential for \emph{modular} verification.
+
+In this paper, we introduce \emph{Bounded Refinement Types}
+which reconcile expressive higher order specifications
+with automatic SMT based verification. Our approach
+comprises two key ingredients.
+%
+Our first ingredient is a mechanism, developed by \cite{vazou13},
+for \emph{abstracting} refinements over type signatures.
+This mechanism is the analogue of parametric polymorphism
+in the refinement setting: it increases expressiveness by
+permitting generic signatures that are universally quantified
+over the (concrete) refinements that hold at different
+call-sites.
+%
+However, we observe that for modular verification, we
+additionally need to \emph{constrain} the abstract refinement
+parameters, typically to specify fine grained dependencies
+between the parameters.
+%
+Our second ingredient provides a technique
+for enriching function signatures with \emph{subtyping constraints}
+(or \emph{bounds}) between abstract refinements that must be
+satisfied by the concrete refinements at instantiation.
+Thus, constrained abstract refinements are the analogue of bounded
+quantification in the refinement setting and in this paper, we
+show that this simple technique proves to be remarkably effective.
+
+%% We preserved decidability of checking and
+%% inference by encoding abstractly refined
+%% types with uninterpreted functions obeying the
+%% decidable axioms of congruence~\cite{NelsonOppen}.
+
+\begin{itemize}
+\item
+First, we demonstrate via a series of short examples how bounded refinements
+enable the specification and verification of diverse textbook higher order
+abstractions that were hitherto beyond the scope of decidable refinement
+typing~(\S~\ref{sec:overview}).
+
+\item
+Second, we formalize bounded types and show how bounds are translated
+into ``ghost'' functions, reducing type checking and inference to the
+``unbounded'' setting of~\cite{vazou13}, thereby ensuring that checking
+remains decidable. Furthermore, as the bounds are Horn constraints, we
+can directly reuse the abstract interpretation of Liquid Typing~\citep{LiquidPLDI08}
+to automatically infer concrete refinements at instantiation
+sites~(\S~\ref{sec:check}).
+
+\item
+Third, to demonstrate the expressiveness of bounded refinements, we
+use them to build a typed library for extensible dictionaries, to
+then implement a relational algebra library on top of those
+dictionaries, and to finally build a library for type-safe
+database access~(\S~\ref{sec:database}).
+
+\item
+Finally, we use bounded refinements to develop a \emph{Refined State Transformer}
+monad for stateful functional programming, based upon Filli\^atre's method
+for indexing the monad with pre- and post-conditions~\citep{Filliatre98}.
+%
+We use bounds to develop branching and looping combinators whose types
+signatures capture the derivation rules of Floyd-Hoare logic, thereby
+obtaining a library for writing verified stateful computations~(\S~\ref{sec:state}).
+%
+We use this library to develop a refined IO monad that tracks capabilities
+at a fine-granularity, ensuring that functions only access specified
+resources~(\S~\ref{sec:files}).
+\end{itemize}
+
+We have implemented Bounded Refinement Types in \toolname~\citep{LiquidICFP14}.
+The source code of the examples (with slightly more verbose concrete syntax)
+is at \cite{liquidhaskellgithub}.
+%
+While the construction of these verified abstractions is possible with full
+dependent types, bounded refinements
+%
+keep checking automatic and decidable,
+%
+use abstract interpretation to automatically synthesize
+refinements (\ie pre- and post-conditions and loop invariants),
+and most importantly
+%
+enable retroactive or \emph{gradual} verification as when
+erase the refinements, we get valid programs in the
+host language~(\S~\ref{sec:related}).
+%
+%In~(\S~\ref{sec:related}) we further compare this work with dependent type systems.
+%
+Thus, bounded refinements point a way towards keeping our automation, and
+perhaps having expressiveness too.
+%
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:

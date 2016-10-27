@@ -1,0 +1,49 @@
+\begin{figure}
+\begin{code}
+copySpec h d = \w ->
+  pset pcontents h w && pset plookup h     w &&
+  pset pread h     w && pset pcreateFile d w &&
+  pset pwrite d    w && pset pcreateF d    w &&
+  pwrite (pcreateFP (select (caps w) d)))
+
+copyRec recur s d = 
+  do cs <- contents s
+     forM_ cs $ \ p -> do
+       x <- flookup s p
+       when (isFile x) $ do
+         y <- create d p
+         s <- fread x
+         write y s
+       when (recur && (isDir x)) $ do
+         y <- createDir d p
+         copyRec recur x y
+\end{code}
+\caption{\label{fig:copysrc} Specification and Source of \texttt{copyRec}}
+\end{figure}%$
+% \begin{figure}[t]
+% \begin{code}
+% copyRec :: Bool -> s:FH -> d:FH ->
+%            RIO<\w     -> CopySpec v s d,
+%               ,\_ _ w -> CopySpec v s d> () 
+% \end{code}
+% \caption{\label{fig:copytype1} (Incorrect) Type for \texttt{copySrc}}
+% \end{figure}
+% \begin{figure}[t]
+% \begin{code}
+% bound Stable i = \w x y v -> 
+%   i w => (EqP v w ||
+%          (Alloc v w x && (CopyP v w x y 
+%                          || DerivP v w x y)))
+%       => i v 
+
+% copyRec :: (Stable i) => 
+%            Bool -> s:FH -> d:FH ->
+%            RIO<\w     -> i w && CopySpec v s d,
+%               ,\_ _ w -> i w && CopySpec v s d> () 
+% \end{code}
+% \caption{\label{fig:copytype2} (Correct) Type for \texttt{copySrc}}
+% \end{figure}
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End: 

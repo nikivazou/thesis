@@ -1,0 +1,246 @@
+Refinement types have since been used to verify 
+properties ranging from partial correctness concerns 
+like array bounds checking~\cite{pfenningxi98,LiquidPLDI08} 
+security protocol validation~\cite{GordonTOPLAS2011,FournetCCS11}, 
+web applications \cite{SwamyOAKLAND11}.
+%
+To ensure decidable checking several refinement
+type systems including~\citep{pfenningxi98,LiquidICFP14}
+restrict refinements to decidable, quantifier free logics.
+%
+While this ensures predictable checking and inference~\cite{LiquidPLDI08} 
+it severely limits the language of specifications, and makes it hard to 
+fashion simple higher order abstractions like @filter@ (let alone the more
+complex ones like relational algebras and state transformers.)
+
+
+\section{Introduction} \label{sec:intro}
+
+Abstract Refinement Types~\citep{vazou13} present how abstraction over
+refinement types increases expressiveness of refinement types
+without increasing their complexity.
+In this paper we repeat the same motif one level up:
+we suggest \emph{bounded quantification} for abstract refinements. 
+We describe how \textit{bounds}, \ie quantification over 
+abstract refinements, increase expressiveness of abstract refinement types
+without increasing their complexity.
+
+%%%% 
+%%%In other words, these Horn constraints enable a dependent 
+%%%form of bounded quantification that is analogous to the 
+%%%classical case.
+%%%
+
+Refinement types are used to verify semantic properties of programs
+by decorating types with properties from a constrained language.
+%
+We choose to restrict the refinement language to qualifier-free predicates
+drawn from a decidable logic
+so that we enjoy decidable type checking from SMT 
+solvers, 
+but pay the cost of limited expressiveness.
+%
+Unlike us, dependent type systems (Coq~\citep{coq-book}, Agda~\citep{norell07}, \etc),
+as well as some refinement type systems (\fstar~\citep{fstar}),
+follow a different route:
+they start from a highly expressive higher order logic 
+that requires explicit, user provided proofs and work
+towards developing tactics that discharge proof obligations to 
+reduce the annotation burden and simplify programming.
+%
+
+Our work follows the opposite direction: we start by a 
+decidable system with a constraint refinement language 
+and aim to increase expressiveness.
+%
+Vanilla decidable refinement types have been proven ideal to reason about 
+array bounds checking~\citep{pfenningxi98, LiquidPLDI08} and data
+structure invariants~\citep{LiquidPLDI09}.
+%
+Abstract Refinement Types~\citep{vazou13} allow abstraction over refinement 
+types and 
+push expressiveness walls further, since they allow specification of, 
+among others,
+inductive and recursive invariants 
+to, for example, verify list sorting algorithms.
+%
+We implemented Abstract Refinement Types in \toolname 
+and presented that expressiveness is good enough:
+\toolname has been used to verify 10.000 lines of
+widely used \haskell libraries, including bytestring and Data.map.
+
+We desired to be more expressive than Abstract Refinement Types.
+For example, we were unable to specify and verify stateful computation 
+or to express disjointness of two list arguments.
+%
+Consider, as an example, the following @product@ function
+\begin{code}
+product :: xs:[a] -> ys:[a] -> [(a, a)]
+\end{code}
+We want to express a precondition that @product@ is only applied on disjoint arguments.
+%
+The list elements are wrapped in the list type constructor, 
+so there is no way the type of the one argument to directly refer
+to the elements of the other argument.
+%
+As we shall see next, we can use two Abstract Refinements @p@ and @q@ 
+to describe the elements of @xs@ and @ys@ respectively. 
+%
+Then, we enforce disjointness by quantifing  the type of @product@ by
+an appropriately defined @Disjoint p q@ \textit{bound}, 
+\ie a dictionary-like argument that is deleted during run-time, 
+and appropriately constraints the abstract refinements @p@ and @q@ to 
+describe elements of two disjoint lists. 
+\begin{code}
+product :: (Disjoint p q) => ...
+\end{code}
+%
+The bound @Disjoint@ behaves as a local axiom at @product@'s definition site: 
+disjointness can be assumed to prove safety of the definiton, 
+and as a proof oblication at the @product@'s call-site:
+the caller of  @product@ should prove that the two provided arguments are disjoint. 
+%
+Happily, we use the framework of liquid types to automatically prove bound obligations.
+
+
+We present \textit{Bounded Refinement Types} that bound the 
+abstract refinement variables that appear in the types 
+to specific domains.
+%
+We preserve decidability by translating the bounds to functional arguments,
+thus reducing Bounded to the decidable Abstract Refinement Types.
+%
+The paper's contributions are summarized as follows:
+\begin{itemize}
+\item Firstly, we provide an informal overview of Bounded Refinement Types (\S~\ref{sec:overview}), 
+      describe how they can be used to precisely specify commonly used \haskell functions, 
+      like @filter@, @compose@, and @foldr@.
+\item Then, we demonstrate how typechecking remains decidable (\S~\ref{sec:check}) 
+      by translating bounds to functions, thus reducing Bounded to Abstract Refinement Types. 
+\item Finally, we provide two extensive case studies. 
+      We used the power of bounds to verify correctness of relational algebra
+      operators (\S~\ref{sec:database}) inspired by The power of Pi\citep{thepipower}. 
+      Moreover, we used bounds to specify and verify stateful computations (\S~\ref{sec:state})
+      as inspired by the Dijkstra Monad~\citep{dijkstramonad}.
+\end{itemize}
+
+We have implemented Boundend Refinement Types in \toolname~\citep{realworldliquid}.
+%
+The source code of the examples appearing in this paper can be found online\footnotemark[1].
+\footnotetext[1]{\url{github.com/ucsd-progsys/liquidhaskell/tree/master/benchmarks/icfp15}}
+%
+For aesthetics and space, we have some times simplified the actual \toolname syntax.
+
+\begin{comment}
+
+Consider for example the function @checkGt@
+that takes a list of integers @xs@ and an integer @y@
+and if each element in @xs@ is less than @y@ it
+returns unit, otherwise it crashes.
+
+\begin{code}
+  checkGt :: [Int] -> Int -> ()
+  checkGt (x:xs) y | x < y = checkGt xs y
+  checkGt []     _         = ()
+\end{code}
+
+We want to give @checkGt@ a type that checks
+\textit{crash freedom}, \ie we should give it a 
+precondition that states that each element of @xs@ is
+less that @y@.
+%
+Note that if @checkGt@'s arguments were flipped than 
+we could state the desired precondition using vanilla 
+refinement types to name the first argument as @y@
+and specify that each element of the list should be an 
+Integer greater than @y@.
+%
+\begin{code}
+  checkGt :: y:Int -> [{x:Int | x < y}] -> ()
+\end{code}
+
+\begin{code}
+  checkGt :: (Gt p q) => [{x:Int | p x}] -> {y:Int | q y} -> ()
+\end{code}
+
+
+\begin{code}
+  bound Gt p q = \x y -> p x => q y => x < y 
+\end{code}
+
+
+Consider for example the following function that 
+takes as argument a list @xs@ of Integers,
+an Integer @y@ and if @xs@ has exactly one element @x@
+which is greater than @y@ then it returns @x@, 
+otherwise @ex@ crashes. 
+%
+\begin{code}
+    CheckGt :: [Int] -> Int -> ()
+    checkGt (x:xs) y | x > y = checkGt xs y
+    checkGt []     _         = ()
+\end{code}
+%
+We want to type @checkGt@ in such a way as to 
+prove crash freedom 
+\ie give @checkGt@ a precondition that states that 
+all the elements in the list @xs@ are greater that @y@. 
+
+
+
+
+
+
+We start by establishing the first precondition:
+the length of the input list should be exactly one.
+Equipped with the measure~\citep{LiquidICFP14} @len@
+that returns the length of a list, we specify a type alias
+for lists with length equal to one
+\begin{code}
+    type MonoList a = {v:[a] | len v = 1}
+\end{code}
+
+With refinement types we establish the length precondition:
+\begin{code}
+    ex :: MonoList a -> a -> a
+\end{code}
+
+Next, we use Abstract Refinement Types~\citep{vazou13} to
+enchance presicion. 
+We abstract the signature of @ex@ over some refinement @p@
+on Integers and state that if every elements of the argument
+list satisfies @p@ then the result also satisfies @p@.
+%
+\begin{code}
+    ex :: forall <p :: a -> Bool>.
+          MonoList(a<p>) -> a -> a<p>
+\end{code}
+where informally, @Int<p>@ stands for @{v:Int | p v}@,
+and @p@ is an \emph{uninterpreted function} in the refinement 
+logic~\cite{NelsonOppen}.
+% 
+Thus, the signature states that for any refinement @p@ on @Int@,
+the function takes as input a list of elements that satisfy @p@ 
+and an integer
+and returns as output an integer satisfying @p@. 
+
+
+\begin{code}
+    bound Gt p q = \x y -> p x => q y => x > y 
+\end{code}
+
+\begin{code}
+    ex :: forall <p :: a -> Bool, q :: a -> Bool>.
+          (Gt p q)
+       => MonoList (Int<p>) -> Int<q> -> Int<p>
+\end{code}
+
+Our method is inspired by the method of~\citep{Filliatre98} 
+but unlike related techniques~\cite{ynot,dijkstramonad} we
+require no special support from the type system, and yet 
+ensure \emph{decidable checking} of verification conditions
+and \emph{inference} of loop invariants and pre- and
+post- conditions via liquid typing.
+
+\end{comment}
+

@@ -1,0 +1,159 @@
+\documentclass{sigplanconf}
+
+% \pagestyle{plain}
+\usepackage{times}
+\usepackage{amsmath,amssymb, latexsym}
+
+\usepackage[latin1]{inputenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{amsthm}
+
+\usepackage[inference]{semantic}
+\usepackage{enumerate}
+\def\url{}
+\usepackage{xspace}
+\usepackage{epsfig}
+\usepackage{mathpartir}
+\usepackage{booktabs}
+\usepackage{paralist}
+\usepackage{hyperref}
+
+\def\qed{\hfill$\Box$}
+
+% space at the beginning of an environment:
+\def\@envspa{\hspace{0.3em}}
+\def\@sa{\hspace{-0.2em}}
+\def\@sb{\hspace{0.5em}}
+\def\@sc{\hspace{-0.1em}}
+
+\def\sk{\smallskip}		% space before and after theorems
+
+\newtheorem{notation}{Notation}{\itshape}{}
+\newtheorem{invariant}{Invariant}
+\newtheorem{lemma}{Lemma}
+\newtheorem*{lemma*}{Lemma}
+\newtheorem{definition}{Definition}
+\newtheorem{theorem}{Theorem}
+\newtheorem*{theorem*}{Theorem}
+
+\usepackage{color}
+\usepackage{textcomp}
+\usepackage{soul}
+% \newcommand\highlight[2]{{\setlength\fboxsep{1pt}\colorbox{#1}{#2}}}
+\newcommand\highlight[2]{{\sethlcolor{#1}\hl{#2}}}
+
+\definecolor{colorNV}{rgb}{1,0.8,1}
+\def\NV{\highlight{colorNV}}
+
+\definecolor{colorRJ}{rgb}{0.2,1.0,0.3}
+\def\RJ{\highlight{colorRJ}}
+
+\definecolor{colorAB}{rgb}{0.8,0.8,0}
+\def\AB{\highlight{colorAB}}
+
+
+\def\nv#1{\NV{\sf NV:$\clubsuit$ #1$\clubsuit$}}
+\def\rj#1{\RJ{\sf RJ:$\clubsuit$ #1$\clubsuit$}}
+\def\ab#1{\AB{\sf AB:$\clubsuit$ #1$\clubsuit$}}
+
+\usepackage{commands}
+\usepackage{liquidHaskell}
+\input{haskellListings}
+\usepackage{flushend}
+
+
+% FONT SETTINGS
+%% \usepackage{fontspec}
+%% \defaultfontfeatures{Mapping=tex-text,Scale=MatchLowercase}
+%% \renewcommand\allcapsspacing[1]{{\addfontfeature{LetterSpace=15}#1}}
+%% \renewcommand\smallcapsspacing[1]{{\addfontfeature{LetterSpace=10}#1}}
+
+\usepackage{inconsolata}
+
+
+\usepackage{thmtools}
+\declaretheoremstyle[%
+  spaceabove=-6pt,%
+  spacebelow=6pt,%
+  headfont=\normalfont\itshape,%
+  postheadspace=1em,%
+  qed=\qedsymbol,%
+  headpunct={}
+]{mystyle}
+\declaretheorem[name={Proof Sketch:},style=mystyle,unnumbered,
+]{proofsketch}
+
+
+\newcommand\ifextended[2]{#2}
+\sloppy
+
+\special{papersize=8.5in,11in}
+\setlength{\pdfpageheight}{\paperheight}
+\setlength{\pdfpagewidth}{\paperwidth}
+
+\conferenceinfo{CONF 'yy}{Month d--d, 20yy, City, ST, Country} 
+\copyrightyear{20yy} 
+\copyrightdata{978-1-nnnn-nnnn-n/yy/mm} 
+\doi{nnnnnnn.nnnnnnn}
+
+% Uncomment one of the following two, if you are not going for the 
+% traditional copyright transfer agreement.
+
+%\exclusivelicense                % ACM gets exclusive license to publish, 
+                                  % you retain copyright
+
+%\permissiontopublish             % ACM gets nonexclusive license to publish
+                                  % (paid open-access papers, 
+                                  % short abstracts)
+
+\titlebanner{banner above paper title}        % These are ignored unless
+\preprintfooter{short description of paper}   % 'preprint' option specified.
+
+
+
+\title{Bounded Refinement Types
+\thanks{This work was supported by NSF grants CCF-1422471, C1223850, CCF-1218344,
+        a Microsoft Research Ph.D Fellowship and a generous gift from Microsoft
+        Research.}\ifextended{\\ Supplementary Material}{}}
+
+\authorinfo{Niki Vazou \and Alexander Bakst \and Ranjit Jhala}{UC San Diego, USA}{}
+
+\renewcommand{\keywords}{\paragraph*{Keywords}}
+
+\begin{document}
+\toappear{}
+\maketitle
+
+\begin{abstract}
+\input{abstract}
+\end{abstract}
+
+
+\category{D.2.4}{Software/Program Verification}{}
+\category{D.3.3}{Language Constructs and Features}{Polymorphism}
+\category{F.3.1}{Logics and Meanings of Programs}{Specifying and Verifying and Reasoning about Programs}
+
+\keywords
+haskell, refinement types, abstract interpretation
+
+
+\input{intro}
+\input{overview}
+\input{formalism}
+\input{database}
+\input{state}
+\input{files}
+\input{related}
+
+\section*{Acknowledgments}
+We thank the anonymous reviewers and Colin Gordon for providing invaluable feedback
+about earlier drafts of this paper.
+
+{
+\bibliographystyle{plain}
+\bibliography{sw}
+}
+
+\end{document}

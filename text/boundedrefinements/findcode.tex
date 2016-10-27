@@ -1,0 +1,36 @@
+\begin{figure}
+\begin{code}
+findSpec i f = \w ->
+  i w && pset pcontents f w && pset plookup f w
+eqc f g = \w ->
+  select (caps w) f == select (caps w) g
+  
+bound Cmd q i p = \f v ->
+  q f => i v => p f v
+bound Next q i p = \f g v ->
+  q f => p f v && g in active v && eqc f g v
+      => p g v
+
+findExec ::
+  (Stable i, Cmd q i p, Next q i p)
+  => f:FHandle<q>
+  -> (g:FHandle -> RIO<p g, eqp> ())
+  -> RIO<findSpec i f, \_ _ -> findSpec i f> () 
+findExec f cmd = 
+  do when (isFile f) $ cmd f
+     when (isDir f) $
+       do cs <- contents f
+          forM_ cs $ \z ->
+            do h <- flookup f z
+              findExec h cmd
+            
+findWr d = \w -> findSpec d w && pset pwrite d w
+prepend :: String -> d:FH -> RIO<findWr, True> ()
+prepend s d = findExec dir (\f -> write f s)
+\end{code}
+\caption{\label{fig:findsrc} Specification and Source of \texttt{findExec}}
+\end{figure}
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End: 

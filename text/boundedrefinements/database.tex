@@ -1,0 +1,462 @@
+\section{A Refined Relational Database}\label{sec:database}
+
+Next, we use bounded refinements to develop a library
+for relational algebra, which we use to enable generic,
+type safe database queries.
+%
+A relational database stores data in \emph{tables},
+that are a collection of \emph{rows}, which in turn 
+are \emph{records} that represent a unit of data 
+stored in the table.
+The tables's \textit{schema} describes the types of 
+the values in each row of the table.
+For example, the table in Figure~\ref{fig:moviedb} organizes 
+information about movies, and has the schema:
+%
+\begin{code}
+ Title:String, Dir:String, Year:Int, Star:Double
+\end{code}
+
+\begin{figure}[t]
+$$
+\begin{tabular}{| l | l| r | r |}
+  \hline
+  \textbf{Title} & \textbf{Director} & \textbf{Year} & \textbf{Star} \\
+  \hline  
+  ``Birdman'' & ``I\~{n}\'{a}rritu''   & 2014 & 8.1\\
+  ``Persepolis''  & ``Paronnaud'' & 2007 & 8.0 \\ 
+  \hline
+\end{tabular}
+$$
+\caption{\label{fig:moviedb} Example Table of Movies}
+\end{figure}
+
+First, we show how to write type safe extensible 
+records  that represent rows, and use them to 
+implement database tables~(\S~\ref{subsec:records}). 
+%
+Next, we show how bounds let us specify type 
+safe relational operations and how they may be 
+used to write safe database queries~(\S~\ref{subsec:relational}).
+
+\subsection{Rows and Tables}\label{subsec:records}
+
+We represent the rows of a database with dictionaries, 
+which are maps from a set of keys to values.
+In the sequel, each key corresponds to a column, and 
+the mapped value corresponds to a valuation of the column 
+in a particular row.
+
+\paragraph{A dictionary} @Dict <r> k v@ maps a key @x@ of 
+type @k@ to a value of type @v@ that satisfies the property @r x@
+%
+% \NV CUT
+\begin{code}
+  type Range k v = k -> v -> Bool
+   
+  data Dict k v <r :: Range k v> = D {
+      dkeys :: [k]
+    , dfun  :: x:{k | x Set_mem elts dkeys} -> v<r x>
+    }
+\end{code}      
+%
+Each dictionary @d@ has a domain @dkeys@ 
+\ie the list of keys for which @d@ is defined 
+and a function @dfun@ that is defined only on
+elements @x@ of the domain @dkeys@.
+%
+For each such element @x@, @dfun@ returns a value that satisfies the
+property @r x@.
+
+\paragraph{Propositions about the theory of sets} can be decided
+efficiently by modern SMT solvers. Hence we use such 
+propositions within refinements~\citep{realworldliquid}.
+% 
+The measures (logical functions) @elts@ and @keys@ 
+specify the set of keys in a list and a dictionary 
+respectively:
+%
+\begin{code}
+  elts        :: [a] -> Set a
+  elts ([])   = Set_emp
+  elts (x:xs) = {x} Set_cup elts xs
+
+  keys        :: Dict k v -> Set k
+  keys d      = elts (dkeys d) 
+\end{code}
+
+\paragraph{Domain and Range of dictionaries.}
+%
+In order to precisely define the domain (\eg columns) and range (\eg values)
+of a dictionary (\eg row), we define the following aliases:
+%
+% NV CUT
+\begin{code}
+  type RD k v <dom :: Dom k v, rng :: Range k v>
+    = {v:Dict <rng> k v | dom v}
+
+  type Dom k v = Dict k v -> Bool 
+\end{code}
+%
+We may instantiate @dom@ and @rng@ with predicates that precisely describe
+the values contained with the dictionary.
+%
+For example,
+%
+\begin{code}
+  RD < \d -> keys d == {"x"}
+     , \k v-> 0 < v         > String Int
+\end{code}
+%
+%% instantiating @dom@ with 
+%% \hbox{@\d -> keys d = {"x"}@}
+%% and @rng@ with the predicate
+%% \hbox{@\k v -> k = "x" => v > 0@}
+%
+describes dictionaries with a single field @"x"@ 
+whose value (as determined by @dfun@) is stricly 
+greater than 0.
+%
+We will define schemas by appropriately 
+instantiating the abstract refinements 
+@dom@ and @rng@.
+
+
+\paragraph{An empty dictionary} has an empty domain 
+and a function that will never be called:
+%
+\begin{code}
+  empty   :: RD <emptyRD, rFalse> k v
+  empty   = D [] (\x -> error "calling empty")
+
+  emptyRD = \d -> keys d == Set_emp
+  rFalse  = \k v -> false
+\end{code}
+%% %
+%% Thus, @empty@'s range satisfies \textit{any} predicate -- that is,
+%% it satisfies @false@.
+ 
+\paragraph{We define singleton maps} as dependent pairs 
+@x := y@ which denote the mapping from @x@ to @y@:
+%
+\begin{code}
+  data P k v <r :: Range k v> 
+    = (:=) {pk :: k, pv :: v<r pk>}
+\end{code}
+%
+Thus, @key := val@ has type \hbox{@P<r> k v@} only if 
+@r key val@.
+
+\paragraph{A dictionary may be extended} with a singleton
+binding (which maps the new key to its new value). 
+%
+\begin{code}
+  (+=)   :: bind:P<r> k v 
+         -> dict:RD<pTrue, r> k v 
+         -> RD <addKey (pk bind) dict, r> k v
+ 
+  (k := v) += (D ks f) 
+         = D (k:ks) 
+             (\i -> if i == k then v else f i)
+  
+  addKey = \k d d' -> keys d' == {k} Set_cup keys d
+  pTrue  = \_ -> true
+\end{code}
+%
+Thus, @(k := v)  += d@ evaluates to 
+a dictionary @d'@ that extends @d@ 
+with the mapping from @k@ to @v@.
+%
+The type of @(+=)@ constrains the new binding @bind@, 
+the old dictionary @dict@ and the returned value to have 
+the same range invariant @r@.
+%
+The return type states that the output dictionary's 
+domain is that of the domain of @dict@ extended by 
+the new key @(pk bind)@.
+
+\paragraph{To model a row in a table} \ie a schema, 
+we define the unrefined (Haskell) type @Schema@, 
+which is a dictionary mapping @String@s, \ie the 
+names of the fields of the row, to elements of 
+some universe @Univ@ containing @Int@, @String@ 
+and @Double@.
+%
+(A closed universe is not a practical restriction; 
+most databases support a fixed set of types.)
+% 
+\begin{code}
+  data Univ   = I Int | S String | D Double
+
+  type Schema = RD String Univ
+\end{code}
+
+\paragraph{We refine Schema} with concrete instantiations
+for @dom@ and @rng@, in order to recover precise 
+specifications for a particular database. For example, 
+@MovieSchema@ is a refined @Schema@ that describes the 
+rows of the Movie table in Figure~\ref{fig:moviedb}:
+%
+%
+\begin{code}
+type MovieSchema = RD <md, mr> String Univ
+
+  md = \d -> 
+      keys d={"year","star","dir","title"}
+  mr = \k v -> 
+      (k = "year"  => isI v && 1888 < toI v)
+   && (k = "star"  => isD v && 0 <= toD v <= 10)
+   && (k = "dir"   => isS v)
+   && (k = "title" => isS v)
+
+  isI (I _)   = True 
+  isI _       = False 
+
+  toI       :: {v: Univ | isI v} -> Int
+  toI (I n) = n
+...
+\end{code}
+%
+The predicate @md@ describes the \emph{domain} of the movie schema,
+restricting the keys to exactly @"year"@, @"star"@, @"dir"@, and @"title"@.
+%
+The range predicate @mr@ describes the types of the values in the schema:
+%
+a dictionary of type @MovieSchema@ must map 
+@"year"@ to an @Int@,
+@"star"@ to a @Double@, 
+and @"dir"@ and @"title"@ to @String@s.
+%
+The range predicate may be used to impose additional constraints on the values
+stored in the dictionary.
+%
+For instance, @mr@ restricts the year to be not only an integer but
+also greater than @1888@.
+%
+%%%Because refinements in \toolname are drawn from a decidable logic,
+%%%refining the range with logical predicates comes ``for free''.
+%%%%
+%%%A more heavyweight dependent type system, on the other hand, would
+%%%require the programmer to manually thread proofs of these range
+%%%predicates throughout the code.
+
+\paragraph{We populate the Movie Schema} by extending the
+empty dictionary with the appropriate pairs of fields and 
+values. For example, here are the rows from the table
+in Figure~\ref{fig:moviedb}
+%
+\begin{code}
+  movie1, movie2 :: MovieSchema
+  movie1 = ("title" := S "Persepolis")
+        += ("dir"   := S "Paronnaud") 
+        += ("star"  := D 8) 
+        += ("year"  := I 2007) 
+        += empty
+
+  movie2 = ("title" := S "Birdman") 
+        += ("star"  := D 8.1) 
+        += ("dir"   := S "Inarritu")
+        += ("year"  := I 2014) 
+        += empty
+\end{code}
+%
+Typing @movie1@ (and @movie2@) as @MovieSchema@
+boils down to proving:
+%
+That @keys movie1 = {"year", "star", "dir", "title"}@;
+and that each key is mapped to an appropriate value 
+as determined by @mr@.
+%
+For example, declaring @movie1@'s year to be @I 1888@
+or even misspelling @"dir"@ as @"Dir"@
+will cause the @movie1@ to become ill-typed.
+%
+As the (sub)typing relation depends on logical 
+implication (unlike in @HList@ based approaches 
+\cite{heterogeneous}) key ordering \emph{does not} 
+affect type-checking;
+%
+in @movie1@ the star field is added before the 
+director, while @movie2@ follows the opposite order.
+%%%On the contrary, with dependent types, proving that two heterogeneous
+%%%collections constructed with different ordering have the same type
+%%%would require an additional (manually-supplied) equality proof.
+
+\paragraph{Database Tables} are collections of rows, 
+\ie collections of refined dictionaries.
+%
+We define a type alias @RT s@ (Refined Table) for 
+the list of refined dictionaries from the field 
+type @String@ to the @Univ@erse.
+%
+\begin{code}
+  type RT (s :: {dom::TDom, rng::TRange}) 
+    = [RD <s.dom, s.rng> String Univ]
+
+  type TDom   = Dom   String Univ
+  type TRange = Range String Univ
+\end{code}
+%
+For brevity we pack both the domain and the range 
+refinements into a record @s@ that describes the 
+schema refinement; \ie each row dictionary has 
+domain @s.dom@ and range @s.rng@.
+
+For example, the table from Figure~\ref{fig:moviedb}
+can be represented as a type @MoviesTable@ which 
+is an @RT@ refined with the domain and range @md@ 
+and @mr@ described earlier (\S~\ref{subsec:records}):
+%
+\begin{code}
+  type MoviesTable = RT {dom = md, rng = mr}
+   
+  movies :: MoviesTable 
+  movies = [movie1, movie2]
+\end{code}
+
+\subsection{Relational Algebra}\label{subsec:relational}
+
+Next, we describe the types of the relational algebra operators
+which can be used to manipulate refined rows and tables.
+For space reasons, we show the \emph{types} of the basic 
+relational operators; their (verified) implementations 
+can be found online~\cite{liquidhaskellgithub}.
+%
+\begin{code}
+  union   :: RT s -> RT s -> RT s
+  diff    :: RT s -> RT s -> RT s
+  select  :: (RD s -> Bool) -> RT s -> RT s
+  project :: ks:[String] -> RTSubEqFlds ks s 
+          -> RTEqFlds ks s
+  product :: ( Disjoint s1 s2, Union s1 s2 s
+             , Range s1 s, Range s2 s) 
+          => RT s1 -> RT s2 -> RT s
+\end{code}
+
+\paragraph{\texttt{union} and \texttt{diff}} compute the union 
+and difference, respectively of the (rows of) two tables.
+%
+The types of @union@ and @diff@ state that the 
+operators work on tables with the same schema 
+@s@ and return a table with the same schema.
+
+\paragraph{\texttt{select}} takes a predicate @p@
+and a table @t@ and filters the rows of @t@ 
+to those which that satisfy @p@.
+%
+The type of @select@ ensures that @p@ will 
+not reference columns (fields) that are
+not mapped in @t@, as the predicate @p@
+is constrained to require a dictionary 
+with schema @s@.
+
+\paragraph{\texttt{project}} takes
+a list of @String@ fields @ks@ 
+and a table @t@ and projects 
+exactly the fields @ks@ at 
+each row of @t@.
+%
+@project@'s type states that for 
+any schema @s@, the input table 
+has type @RTSubEqFlds ks s@ 
+\ie its domain should have at 
+least the fields @ks@ and the 
+result table has type @RTEqFlds ks s@, 
+\ie its domain has exactly the elements @ks@. 
+%
+\begin{code}
+  type RTSubEqFlds ks s
+    = RT s{dom = \z -> elts ks Set_sub  keys z}
+
+  type RTEqFlds ks s
+    = RT s{dom = \z -> elts ks == keys z}
+\end{code}
+% 
+The range of the argument and the result tables 
+is the same and equal to @s.rng@.
+
+\paragraph{\texttt{product}} takes two tables 
+as input and returns their (Cartesian) 
+product.
+%
+It takes two Refined Tables with schemata 
+@s1@ and @s2@ and returns a Refined Table 
+with schema @s@. Intuitively, the output
+schema is the ``concatenation'' of the input
+schema; we formalize this notion using bounds:
+%
+(1)~@Disjoint s1 s2@ says the domains of 
+    @s1@ and @s2@ should be disjoint,
+%
+(2)~@Union s1 s2 s@ says the domain of @s@ 
+    is the union of the domains of @s1@ and @s2@, 
+%
+(3)~@Range s1 s@ (\resp @Range s2 s2@) says 
+    the range of @s1@ should imply the result 
+    range @s@; together the two imply the output
+    schema @s@ preserves the type of each key in 
+    @s1@ or @s2@.
+%
+\begin{code}
+  bound Disjoint s1 s2 = \x y -> 
+    s1.dom x => s2.dom y => keys x Set_cap keys y == Set_emp
+   
+  bound Union s1 s2 s = \x y v -> 
+    s1.dom x => s2.dom y 
+             => keys v == keys x Set_cup keys y 
+             => s.dom v
+
+  bound Range si s = \x k v -> 
+    si.dom x => k Set_mem keys x => si.rng k v 
+             => s.rng k v 
+\end{code}
+
+%% We note that none of these restrictions can be 
+%% expressed using unbounded Abstract Refinement Types.
+
+Thus, bounded refinements  enable the precise 
+typing of  relational algebra operations.
+They let us describe precisely when union, 
+intersection, selection, projection and products 
+can be computed, and let us determine, at compile
+time the exact ``shape'' of the resulting tables.
+
+% \subsection{Data Base Queries}\label{subsec:dbclient}
+
+\paragraph{We can query Databases} by writing functions 
+that use the relational algebra combinators. 
+%
+For example, here is a query that returns the 
+``good'' titles -- with more than 8 stars -- 
+from the @movies@ table
+\footnote{More example queries can be found online~\cite{liquidhaskellgithub}}
+%
+\begin{code}
+  good_titles = project ["title"] $ select (\d ->
+                  toDouble (dfun d $ "star") > 8
+                ) movies
+\end{code}
+%
+%% The above query selects the movies that have more
+%% than 8 stars and projects only their @"title"@ field.
+%
+
+Finally, note that our entire library -- including 
+records, tables, and relational combinators -- is 
+built using vanilla Haskell \ie without \emph{any} 
+type level computation. 
+%
+All schema reasoning happens at the granularity of 
+the logical refinements. That is if the refinements
+are erased from the source, we still have a well-typed
+Haskell program but of course, lose the safety 
+guarantees about operations (\eg ``dynamic'' key lookup) 
+never failing at run-time.
+
+
+ 
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End: 

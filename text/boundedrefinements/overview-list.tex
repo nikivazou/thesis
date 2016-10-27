@@ -1,0 +1,152 @@
+\subsection{Bounds for Data Types} \label{sec:overview:data}
+
+Bounded refinements are also very useful in the first-order 
+setting, for example, when working with data types.
+
+\subsubsection*{Abstracting Refinements over Data}
+
+Lets start by abstracting refinements over data
+definitions~\cite{vazou13}. Consider the @List@ type
+abstractly refined with @p :: a -> a -> Prop@, a binary relation
+between two values of type @a@:
+%
+\begin{code}
+    data List <p> a 
+      = [] | (:) {h :: a, t :: List<p> a<p h>}
+\end{code}
+%
+Intuitively, the definition states that each "tail" is a list of
+elements that are @p@-related to the ``head'' @h@. That is, 
+in a list $[x_1,\ldots,x_n]$ for each $1 \leq i < j \leq n$, we 
+have $(\cc{p}\ x_i\ x_j)$.
+
+\paragraph{Ordered Lists} To see why this abstraction is useful,
+observe that we can define concrete refinements:
+%
+\begin{code}
+    inc = \hd v -> hd <= v
+\end{code}
+%
+and use them to specify and verify that sorting routines return 
+lists in increasing order:
+%
+\begin{code}
+   isort :: List a -> List<inc> a
+   isort = foldr insert []
+
+   insert :: a -> List<inc> a -> List<inc> a
+   insert =  -- elided for brevity 
+\end{code}
+
+\paragraph{QuickSort} However, when we try to verify:
+%
+\begin{code}
+    qsort        :: List a -> List<inc> a
+    qsort []     = []
+    qsort (x:xs) = qsort ls ++ x : qsort rs
+      where
+        ls       = [y | y <- xs, y <= x]  
+        rs       = [z | z <- xs, x <  z]  
+\end{code}
+%
+we run into a surprising problem: how can we type the \emph{append} 
+function @(++)@ in a way that lets us prove that the concatenation 
+above preserves order? 
+
+\subsubsection*{Appending Lists}
+
+Actually, even talking about order is presumes that we are interested
+in a particular instantiation for the @List@ refinement. How can we
+generically ensure that some abstract refinement @p@? Here's how; we 
+define a bound:
+%
+\begin{code}
+    bound Meet p q r = \x1 x2 -> 
+      q x1 => r x2 => p x1 x2
+\end{code}
+%
+that states that if two values @x1@ and @x2@ respectively satisfy 
+the (unary) properties @q x1@ and @r x2@ then they satisfy the 
+binary property @p x1 x2@. We can now use this to give append a 
+type that preserves the abstract binary relation @r@:
+%
+\begin{code}
+(++) :: (Meet p q r) => 
+          List<p> a<q> -> List<p> a<r> -> List<p> a
+[]     ++ ys = ys
+(x:xs) ++ ys = x : xs ++ ys
+\end{code}
+
+\paragraph{To verify \cc{qsort}} \toolname automatically instantiates the 
+refinements at the call to @(++)@ as: 
+%
+\begin{code}
+    p |-> \hd v -> hd <= v      -- inc 
+    q |-> \v -> v <= x 
+    r |-> \v -> x < v 
+\end{code}
+%
+This instantiation is permitted as upon instantiation, the bound 
+yields the VC:
+%
+\begin{code}
+    x1 <= x => x < x2 => x1 <= x2
+\end{code}
+%
+which is easily validated by the SMT solver, thereby verifying that
+the concatenation and hence @qsort@ produces increasingly ordered 
+lists of type @List<inc> a@.
+
+\subsubsection*{Reversing Lists}
+
+As a final example, consider the tail recursive list @reverse@ function:
+%
+\begin{code}
+reverse []          = []
+reverse (x:xs)      = go x [] xs
+  where
+    go x acc []     = x : acc
+    go x acc (y:xs) = go y (x : acc) xs
+\end{code}  
+
+As with append, we would like to assign @reverse@ a
+refinement-generic type that does not bake order into the
+signature. The natural specification is that if the input was a
+@List<p> a@ then the output must be a @List<q> a@ where the
+binary relation @q@ is the inverse of @p@.
+
+\paragraph{We can specify inversion} via a bound:
+%
+\begin{code}
+    bound Inverse p q = \x y -> p x y => q y x
+\end{code}
+%
+and use it to type 
+%
+\begin{code}
+    reverse :: (Inverse p q) 
+            => List<p> a -> List<q> a
+\end{code}
+
+\paragraph{We can use \cc{reverse}} to specify and verify that @decsort@ 
+returns lists sorted in decreasing order:
+%
+\begin{code}
+    decsort :: List a -> List<dec> a
+    decsort = reverse `compose` qsort
+\end{code}
+%
+where @dec = \hd v -> hd >= v@. Verification proceeds by
+by automatically instantiating @p@ and @q@ with the (valid) 
+concrete refinements:
+%
+\begin{code}
+    p |-> \hd v -> hd <= v
+    q |-> \hd v -> v  <= hd
+\end{code}
+
+%% -- inferring
+%% go :: x:a -> List<q> a<q x> -> List<p> a<p x>
+%%    -> List<q> a
+%% \end{code}
+
