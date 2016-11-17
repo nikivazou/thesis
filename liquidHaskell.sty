@@ -112,7 +112,7 @@
 
 \newcommand\elet[3]{\ensuremath{\nhaskell{let} \ #1 = #2 \ \nhaskell{in} \ #3}}
 \newcommand\eletrec[3]{\ensuremath{\nhaskell{let rec} \ #1 = #2 \ \nhaskell{in} \ #3}}
-\newcommand\ecase[4]{\ensuremath{\nhaskell{case} \ (#1 = #2) \ \nhaskell{of} \ \mid_i  #3 \ \rightarrow \ #4}}
+\newcommand\ecase[5]{\ensuremath{\nhaskell{case} \ (#5 = #1) \ \nhaskell{of} \  \{  #2\ #3 \ \rightarrow \ #4 \} }}
 
 %translation
 
@@ -137,8 +137,8 @@
 \newcommand{\tpp}[2]{{#1 \langle #2 \rangle}}
 \newcommand\tpref[3]{\tref{\tpp{#1}{#2}}{#3}}
 
-\newcommand\tbint{\ensuremath{\texttt{int}}\xspace}
-\newcommand\tbbool{\ensuremath{\texttt{bool}}\xspace}
+\newcommand\tbint{\ensuremath{\texttt{Int}}\xspace}
+\newcommand\tbbool{\ensuremath{\texttt{Bool}}\xspace}
 \newcommand\tc[1]{\ensuremath{tc\left(#1\right)}}
 % \newcommand\tfun[3]{\ensuremath{{(#1:#2)} \rightarrow #3}}
 \newcommand\tcfun[2]{\ensuremath{{#1 \rightarrow #2}}}
@@ -230,11 +230,11 @@
 
 \newcommand\tttyp{\ensuremath{\mathtt{t}}\xspace}
 \newcommand\ttBase{\ensuremath{\mathtt{B}}\xspace}
-\newcommand\ttbase{\ensuremath{\mathtt{b}}}
+\newcommand\ttbase{\ensuremath{\mathtt{B}}\xspace}
 \newcommand\ttT{\ensuremath{\mathtt{T}}}
 \newcommand\ttsto{\ensuremath{\mathtt{\Gamma}}}
 
-\newcommand{\CRASH}{\ensuremath{\mathtt{crash}}\xspace}
+\newcommand{\CRASH}{\ensuremath{\mathtt{Crash}}\xspace}
 \newcommand{\defeq}{\ \doteq\ }
 \newcommand{\dcolon}{::}
 \providecommand{\dbrkts}[1]{[\![#1]\!]}
@@ -363,8 +363,8 @@
 \newcommand\ttNonzero{\mathtt{NonZero}}
 \newcommand\ttNat{\mathtt{Nat}}
 \newcommand\ttfib{\mathtt{fib}}
-\newcommand\tttrue{\mathtt{true}}
-\newcommand\ttfalse{\mathtt{false}}
+\newcommand\tttrue{\mathtt{True}}
+\newcommand\ttfalse{\mathtt{False}}
 \newcommand\ttfoo{\mathtt{foo}}
 \newcommand\ttemp{\mathtt{emp}}
 \newcommand\ttlen{\mathtt{len}}
@@ -431,10 +431,10 @@
 \newcommand\erec[3]{\ensuremath{\mu #1.\lambda #2. #3}}
 % \newcommand\etabs[2]{\ensuremath{\left[\Lambda #1\right] #2}}
 % \newcommand\etapp[2]{\ensuremath{#1 \left[ #2 \right]}}
-\newcommand\etrue{\ensuremath{\mathtt{true}}\xspace}
-\newcommand\efalse{\ensuremath{\mathtt{false}}\xspace}
-\newcommand\ptrue{\ensuremath{\mathit{true}}\xspace}
-\newcommand\pfalse{\ensuremath{\mathit{false}}\xspace}
+\newcommand\etrue{\ensuremath{\mathtt{True}}\xspace}
+\newcommand\efalse{\ensuremath{\mathtt{False}}\xspace}
+\newcommand\ptrue{\ensuremath{\mathit{True}}\xspace}
+\newcommand\pfalse{\ensuremath{\mathit{False}}\xspace}
 \newcommand\eletsub[2]{\ensuremath{#1 #2}}
 
 \newcommand\ealt[2]{\ensuremath{#1 \rightarrow #2}}
@@ -626,7 +626,7 @@
 	\tfun{m}{\tnat^\finite}{#1\sub{x}{m}}	
 \end{array}
 }}
-\newcommand\tnat{\ensuremath{\mathtt{nat}}\xspace}
+\newcommand\tnat{\ensuremath{\mathtt{Nat}}\xspace}
 \newcommand\csem[1]{\ensuremath{\delta(#1)}}
 \newcommand\ceval[2]{\ensuremath{\csem{#1, #2}}}
 

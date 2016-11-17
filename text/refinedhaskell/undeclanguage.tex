@@ -1,5 +1,6 @@
-\begin{figure}
-\hrule width 0.48\textwidth \vspace{0.05in}
+\begin{figure}[!t]
+\centering
+\captionsetup{justification=centering}
 $$
 \begin{array}{rrcl}
 
@@ -20,16 +21,11 @@ $$
   & r & ::= &   e \\[0.05in] 
 
 \emphbf{Basic Types} \quad 
-  & \tbase & ::= & \tint \spmid \tbool \spmid \ttct \\[0.05in] 
+  & \Base & ::= & \tint \spmid \tbool \spmid \ttct \\[0.05in] 
 
 \emphbf{Types} \quad 
   & \typ & ::= & \tref{v}{\Base}{}{r} \spmid \tfunref{x}{\typ}{\typ}{v}{e} \\[0.1in]
-\end{array}
-$$
 % \hrule width 0.48\textwidth
-
-$$
-\begin{array}{rrcl}
 \emphbf{Contexts} \quad 
   & C
   & ::= 
@@ -56,7 +52,7 @@ $$
 \end{array}
 $$
 
-\caption{\undeclang: Syntax and Operational Semantics}
+\caption{Syntax and Operational Semantics of \undeclang.}
 \label{fig:undeclang}
 \label{fig:operational}
 \end{figure}

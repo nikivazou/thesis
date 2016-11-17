@@ -2,13 +2,13 @@
 
 Next, we formalize our stratified refinement type system, in two steps.
 %
-First, in this section, we present a core calculus \undeclang, 
+First,  we present a core calculus \undeclang, 
 with a general $\beta$-reduction semantics. We describe the syntax,
 operational semantics, and sound but undecidable declarative typing 
 rules for \undeclang. 
 %
 Second, in \Sref{sec:typing}, we describe \logiclang, a subset 
-of \undeclang that forms a decidable logic of refinements, and 
+of \undeclang that forms a decidable logic of refinements and 
 use it to obtain \declang with decidable SMT-based algorithmic typing.
 
 \subsection{Syntax}\label{sec:undec:syntax} 
@@ -38,7 +38,7 @@ $\mathtt{\leq}$,$\mathtt{/}$, $\mathtt{\land}$, $\mathtt{\lnot}$.
 In addition, we include a special \emph{untypable} constant $\ecrash$ 
 that models ``going wrong''. Primitive operations return a $\ecrash$
 when invoked with inputs outside their domain, \eg when $\mathtt{/}$ 
-is invoked with $\mathtt{0}$ as the divisor, or when $\mathtt{assert}$ is 
+is invoked with $\mathtt{0}$ as the divisor or when $\mathtt{assert}$ is 
 applied to $\mathtt{false}$.
 
 \spara{Data Constructors}
@@ -68,72 +68,49 @@ and $\mathtt{let}$ expressions.
 \subsection{Operational Semantics}
 
 Figure~\ref{fig:operational} summarizes the small 
-step contextual $\beta$-reduction semantics for 
+step, contextual $\beta$-reduction semantics for 
 \undeclang.
 %
-Note that we allow for reductions under data constructors, 
+We allow for reductions under data constructors, 
 and thus, values may be further reduced.
 %
 We write \evalj{e}{e'}{j} if there exist $e_1,\ldots,e_j$ such that
 $e$ is $e_1$, $e'$ is $e_j$ and $\forall i,j, 1 \leq i < j$, we have
 \eval{e_i}{e_{i+1}}.
 %
-We write \evals{e}{e'} if there exists some (finite) $j$ such that
+We write \evals{e}{e'} if there exists a (finite) $j$ such that
 $\evalj{e}{e'}{j}$.
 
 \spara{Constants} Application of a constant requires the
-argument be reduced to a value; in a single step the 
+argument to be reduced to a value; in a single step the 
 expression is reduced to the output of the primitive 
 constant operation. 
 %
 For example, consider $=$, the primitive equality operator 
 on integers. We have $\ceval{=}{n} \defeq =_n$
 where $\ceval{=_n}{m}$ equals \etrue iff $m$ is the same as $n$.
-%%as follows:
-%%%
-%%$$
-%%\ceval{=}{n} \defeq =_n \qquad \ceval{=_n}{m} \defeq \begin{cases} \etrue, & \mbox{if}\ m = n \\
-%%                                                                     \efalse, & \mbox{otherwise}
-%%                                                       \end{cases}
-%%$$
-
-%% \begin{align*}
-%% \interp{=}(n) \defeq & =_n \\
-%% \interp{=_n}(m) \defeq & \begin{cases} \etrue, & \mbox{if}\ m = n \\
-%%                                        \efalse, & \mbox{otherwise}
-%%                          \end{cases}
-%% \end{align*}
-%%
-%%\spara{Data Constructors} \RJ{This para is cancelled with $\beta$-reduction, right?}
-%%%
-%%There is no rule to evaluate application of data constructors.
-%%Like Haskell, our semantics do not force evaluation of expressions 
-%%wrapped in data constructors, thus, $D \ e_1\ \dots \ e_n$ is a 
-%%value, without requiring $e_i$s to be values.
-
 
 \subsection{Types}
 
 \undeclang types include basic types, which are \emph{refined} with predicates, 
 and dependent function types.
 %
-\emph{Basic types} $\tbase$ comprise integers, booleans, and a family of data-types 
-$T$ (representing lists, trees \etc.)
+\emph{Basic types} $\Base$ comprise integers, booleans, and a family of data-types 
+$T$ (representing lists, trees \etc).
 %
-For example the data type \tintlist represents lists of integers.
+For example, the data type \tintlist represents lists of integers.
 %
 We refine basic types with predicates (boolean valued expressions $e$) to obtain
-\emph{basic refinement types} $\tref{v}{\tbase}{}{e}$.
+\emph{basic refinement types} $\tref{v}{\Base}{}{e}$.
 %
 Finally, we have dependent \emph{function types} $\tfun{x}{\typ_x}{\typ}$ 
 where the input $x$ has the type $\typ_x$ and the output $\typ$ may
 refer to the input binder $x$.
 
-\spara{Notation} We write $\tbase$ to abbreviate $\tref{v}{\tbase}{}{\etrue}$, 
+\spara{Notation} We write $\Base$ to abbreviate $\tref{v}{\Base}{}{\etrue}$
 and \tfunbasic{\typ_x}{\typ} to abbreviate \tfun{x}{\typ_x}{\typ} if 
 $x$ does not appear in $\typ$. 
-% We use $p$, $q$, and $r$ for 
-% refinements, and 
+%
 We use $\_$ for unused binders.
 We write $\tref{v}{\tnat}{l}{r}$ to abbreviate $\tref{v}{\tint}{l}{0 \leq v \wedge r}$.
 
@@ -149,8 +126,8 @@ standard typing relation for the typed lambda calculus.
 %
 Then, we define the denotation of types as: 
 \begin{align*}
-\interp{\tref{x}{\tbase}{}{r}} \defeq & 
-    \{e \mid  \hastypebasesmall{\emptyset}{e}{\tbase},
+\interp{\tref{x}{\ttbase}{}{r}} \defeq & 
+    \{e \mid  \hastypebasesmall{\emptyset}{e}{\ttbase},
               \mbox{ if } \evals{e}{w} 
               \mbox{ then } \evals{\SUBST{r}{x}{w}}{\etrue} \}\\
 \interp{\tfun{x}{\typ_x}{\typ}} \defeq & 
@@ -159,29 +136,10 @@ Then, we define the denotation of types as:
     \}
 \end{align*}
 
-%% The meaning of the refined type $\tref{v}{b}{}{e_r}$
-%% is all the closed expressions $e$ of basic type $b$ for 
-%% which $e_r$ holds, 
-%% in the sense that if \evals{e}{v} for some value $v$, 
-%% then $e_r\sub{v}{e}$ evaluates to \etrue.
-%% %
-%% A dependent function type $\tfunref{x}{\typ_x}{\typ}{}{}$ 
-%% is interpreted as the set of closed expressions of
-%% simple type \tfunbasic{\typ_x}{\typ}. 
-%% that give output in $\interp{\typ\sub{x}{e_x}}$ 
-%% %whenever their input $e_x$ is in \interp{\typ_x}
 
 \spara{Constants}
 For each constant $c$ we define its type \constty{c}
-such that $c \in \interp{\constty{c}}$. 
-%
-For example,
-%Each constant $c$ we define is in the denotation of its type \constty{c}:
-%
-%Each constant $c$ is has type \constty{c} such that
-%$c \in \interp{\constty{c}}$. 
-%
-%% For example,
+such that $c \in \interp{\constty{c}}$, \eg
 %
 $$
 \begin{array}{lcl}
@@ -192,10 +150,10 @@ $$
 \end{array}
 $$
 %
-So, by definition we get the constant typing lemma
+So, by definition we get the constant typing lemma.
 %
 \begin{lemma}{[Constant Typing]}\label{lemma:constants}
-Every constant $c \in \interp{\constty{c}}$.
+For every constant $c$, $c \in \interp{\constty{c}}$.
 \end{lemma}
 %
 Thus, if $\constty{c} \defeq \tfun{x}{\typ_x}{\typ}$, then for every value 
@@ -293,7 +251,7 @@ described by $\typ$.
 
 \mypara{Soundness}
 Following \hlang~\cite{Knowles10}, we use the (undecidable) \rsubbase to show that each step 
-of evaluation preserves typing, and that if an expression
+of evaluation preserves typing and that if an expression
 is not a value, then it can be further evaluated:
 %
 \begin{itemize}
@@ -306,7 +264,7 @@ is not a value, then it can be further evaluated:
 \end{itemize}
 %
 We combine the above to prove that evaluation preserves 
-typing, and that a well typed term will not \ecrash.
+typing and that a well typed term will not \ecrash.
 %
 \begin{theorem}{[Soundness of \undeclang]}\label{thm:safety}
 \begin{itemize}
@@ -318,7 +276,7 @@ typing, and that a well typed term will not \ecrash.
 \end{theorem}
 
 We prove the above following the overall recipe of~\cite{Knowles10}. 
-Crash-freedom follows from type-preservation and as \ecrash has no type.
+Crash-freedom follows from type-preservation, as \ecrash has no type.
 %
 The Substitution Lemma, in particular, follows from a connection between
 the typing relation and type denotations:
