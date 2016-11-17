@@ -3,17 +3,18 @@
 \subsection{Measures: From Integers to Data Types}\label{sec:measures}
 
 \begin{figure}
-\hrule width 0.48\textwidth \vspace{0.05in}
+\centering
+\captionsetup{justification=centering}
 $$
-\begin{array}{rcl}
-\multicolumn{3}{l}{\emphbf{Definition}}               \\
+\begin{array}{lrcl}
+{\emphbf{Definition}} &
   \mathit{def} & ::=  &  \mathtt{measure} \ f :: \tau \\
-               &      &  \quad eq_1 \ldots eq_n       \\[0.05in]
+              & &      &  \quad eq_1 \ldots eq_n       \\[0.05in]
 
-\multicolumn{3}{l}{\emphbf{Equation}}                 \\ 
+{\emphbf{Equation}}   & 
   \mathit{eq}  & ::=  &   f\ (D\ \overline{x}) = r    \\[0.15in] 
 
-\multicolumn{3}{l}{\emphbf{Equation to Type}}         \\[0.05in]
+{\emphbf{Equation to Type}} &
 \quad \embed{f\ (D\ \overline{x}) = r} & \defeq & D :: \overline{\tbind{x}{\tau}} \rightarrow \tref{\mathtt{v}}{\tau}{}{f\ \mathtt{v} = r}
 \end{array}
 $$
@@ -22,40 +23,12 @@ $$
 \end{figure}
 
 
-%% \begin{figure}
-%% \hrule width 0.48\textwidth \vspace{0.05in}
-%% $$
-%% \begin{array}{rrcl}
-%% \emphbf{Definition} \quad 
-%%   & def & ::=&  \mathtt{measure} \ f :: \tau \\
-%%   &     &    &  \quad eq_1 \ldots eq_n
-%%   \\[0.05in]
-%% 
-%% \emphbf{Equation} \quad 
-%%   & eq & ::=&   f\ (D\ \overline{x}) = r 
-%%   \\[0.05in] 
-%% 
-%% \emphbf{Equation-Type} &&& \\[0.05in]
-%% \multicolumn{2}{r}{\embed{f\ (D\ \overline{x}) = r}} & \defeq & 
-%%     D :: \overline{\tbind{x}{\tau}} \rightarrow \tref{\mathtt{v}}{\tau}{}{f\ \mathtt{v} = r}
-%% 
-%% %% \emphbf{Equation to Type} &&&
-%% %%   \\[0.05in]
-%% %% \multicolumn{4}{c}{ \embed{f\ (D\ \overline{x}) = r} =
-%% %%  D :: \overline{\tbind{x}{\tau}} \rightarrow \tref{\mathtt{v}}{\tau}{}{f\ \mathtt{v} = r}
-%% %% }
-%% \end{array}
-%% $$
-%% \caption{Syntax of measures}
-%% \label{fig:measures}
-%% \end{figure}
 
 So far, all our examples have used only integer and boolean expressions in refinements.
 To describe properties of algebraic data types, we use \emph{measures},
 introduced in prior work on Liquid Types~\cite{LiquidPLDI09}.
-%% Next, we define \emph{measures}~\cite{LiquidPLDI09} (also called logical functions~\cite{fstar})
-%% that capture properties of data expressions.
-Measures are inductively defined functions that can be used in refinements, and
+%
+Measures are inductively defined functions that can be used in refinements and
 provide an efficient way to axiomatize properties of data types.
 %
 For example, @emp@ determines whether a list is empty:
@@ -67,17 +40,17 @@ For example, @emp@ determines whether a list is empty:
 \end{code}
 The syntax for measures deliberately looks like Haskell, but it is \emph{far} more
 restricted, and should really be considered as a separate language.
-A measure has exactly one argument, and is defined by a list of equations,
-each of which has a simple pattern on the left hand side (see Figure~\ref{fig:measures}).
+A measure has exactly one argument and is defined by a list of equations,
+each of which has a simple pattern on the left hand side (Figure~\ref{fig:measures}).
 The right-hand side of the equation is a refinement expression $r$.
 Measure definitions are typechecked in the usual way; we omit the typing rules which are standard.
 (Our metatheory does not support type polymorphism,
-so in this paper we simply reason about lists of integers;
+so here we simply reason about lists of integers;
 however, our implementation supports polymorphism.)
 
 \paragraph{Denotational semantics}
 The denotational semantics of types in \hlang in \Sref{sec:den-sem} is readily extended to
-support measures.  In \hlang a refinement $r$ is an arbitrary expression, and
+support measures.  In \hlang a refinement $r$ is an arbitrary expression and
 calls to a measure are evaluated in the usual way by pattern matching.
 For example, with the above definition of @emp@ it is straightforward to show that
 \begin{align}
@@ -87,7 +60,7 @@ as the refinement @not (emp ([1, 2, 3]))@ evaluates to $\tttrue$.
 
 \mypara{Measures as Axioms}
 How can we reason about invocations of measures in the decidable logic of VCs?
-A natural approach is to treat a measure like @emp@ as an uninterpreted function,
+A natural approach is to treat a measure like @emp@ as an uninterpreted function
 and add logical axioms that capture its behaviour. This looks easy: each equation 
 of the measure definition corresponds to an axiom, thus:
 %
@@ -121,7 +94,7 @@ These types ensure that:
 ~(1) each time a list value is \emph{constructed}, 
 its type carries the appropriate emptiness information. 
 Thus our system is able to statically decide that 
-(\ref{type:len}) is valid, and,
+(\ref{type:len}) is valid and
 ~(2) each time a list value is \emph{matched}, 
 the appropriate emptiness information is used to 
 improve precision of pattern matching, as we see next.
@@ -148,10 +121,9 @@ be called with lists that are \emph{not} @[]@, and so
 The call to @error@ generates the subtyping query
 %
 \begin{align*}
-	\begin{array}{l}
-   \tbind{\ttxs}{\tref{\ttxs}{[\tint]}{\trivial}{\lnot (\ttemp\ \ttxs)}}\\
+   \tbind{\ttxs}{\tref{\ttxs}{[\tint]}{\trivial}{\lnot (\ttemp\ \ttxs)}}, \
    \tbind{\ttb}{\tttref{\ttb}{[\tint]}{\trivial}{(\ttemp\ \ttxs)= true}} 	
-	\end{array} & \vdash \subtref{\tttrue}{\ttfalse} 
+	 & \vdash \subtref{\tttrue}{\ttfalse} 
 \end{align*}
 %
 The match-binder $\ttb$ holds the result of the 
@@ -160,18 +132,15 @@ we assign it the refinement of the type of \texttt{[]}
 which is $(\ttemp\ \ttxs) = \tttrue$. %~\cite{LiquidPLDI09}.
 %
 Since the call is done inside a @case-of@ expressions 
-both @xs@ and @b@ are guaranteed to be in WHNF,
+both @xs@ and @b@ are in WHNF,
 thus they have \Wnf types. 
   
-The verifier \emph{accepts} the program as the above subtyping reduces to the valid VC
+The verifier \emph{accepts} the program as the above subtyping reduces to the valid VC:
 \begin{align*}
 \lnot (\ttemp\ \ttxs) \wedge ((\ttemp\ \ttxs)= \tttrue) \Rightarrow\ & \tttrue \Rightarrow\ \ttfalse
 \end{align*}
 %
-%%The above method also applies to terms that have been @seq@-ed or have strictness 
-%%annotations.
-%
-Consequently, our system can naturally support idiomatic 
+Thus, our system supports idiomatic 
 Haskell, \eg taking the @head@ of an infinite list:
 %
 \begin{code}
@@ -181,16 +150,6 @@ Haskell, \eg taking the @head@ of an infinite list:
   repeat y = y : repeat y
 \end{code}
 %
-%% We verify the signature for @repeat@ as the only returned value 
-%% is a cons-ed list for which @emp@ is $\ttfalse$.
-%% %
-%% Note that as the return has a \Div-type, \toolname would soundly 
-%% reject the signature 
-%% %
-%% \begin{code}
-%%   repeat   :: a -> {v:[a] | false}
-%% \end{code}
-
 
 \mypara{Multiple Measures}
 If a type has multiple measures, we simply refine each data constructor's type
@@ -204,43 +163,16 @@ For example, consider a measure that computes the length of a list:
 \end{code}
 %
 Using the translation of Figure~\ref{fig:measures},
-we extract the following types for list's data constructors.
-$$
-\begin{array}{lcl}
-\text{[]}  & :: & \ttreft{v}{[\tint]}{len\ v = 0}\\
-{:}  & :: & \tfun{\ttx}{\tint}{\tfun{\ttxs}{[\tint]}{\ttreft{v}{[\tint]}{len\ v = 1 + (len\ xs)}}}\\[0.05in]
-\multicolumn{3}{l}{
-\text{The final types for list data constructors will be the 
-conjunction of}}\\
-\multicolumn{3}{l}{
-\text{the refinements from $\mathtt{len}$ and $\mathtt{emp}$:}
-}\\[0.05in]
-\text{[]}  & :: & \ttreft{v}{[\tint]}{emp\ v = true \land len\ v = 0}\\
-{:}  & :: & \tfun{\ttx}{\tint}{\tfun{\ttxs}{[\tint]}\\ &&
-{\ttreft{v}{[\tint]}{emp\ v = false \land len\ v = 1 + (len\ xs)}}}
-\end{array}
-$$
-
-
-
-
+we get the following types for list's data constructors.
 %
-\begin{comment}
-* uninterpreted functions approximated haskell functions, 
-for soundness we need to evaluate them
+\begin{align*}
+\text{[]}  & ::  \ttreft{v}{[\tint]}{len\ v = 0}\\
+{:}  & ::  \tfun{\ttx}{\tint}{\tfun{\ttxs}{[\tint]}{\ttreft{v}{[\tint]}{len\ v = 1 + (len\ xs)}}}\\
+\intertext{The final types for list data are the 
+conjunction of the refinements from $\mathtt{len}$ and $\mathtt{emp}$:}\\
+\text{[]}  & ::  \ttreft{v}{[\tint]}{emp\ v = true \land len\ v = 0}\\
+{:}  & ::  \tfun{\ttx}{\tint}{\tfun{\ttxs}{[\tint]}
+           {\ttreft{v}{[\tint]}{emp\ v = false \land len\ v = 1 + (len\ xs)}}}
+\end{align*}
 
-* measure definitions => types of data contructors
-Measure definitions are not used in any other way
-Otherwise they are simply uninterpretd functions
 
-* Many measures => conjunction.
-
-* State that you can use measures that lack definitions; they are uninterpreted functions
-
-* give measure syntax definition
-
-* measure evaluation is haskell evaluation
-
-* eqivalently use axioms, but what we do is more efficient, see HALO
-see related work discussion about why this is not an option and HALO was Bad
-\end{comment}

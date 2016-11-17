@@ -1,6 +1,7 @@
 \section{Overview}\label{sec:overview}
 
-We start with an overview of our contributions. 
+We start with an informal overview of a sound refinement type 
+system for Haskell. 
 %
 After recapitulating the basics of refinement types
 we illustrate why the classical approach based on 
@@ -8,44 +9,68 @@ verification conditions (VCs) is unsound due to
 lazy evaluation.  
 %
 Next, we step back to understand precisely how the 
-VCs arise from refinement subtyping, and how subtyping
+VCs arise from refinement subtyping and how subtyping
 is different under eager and lazy evaluation. 
 In particular, we demonstrate that under lazy, but 
 \emph{not} eager, evaluation, the refinement type 
 system, and hence the VCs, must account for divergence.
 %
 Consequently, we develop a type system that accounts 
-for divergence in a modular and syntactic fashion, 
+for divergence in a modular and syntactic fashion 
 and illustrate its use via several small examples.
 %
 Finally, we show how a refinement-based termination
-analysis can be used to improve precision, yielding 
+analysis is used to improve precision, yielding 
 a highly effective SMT-based verifier for Haskell.
 
 \subsection{Standard Refinement Types: From Subtyping to VC}\label{subsec:vc}
 
-%%Recall the refinement type aliases @Pos@ and @Nat@ 
-%%and the specification for @div@ from \Sref{sec:intro}.
-%%
-%%\begin{code}
-%%   type Pos = {v:Int | 0 <  v} 
-%%   type Nat = {v:Int | 0 <= v}
-%%   
-%%   div :: n:Nat -> d:Pos -> {v:Nat | v <= n}
-%%\end{code}
-%%
+
+\begin{figure}[!t]
+\centering
+\captionsetup{justification=centering}
+$$
+\begin{array}{rrcl}
+\emphbf{Refinements} & \refi     & ::= & \dots \text{varies} \dots \\[0.05in] 
+\emphbf{Basic Types} & \base  & ::= & \tref{v}{\tint}{}{\refi} \spmid \dots \\[0.05in] 
+\emphbf{Types}       & \typ   & ::= & \base \spmid \tfunref{\x}{\typ}{\typ}{v}{\refi} \\[0.05in] 
+\emphbf{Environment} & \env   & ::= & \emptyset \spmid \bind{x}{\typ}, \env \\[0.1in]
+
+\multicolumn{3}{l}{\emphbf{Subtyping}}   & \issubtype{\env}{\typ_1}{\typ_2} \\[0.1in]
+
+\multicolumn{4}{l}{\mbox{\emphbf{Abbreviations}}} \\[0.05in]
+  \multicolumn{2}{r}{\bind{x}{\ttref{\refi}}} & \doteq & \bind{x}{\tref{x}{\tint}{}{\refi}} \\[0.05in]
+  \multicolumn{2}{r}{\ttreftsimple{\x}{\refi}}   & \doteq & {\tref{x}{\tint}{}{\refi}} \\[0.05in]
+  \multicolumn{2}{r}{\ttref{\refi}}             & \doteq & {\tref{v}{\tint}{}{\refi}} \\[0.05in]
+  \multicolumn{2}{r}{\reft{\x}{\reft{\y}{\tint}{\refi_\y}}{\refi_\x}} & \doteq & 
+  					{\reft{\x}{\tint}{\refi_\x \land \refi_\y\sub{\y}{\x}}} \\[0.05in]
+
+
+\multicolumn{4}{l}{\mbox{\emphbf{Translation}}} \\[0.05in]
+\multicolumn{2}{r}{\embed{\issubtype{\env}{\base_1}{\base_2}}} & \defeq& \isvalidvc{\embed{\env}}{\embed{\base_1}}{\embed{\base_2}}\\[0.05in]
+  \multicolumn{2}{r}{\embed{\tttref{\x}{\tint}{}{\refi}}} & \defeq & \lref\\[0.05in]
+  \multicolumn{2}{r}{\embed{\ttbind{\x}{\tttref{\vv}{\tint}{}{\refi}}}} &\defeq & \ \mbox{``$\mathtt{\x}$ is a value"}  \Rightarrow \SUBST{\lref}{\vv}{\x}\\[0.05in]
+  \multicolumn{2}{r}{\embed{\bind{\x}{(\tfun{\y}{\typ_\y}{\typ})}}} &\defeq & \tttrue\\[0.05in]
+  \multicolumn{2}{r}{\embed{\ttbind{\x_1}{\typ_1},\ldots,\ttbind{\x_\n}{\typ_\n}}} & \defeq & \embed{\ttbind{\x_1}{\typ_1}} \wedge \ldots \wedge \embed{\ttbind{\x_\n}{\typ_\n}} \\
+\end{array}
+$$
+\caption[Summary of Informal Notation]{Informal Notation: Types, Subtyping, and VCs}
+\label{fig:overview:syntax}
+\end{figure}
+
+
 First, let us see how standard refinement type systems 
 \cite{LiquidPLDI08, Knowles10} will 
 use
-the refinement type aliases @Pos@ and @Nat@ 
-and the specification for @div@ from \Sref{sec:intro}
+the aforementioned refinement type aliases @Pos@ and @Nat@ 
+and the specification for @div@
 %
 to \emph{accept} @good@ and
 \emph{reject} @bad@.
 We use the syntax of Figure~\ref{fig:overview:syntax}, where $r$ is a
 \emph{refinement expression}, or just \emph{refinement} for short.
 We will vary the expressiveness of the language of refinements in
-different parts of the paper.
+different parts of this document.
 %
 \begin{code}
     good     :: Nat -> Nat -> Int
@@ -63,12 +88,10 @@ the actual parameter @y@ is a \emph{subtype} of the type of
 @div@'s second input, via a subtyping query:
 %
 $$
-\begin{array}{l}
-\ttbind{x}{\tref{x}{Int}{}{x \geq 0}},\\ 
-\ttbind{y}{\tref{y}{Int}{}{y \geq 0}}\\
-\end{array}
- \vdash\ 
-	\subt{\tttref{y}{Int}{}{y \geq 0}}{\tttref{v}{Int}{}{v > 0}}$$
+ \ttbind{x}{\tref{x}{Int}{}{x \geq 0}}, 
+ \ttbind{y}{\tref{y}{Int}{}{y \geq 0}}
+ \vdash
+ \subt{\tttref{y}{Int}{}{y \geq 0}}{\tttref{v}{Int}{}{v > 0}}$$
 %
 We use the Abbreviations of Figure~\ref{fig:overview:syntax} to simplify the 
 syntax of the queries.
@@ -111,97 +134,23 @@ So the refinement type system will \emph{reject} @bad@.
 On the other hand, a refinement system \emph{accepts} @good@.
 Here, @+@'s type exactly captures its behaviour into the logic:
 \begin{code}
-(+) :: x:Int -> y:Int -> {v:Int | v = x + y} 
+  (+) :: x:Int -> y:Int -> {v:Int | v = x + y} 
 \end{code}
 Thus, we can conclude that the divisor @z@ is a positive number. 
 The subtyping query for the argument to @div@ is
 %
 \begin{align*}
-\begin{array}{l}
 \ttbind{x}{\ttref{x \geq 0}},
-\ttbind{y}{\ttref{y \geq 0}},\\ 
-\ttbind{z}{\ttref{z = y + 1}}\\ 
-\end{array}
+\ttbind{y}{\ttref{y \geq 0}}, 
+\ttbind{z}{\ttref{z = y + 1}} 
 \vdash\ & \subtref{v = y + 1}{v > 0}
 %\label{sub:good}
 \intertext{which reduces to the \emph{valid} VC}
-	\begin{array}{l}
-	\mathvc{(\ttx \geq 0)} \wedge \mathvc{(\tty \geq 0)}\wedge \\
+	\mathvc{(\ttx \geq 0)} \wedge \mathvc{(\tty \geq 0)}\wedge 
 	\mathvc{(\ttz = \tty+1)} 
-	\end{array}
    \Rightarrow\ & \mathvc{(\ttv = \tty+1)} 
    \Rightarrow \mathvc{(\ttv > 0)} \nonumber
 \end{align*}
-
-\begin{figure}
-\hrule width 0.48\textwidth \vspace{0.05in}
-$$
-\begin{array}{rrcl}
-\emphbf{Refinements} & \refi     & ::= & \dots \text{varies} \dots \\[0.05in] 
-%\emphbf{Refinements} & \refi     & ::= & \dots \text{carefully restricted language} \dots \\[0.05in] 
-\emphbf{Basic Types} & \base  & ::= & \tref{v}{\tint}{}{\refi} \spmid \dots \\[0.05in] 
-\emphbf{Types}       & \typ   & ::= & \base \spmid \tfunref{\x}{\typ}{\typ}{v}{\refi} \\[0.05in] 
-\emphbf{Environment} & \env   & ::= & \emptyset \spmid \bind{x}{\typ}, \env \\[0.1in]
-
-\multicolumn{3}{l}{\emphbf{Subtyping}}   & \issubtype{\env}{\typ_1}{\typ_2} \\[0.1in]
-
-\multicolumn{4}{l}{\mbox{\emphbf{Abbreviations}}} \\[0.05in]
-  \multicolumn{2}{r}{\bind{x}{\ttref{\refi}}} & \doteq & \bind{x}{\tref{x}{\tint}{}{\refi}} \\[0.05in]
-  \multicolumn{2}{r}{\ttreftsimple{\x}{\refi}}   & \doteq & {\tref{x}{\tint}{}{\refi}} \\[0.05in]
-  \multicolumn{2}{r}{\ttref{\refi}}             & \doteq & {\tref{v}{\tint}{}{\refi}} \\[0.05in]
-  \multicolumn{2}{r}{\reft{\x}{\reft{\y}{\tint}{\refi_\y}}{\refi_\x}} & \doteq & 
-  					{\reft{\x}{\tint}{\refi_\x \land \refi_\y\sub{\y}{\x}}} \\[0.05in]
-
-
-\multicolumn{4}{l}{\mbox{\emphbf{Translation}}} \\[0.05in]
-\multicolumn{2}{r}{\embed{\issubtype{\env}{\base_1}{\base_2}}} & \defeq& \isvalidvc{\embed{\env}}{\embed{\base_1}}{\embed{\base_2}}\\[0.05in]
-  \multicolumn{2}{r}{\embed{\tttref{\x}{\tint}{}{\refi}}} & \defeq & \lref\\[0.05in]
-  \multicolumn{2}{r}{\embed{\ttbind{\x}{\tttref{\vv}{\tint}{}{\refi}}}} &\defeq & \ \mbox{``$\mathtt{\x}$ is a value"}  \Rightarrow \SUBST{\lref}{\vv}{\x}\\[0.05in]
-  \multicolumn{2}{r}{\embed{\bind{\x}{(\tfun{\y}{\typ_\y}{\typ})}}} &\defeq & \tttrue\\[0.05in]
-  \multicolumn{2}{r}{\embed{\ttbind{\x_1}{\typ_1},\ldots,\ttbind{\x_\n}{\typ_\n}}} & \defeq & \embed{\ttbind{\x_1}{\typ_1}} \wedge \ldots \wedge \embed{\ttbind{\x_\n}{\typ_\n}} \\
-\end{array}
-$$
-%%%%%% \begin{array}{rrcl}
-%%%%%% \emphbf{Refinements} \quad 
-%%%%%%   & \ttp & ::= &  \dots \text{carefully restricted language} \dots \\[0.05in] 
-%%%%%% 
-%%%%%% \emphbf{Basic Types} \quad 
-%%%%%%   & \ttbase & ::= & \tttref{v}{\tint}{}{p} \spmid \dots \\[0.05in] 
-%%%%%% 
-%%%%%% \emphbf{Types} \quad 
-%%%%%%   & \tttyp & ::= & \ttbase \spmid \tfunref{\ttx}{\tttyp}{\tttyp}{v}{\texttt{p}} \\[0.05in] 
-%%%%%% 
-%%%%%% \emphbf{Environment} \quad 
-%%%%%%   & \ttsto & ::= & \emptyset \spmid \ttbind{x}{\tttyp}, \ttsto \\ \\[0.1in]
-%%%%%% 
-%%%%%% \emphbf{Subtyping} \quad 
-%%%%%%   &  &  & \issubtype{\ttsto}{\tttyp_1}{\tttyp_2} \\ 
-%%%%%% \end{array}
-%%%%%% $$
-%%%%%% 
-%%%%%% \mbox{\emphbf{Abbreviations}}
-%%%%%% $$
-%%%%%% \begin{array}{rcl}
-%%%%%% \ttbind{x}{\ttref{p}} &\doteq & \ttbind{x}{\tref{x}{\tint}{}{p}} \\
-%%%%%% {\ttreftsimple{x}{p}} &\doteq & {\tttref{x}{\tint}{}{p}}  \\
-%%%%%% \ttref{p} &\doteq & {\tttref{v}{\tint}{}{p}}  \\
-%%%%%% \end{array}
-%%%%%% $$
-%%%%%% 
-%%%%%% \mbox{\emphbf{Embedding: From Subtyping to VC}}
-%%%%%% $$
-%%%%%% \begin{array}{rcl}
-%%%%%% \embed{\issubtype{\ttsto}{\ttbase_1}{\ttbase_2}} & \defeq& \isvalidvc{\embed{\ttsto}}{\embed{\ttbase_1}}{\embed{\ttbase_2}}\\
-%%%%%% \embed{\tttref{x}{\tint}{}{p}} & \defeq & p\\
-%%%%%% \embed{\ttbind{x}{\tttref{v}{\tint}{}{p}}} &\defeq & \ \mbox{``$\mathtt{x}$ is a value"}  \Rightarrow \SUBST{p}{v}{x}\\
-%%%%%% \embed{\ttbind{x}{(\tfun{y}{\tttyp_y}{\tttyp})}} &\defeq & \ptrue\\
-%%%%%% \embed{\ttbind{x_1}{\tttyp_1},\ldots,\ttbind{x_n}{\tttyp_n}} &\defeq & 
-%%%%%% \embed{\ttbind{x_1}{\tttyp_1}} \wedge \ldots \wedge \embed{\ttbind{x_n}{\tttyp_n}} \\
-%%%%%% \end{array}
-%%%%%% $$
-\caption{Notation: Types, Subtyping \& VCs}
-\label{fig:overview:syntax}
-\end{figure}
 
 \subsection{Lazy Evaluation Makes VCs Unsound} \label{sec:overview:unsound}
 
@@ -224,7 +173,7 @@ that the function \emph{does not terminate}, \ie does not
 return \emph{any} value. 
 %
 Any standard refinement type checker (or Floyd-Hoare
-verifier like Dafny\footnote{http://rise4fun.com/Dafny/wVGc}) 
+verifier like Dafny~\cite{dafny}) 
 will verify the given signature for @diverge@ 
 via the classical method of inductively \emph{assuming} 
 the signature holds for @diverge@ and then 
@@ -245,10 +194,10 @@ that
 \begin{align}
    \ttbind{\ttn}{\ttref{\ttfalse}},\ \ttbind{\tty}{\ttref{\tty = 0}}\ \vdash\ & \subtref{\ttv = 0}{\ttv > 0} 
    \label{sub:explode}
-\intertext{In the subtyping environment \texttt{n} is 
+\intertext{In the environment, \texttt{n} is 
   bound to the type corresponding to the \emph{output} 
-  type of \texttt{diverge}, and \texttt{y} is bound to 
-  the singleton type stating \texttt{y} equals \texttt{0}.
+  type of \texttt{diverge} and \texttt{y} is bound to 
+  the type stating \texttt{y} equals \texttt{0}.
   In this environment, we must prove that actual parameter's 
   type -- \ie that of \texttt{y} -- is a subtype of \texttt{Pos}. 
   The subtyping, using the embedding of Figure~\ref{fig:overview:syntax} 
@@ -258,13 +207,13 @@ that
     \label{vc:explode}
 \end{align}
 %
-The SMT solver proves this VC valid by using the 
+The SMT solver proves this VC valid using the 
 contradiction in the antecedent, thereby unsoundly 
 proving the call to @div@ safe!
 
 \mypara{Eager vs. Lazy Verification Conditions}
 %
-At this point, we pause to emphasize that the problem lies 
+We pause to emphasize that the problem lies 
 in the fact that the classical technique for encoding subtyping 
 (or generally, Hoare's ``rule of consequence" \cite{Hoare71}) 
 with VCs is \emph{unsound under lazy evaluation}.
@@ -285,45 +234,6 @@ semantics. As @n@ is not required, the program will dive
 headlong into evaluating the @div@ and hence crash, 
 rendering the VC meaningless.
 
-%%Note that the problem with reconciling laziness and VCs is independent
-%%of the functional and type-based setting; it is straightforward to 
-%%translate the above into an imperative, Floyd-Hoare setting~\cite{dafny}.
-
-%% Original paragraph
-%% \mypara{The Problem is Laziness (Not Recursion)}
-
-%% Readers familar with fully dependently typed languages 
-%% like Cayenne~\cite{cayenne}, Agda~\cite{norell07}, 
-%% Coq~\cite{coq-book}, or Idris~\cite{Brady13}, may be
-%% tempted to attribute the unsoundness to the presence 
-%% of arbitrary recursion and hence non-termination 
-%% (\eg in @diverge@).
-%% %
-%% In dependently typed languages, arbitrary terms may 
-%% appear in types. Thus, arbitrary recursion can lead 
-%% to non-terminating functions that make it impossible 
-%% to define the semantics of types, and to check type 
-%% equivalence.
-
-%% However, in the refinement setting, recursion is 
-%% \emph{not} the problem. The types are carefully 
-%% engineered to \emph{not} contain arbitrary terms, 
-%% but only contain formulas from restricted logics 
-%% that preclude arbitrary user-defined 
-%% functions~\cite{pfenningxi98,Dunfield07,fstar}.
-%% %
-%% In our system we enforce this with a \emph{well-formedness condition}
-%% that checks all refinements converge (rule~\rwbased in
-%% Figure~\ref{fig:declang:typing}).
-%% %
-%% Thus, termination has never been an issue with 
-%% refinement type systems. 
-%% Indeed, we will show how to make refinement types sound under 
-%% laziness \emph{without} restricting recursion or requiring proofs 
-%% of termination.
-%% % \NV{This is not true, we do require proofs of termination -- RJ:no -- e.g. for match/SEQ}
-%% % by ensuring that all well-formed refinements do in fact terminate
-%% % (see Rule \rwbased in Figure~\ref{fig:modifications}). 
 
 \mypara{The Problem is Laziness} Readers familar 
 with fully dependently typed languages like 
@@ -341,11 +251,16 @@ Refinement type systems avoid this situation by carefully restricting
 types so that they do not contain arbitrary terms (even through 
 substitution), but rather only terms from restricted logics that
 preclude arbitrary user-defined functions~\cite{pfenningxi98,Dunfield07,fstar}.
-Very much like previous work, we enforce the same restriction
+Very much like previous work, for now, we enforce the same restriction
 with a \emph{well-formedness condition} on 
 refinements (\rwbased in Fig.~\ref{fig:declang:typing}).
+%
+In Chapter~\ref{refinementrflection} we present how 
+our logic is extended with provably terminating arbitrary terms, 
+while preserving both soundness and decidability.
 
-However, we show that this restriction \emph{is plainly not sufficient for soundness} 
+However, we show that restricting the logic of refinements
+\emph{is plainly not sufficient for soundness} 
 when laziness is combined with non-termination, 
 as binders can be bound to diverging expressions. 
 Unsurprisingly, in a strongly
@@ -378,35 +293,22 @@ expressions which evaluate to values greater than @0@.
 We formalize this intuition by defining the denotation
 of a type as:
 $$\interp{\tttref{\x}{\typ}{}{\refi}} \defeq \{e \mid \hastype{\emptyset}{e}{\typ}, \mbox{ if } \goesto{e}{\val} \mbox{ then } \goesto{\SUBST{\refi}{\x}{\val}}{\etrue} \}$$
-%% \intertext{
-%% \SPJ{These two uses of arrow* are presumably not the same since, 
-%%   as you repeatedly assert, the refinement-type language is not 
-%%   the same as the main term language?}
-%% \ES{I think in this case the arrows are the same since this is 
-%%   the denotational version?}
+%
 That is, the type denotes the set of expressions \mie that have
 the corresponding base type \typ which \emph{diverge or} reduce 
 to values that make the refinement reduce to $\etrue$. 
-%%Unlike fully dependent systems,
-%%expressions (and thus refinements) can diverge.
-%%\SPJ{Does this refer to e or p?  e I assume?  Say so.  Again, p can't diverge, right?}
 %
 The guard \goesto{\mie}{\val} is crucially required to prove soundness in the presence of recursion.
 Thus, quoting~\cite{Knowles10}, ``refinement types specify partial and not total correctness''. 
 
-An \emph{environment} $\env$ is a sequence of type bindings,
+An \emph{environment} $\env$ is a sequence of type bindings
 and a \emph{closing substitution} \sto\xspace is a sequence of expression bindings:
-$$\env \defeq \ttbind{\x_1}{\typ_1},\ldots\ttbind{\x_\n}{\typ_\n} \qquad
+$$\env \defeq \ttbind{\x_1}{\typ_1},\ldots\ttbind{\x_\n}{\typ_\n} \qquad \qquad
   \sto \defeq \tgbind{\x_1}{\mie_1}, \ldots, \tgbind{\x_\n}{\mie_\n}$$ %%
 %% 
 Thus, we define the denotation of $\env$ as the set of substitutions:
 %%
 $$\interp{\env} \defeq \{\sto \mid \forall \ttbind{\x}{\typ} \in \env. \sto(\x) \in \interp{\thetasub{\sto}{\typ}} \}$$
-%%
-% \end{align*}
-% \SPJ{I thought you were going to require $empty |- \theta(x) : \tau$, but specify that part denotationally. Why?}
-% \NV{then typing, subtyping, implication, and closing substitution judgements would be mutually-recursive defined 
-% in such a way that we cannot show they are well-defined}
 
 \mypara{Declarative Subtyping}
 Equipped with interpretations for types and environments, 
@@ -465,16 +367,11 @@ there \emph{is no value} that we can map \ttn to, so the set of
 denotations of the environment is empty. Hence, the 
 containment~(\ref{con:explode}) vacuously holds under
 eager evaluation, which proves the program safe.
-%\ES{CONFUSED about empty set bit..}
 %
 Belo's observation 
 is implicitly used by refinement types for eager languages
-to prove that the standard (\ie under call-by-value)
+to prove that the standard (\ie call-by-value)
 reduction from subtyping to VC is sound.
-%%That is exactly why under 
-%%call-by-value evaluation (as in \S~\ref{subsec:vc})
-%%we can soundly ignore the 
-%%``is a value'' guard in the reduction to VCs.
 
 \mypara{Algorithmic Subtyping via Verification Conditions}
 The above subtyping (\rtdsub) 
@@ -494,66 +391,17 @@ to obtain both sound and decidable VCs for the lazy setting.
 
 \mypara{Step 1: Restricting Refinements To Decidable Logics}
 %
-Given that in \hlang refinements can be \emph{arbitrary} expressions,
+Given that \hlang refinements can be \emph{arbitrary} expressions,
 the first step towards obtaining a VC, regardless of evaluation order,
 is to restrict the refinements to a \emph{decidable} logic. 
 %
 We choose the quantifier free logic of equality, uninterpreted functions 
 and linear arithmetic (\logiclang). 
 %
-We design our typing rules to ensure that for any valid derivation, all
-the refinements belong in this restricted language.
+Our typing rules ensure that for any valid derivation, all
+refinements belong in this restricted language.
 
-%%% \SPJ{Does this have anything to do with lazy evaluation?}
-%%While we are free to choose any logic, to ensure that
-%%validity checking is decidable, the logic must not 
-%%allow arbitrary functions and applications to appear 
-%%inside the formulas.
-%%%
-%%This requirement is tricky as the traditional rule 
-%%for application (\rulename{T-APP}) types 
-%%$(e_1\ e_2)$ as $\SUBST{\typ_1'}{x}{e_2}$ 
-%%where the function $e_1$ has the (dependent) type 
-%%$\tfun{x}{\typ_1}{\typ_1'}$, where $x$ is the
-%%binder for the function's input.
-%% \SPJ{Getting lost again because I do not know the "traditional rule".}
-%%%
-%%Consequently, even if the \emph{specified} types 
-%%contain only refinements from a restricted logic, 
-%%the above substitution may \emph{synthesize} 
-%%intermediate types containing arbitrary 
-%%program expressions.
-
-%%\mypara{Step 2: Preserving Restriction via ANF Translation}
-%%%
-%%Fortunately, there are several ways to ensure that 
-%%synthesized types\SPJ{What "synthesised types"?} remain within the refinement logic.
-%%%
-%%We can use existentials, as suggested by~\cite{Knowles09}, 
-%%or, more simply, we can convert the program to 
-%%\emph{Adminstrative Normal Form} (ANF)~\cite{Flanagan93},\SPJ{At this point I don't know what problem converting to ANF solves, or how ANF solves it.}
-%%after which all applications are to variables, 
-%%which ensures the intermediate refinements 
-%%created by substitutions, remain in the 
-%%restricted logic~\cite{LiquidPLDI08}.
-%%%
-%%For simplicity, we take the latter route, and assume that the 
-%%program is in ANF. Of course, while eager evaluation preserves 
-%%ANF, lazy evaluation does not. 
-%%%
-%%However, this is not an issue since we prove 
-%%preservation (and progress) using the declarative 
-%%system~\ref{thm:undec-sound}, and need only prove 
-%%the soundness of the VC for the \emph{initial} 
-%%ANF program~\ref{thm:vc-sound}.
-%%
 \mypara{Step 2: Translating Containment into VCs}
-%%\DV{This para still does not work for me!
-%%Didn't we say that we will phrase it as follows?: 
-%%(1) give the semantic condition\\
-%%(2) write it down with "x is a value"\\
-%%(3) say in words that we will prove something stronger (by pulling out all the x is a value stuff)\\ 
-%%(4) give the final translation as just an implication.}
 Our goal is to encode the denotation containment antecedent of \rtdsub
 %
 \begin{align}\label{denotcont}
@@ -584,19 +432,17 @@ as shown in Figure~\ref{fig:overview:syntax}.
 %
 Using the translation of bindings, 
 and by renaming \x to \vv,
-we rewrite the the condition as
+we rewrite the condition as
 $$
-\begin{array}{rl}
 \forall X \in \mathit{dom}(\Gamma), \vv. 
     \embed{\env}
-    &\Rightarrow
-     ({\text{``}\vv\ \text{is a value"}}  \Rightarrow \lref_1)\\
-    &\Rightarrow
+    \Rightarrow
+     ({\text{``}\vv\ \text{is a value"}}  \Rightarrow \lref_1)
+    \Rightarrow
      ({\text{``}\vv\ \text{is a value"}}  \Rightarrow \lref_2)
-\end{array}
 $$
 Type refinements are carefully chosen to belong to the 
-decidable logical sublanguage \logiclang, thus we directly translate
+decidable logical sublanguage \logiclang, so we directly translate
 type refinements into the logic.
 %
 Thus, what is left is to translate into logic the environment and the ``is a value'' guards.
@@ -604,14 +450,6 @@ Thus, what is left is to translate into logic the environment and the ``is a val
 We postpone translation of the guards as we approximate the above formula by 
 a \emph{stronger}, \ie sound with respect to \ref{denotcont},
 VC that just omits the guards:
-%%%We postpone translation of the guards as we can approximate the above formula by 
-%%%Since our goal is to create a VC that is valid only when \ref{denotcont} holds 
-%%%and is checkable by SMT-solvers,
-%%%a crucial question is how should 
-%%%we encode the ``is a value'' guards.
-%%%%
-%%%We will soon address this question, but as a first step we create a \emph{stronger}, \ie sound,
-%%%VC that simply ignores these guards:
 $$
 \forall X \in \mathit{dom}(\Gamma), \vv. 
     \embed{\env}
@@ -627,15 +465,12 @@ To translate environments, we conjoin their bindings' translations:
 %
 \intertext{However, since types denote \emph{partial correctness},
    the translations must also explicitly account for possible divergence:}
-%%
-%% \embed{\tbind{x}{\tref{v}{t}{}{p}}} \defeq & \ \text{``}x\ \text{binds to a value}\ v\text{''} \Rightarrow {p}
 \embed{\ttbind{\x}{\tlref{\vv}{\tint}{}{\refi}}} \defeq & \ \mbox{``$\x$ is a value"}  \Rightarrow \SUBST{\lref}{\vv}{\x}
-% \embed{\tbind{x}{\ttreft{v}{t}{p}}} \defeq & \ "\isvalue{x}" \Rightarrow \SUBST{p}{v}{x}
 \end{align*}
 %
 That is, we \emph{cannot} assume that each \x satisfies its 
 refinement \refi; we must \emph{guard} that assumption with a 
-predicate stating that \x is bound to a value (not a diverging term.)
+predicate stating that \x is bound to a value (not a diverging term).
 
 The crucial question is: \emph{how} can one discharge these guards
 to conclude that \x indeed satisfies \refi?
@@ -728,7 +563,7 @@ $$
 $$
 and so @explode@ is soundly rejected under lazy evaluation.
 
-As binders appear in refinements, and binders may refer 
+As binders appear in refinements and binders may refer 
 to potentially infinite computations (\eg @[0..]@), we must 
 ensure that refinements are well defined (\ie do not diverge).
 %
@@ -741,19 +576,19 @@ all the refinements are indeed well-defined and converge.
 
 \subsection{Verification With Stratified Types}\label{sec:overview:examples}
 While it is reassuring that the lazy VC soundly \emph{rejects} 
-unsafe programs like @explode@, we now demonstrate by example
+unsafe programs like @explode@, we demonstrate by example
 that it usefully \emph{accepts} safe programs.
 % 
 First, we show how the basic system -- all terms
 have \Div types -- allows us to prove ``partial correctness''
 properties without requiring termination.
 %
-Second, we show how to extend the basic system by 
+Second, we extend the basic system by 
 using Haskell's pattern matching semantics to assign 
 the pattern match scrutinees \Wnf types, thereby 
 increasing the expressiveness of the verifier.
 %
-Third, we show how to further improve the precision 
+Third, we further improve the precision 
 and usability of the system by using a termination 
 checker to assign various terms \Fin types.
 %
@@ -762,13 +597,13 @@ termination checker can itself be realized using
 refinement types.
 %
 Finally, we use the termination checker to ensure that
-all refinements are well-defined (\ie do converge.) 
+all refinements are well-defined (\ie do converge).
 
 \mypara{Example: VCs and Partial Correctness}
 The first example illustrates how, unlike Curry-Howard based
 systems, refinement types \emph{do not require} termination. 
 %
-That is, we retain the Floyd-Hoare notion of ``partial correctness'', 
+That is, we retain the Floyd-Hoare notion of ``partial correctness''
 and can verify programs where \emph{all} terms have \Div-types.
 %
 Consider @ex1@ which uses the result of @collatz@ as a divisor.
@@ -798,128 +633,8 @@ of @collatz@, yielding the subtyping query:
 where the sub-type is just the type of $\ttx$. 
 As $\ttInt$ is a \Div type, the above reduces to the VC 
 ${(\etrue \Rightarrow\  \ttv = 1 \Rightarrow\ \ttv > 0)}$
-which the SMT solver proves valid, thereby verifying @ex1@.
+which the SMT solver proves valid, verifying @ex1@.
 
-%%%%% For example, consider the variant of the above
-%%%%% %
-%%%%% \begin{code}
-%%%%%    ex1'     :: Int -> Int 
-%%%%%    ex1' n   = let x = collatz n 
-%%%%%                   y = bump x
-%%%%%               in
-%%%%%                   10 `div` y
-%%%%% 
-%%%%%    bump x   = x:Int -> {v:Int | v > x}
-%%%%%    bump x   = x + 1
-%%%%% \end{code}
-%%%%% %%
-%%%%% Here, the subtyping query is
-%%%%% \begin{align*}
-%%%%%    \ttbind{x}{\tref{v}{\ttInt}{v=1},\ 
-%%%%%    \ttbind{y}{\tref{v}{\ttInt}{v>x}\ \vdash\ & \subtref{v > x}{v > 0} 
-%%%%% \intertext{which reduces to the VC}
-%%%%%    \ttrue \Rightarrow\ & v > x \RightArrow v > 0
-%%%%% \intertext{which is not valid, as we have lost the information about @x@ from the
-%%%%%   environment, thereby causing the verifier to reject a perfectly good program.}
-%%%%% \end{align*}
-\begin{comment} old Example 2
-\mypara{Example 2: Improving Precision By Pattern Matching}
-\label{sec:pattern-match}
-If all binders in the environment have \Div-types then, effectively, 
-the verifier can make \emph{no} assumptions about the context in 
-which a term evaluates, which leads to a drastic loss of precision. 
-Consider:
-%
-\begin{code}
-  head    :: {v:[a] | not (emp v)} -> a 
-  head xs = case xs of
-              (x:_) -> x
-              []    -> error "yikes"  
-
-  error   :: {v:String | false} -> a
-  error   = undefined
-\end{code}
-%
-where @emp@ is a \emph{measure} that checks emptiness of a list.
-We define measures in \Sref{sec:measures}.
-% 
-Intuitively, @emp@ is an uninterpreted function and
-moreover @emp x@ is true \emph{iff} @x@ is an empty list. 
-
-%%~\cite{LiquidPLDI09} 
-%%(or logical function~\cite{fstar}):
-%%%
-%%\begin{code}
-%%  measure emp :: [a] -> Prop
-%%  emp []      = true 
-%%  emp (x:xs)  = false 
-%%\end{code}
-%%%
-%
-@head@ is safe as its input type stipulates that it will only 
-be called with lists that are \emph{not} @[]@, and so
-@error "..."@ is dead code.
-%
-However, the call to @error@ generates the subtyping query
-%
-\begin{align*}
-	\begin{array}{l}
-   \tbind{\ttxs}{\tref{\ttxs}{[\tta]}{}{\lnot (\ttemp\ \ttxs)}}\\
-   \tbind{\ttb}{\tref{\ttb}{[\tta]}{}{(\ttemp\ \ttxs)}} 	
-	\end{array} & \vdash \subtref{\tttrue}{\ttfalse} 
-\end{align*}
-%
-The match-binder $\ttb$ holds the result of the 
-match~\cite{SulzmannCJD07}. In the \texttt{[]} case,
-we assign it a refinement $(\ttemp\ \ttxs)$ as the 
-measure is $\tttrue$ for empty lists. %~\cite{LiquidPLDI09}. 
-The verifier would \emph{reject} the program as the 
-above subtyping reduces to the invalid VC
-${(\tttrue\ \Rightarrow\ \tttrue \Rightarrow\ \ttfalse)}$.
-
-We address this problem by observing that a pattern match forces evaluation. 
-Hence, inside each case of the @case-of@ expression, the scrutinee and match 
-binder are guaranteed to be Haskell values in WHNF.  
-%
-This intuition is formalized by the typing rule (\rtcased), which checks each 
-case after assuming the scrutinee and the match binder have \Wnf types. 
-%
-With this optimization, the call to @error@ yields the subtyping query:
-%
-\begin{align*}
-	\begin{array}{l}
-   \tbind{\ttxs}{\tref{\ttxs}{[\tta]}{\trivial}{\lnot (\ttemp\ \ttxs)}} \\
-   \tbind{\ttb}{\tref{\ttb}{[\tta]}{\trivial}{(\ttemp\ \ttxs)}}  	
-	\end{array} & \vdash \subtref{\tttrue}{\ttfalse} \\
-\intertext{That is, both $\ttxs$ and $\ttb$ have \Wnf types.
-  Now, the verifier \emph{accepts} the program as the above subtyping reduces to the valid VC}
-  \lnot (\ttemp\ \ttxs) \wedge (\ttemp\ \ttxs) \Rightarrow\ & \tttrue \Rightarrow\ \ttfalse
-\end{align*}
-%
-The above method also applies to terms that have been @seq@-ed or have strictness 
-annotations.
-%
-Consequently, our system can naturally support idiomatic 
-Haskell, \eg taking the @head@ of an infinite list:
-%
-\begin{code}
-  ex2 x    = head (repeat x)
-  
-  repeat   :: a -> {v:[a] | not (emp v)}
-  repeat y = y : repeat y
-\end{code}
-%
-%% We verify the signature for @repeat@ as the only returned value 
-%% is a cons-ed list for which @emp@ is $\ttfalse$.
-%% %
-%% Note that as the return has a \Div-type, \toolname would soundly 
-%% reject the signature 
-%% %
-%% \begin{code}
-%%   repeat   :: a -> {v:[a] | false}
-%% \end{code}
-
-\end{comment} 
 \mypara{Example: Improving Precision By Forcing Evaluation}
 \label{sec:pattern-match}
 If all binders in the environment have \Div-types then, effectively, 
@@ -941,7 +656,7 @@ $$
    \tbind{\tty}{\tref{\tty}{\ttInt}{}{\tty > \ttx}}\ 
    \vdash\ \subtref{v > \ttx}{v > 0} 
 $$
-Which, as $\ttx$ is a \Div type, reduces to the invalid VC 
+Which, as $\ttx$ is a \Div type, reduces to the invalid VC:
 $$
    \tttrue \Rightarrow\ \ttv > \ttx \Rightarrow \ttv > 0
 $$
@@ -961,20 +676,13 @@ case after assuming the scrutinee and the match binder have \Wnf types.
 If we force @x@'s evaluation, using the case primitive, 
 the call to @div@ yields the subtyping query:
 \begin{align}
-	\begin{array}{l}
-   \ttbind{\ttx}{\ttreft{\ttx}{\WnfTy{\ttInt}}{\ttx = 1}}\\
+   \ttbind{\ttx}{\ttreft{\ttx}{\WnfTy{\ttInt}}{\ttx = 1}},\
    \ttbind{\tty}{\ttreft{\tty}{\ttInt}{\tty > \ttx}}      	
-	\end{array}
 	& \vdash\ \subtref{v > \ttx}{v > 0}\label{sub:ex3:good}
-\intertext{As $\ttx$ is \Wnf, we accept \texttt{ex2} by proving the validity of the VC} 
-   \ttx = 1 \Rightarrow\ & \ttv > \ttx \Rightarrow \ttv > 0
+\intertext{As $\ttx$ is \Wnf, we accept \texttt{ex2} by proving the validity of the VC:} 
+   \ttx = 1 \Rightarrow\  \ttv > \ttx & \Rightarrow \ttv > 0
 \label{vc:ex3:good}
 \end{align}
-%%
-%%Although pattern matching on integers is unrealistic
-%%in \Sref{sec:measures} we present 
-%%how the precision provided by pattern matching is 
-%%crucial to type the famous list @head@ function.
 
 \mypara{Example: Improving Precision By Termination}
 While forcing evaluation allows us to ensure that certain 
@@ -996,13 +704,11 @@ Hence, we type @x@ as $\FinTy{\ttInt}$, yielding
 the subtyping query for @div@ application:
 %
 \begin{align}
-	\begin{array}{l}
-   \ttbind{\ttx}{\ttreft{\ttx}{\FinTy{\ttInt}}{\ttx = 1}}\\
+   \ttbind{\ttx}{\ttreft{\ttx}{\FinTy{\ttInt}}{\ttx = 1}},\
    \ttbind{\tty}{\ttreft{\tty}{\ttInt}{\tty > \ttx}}      	
-	\end{array}
 	& \vdash\ \subtref{v > \ttx}{v > 0}\label{sub:ex3:good}
-\intertext{As $\ttx$ is \Fin, we accept \texttt{ex2} by proving the validity of the VC} 
-   \ttx = 1 \Rightarrow\ & \ttv > \ttx \Rightarrow \ttv > 0
+\intertext{As $\ttx$ is \Fin, we accept \texttt{ex2} by proving the validity of the VC:} 
+   \ttx = 1 \Rightarrow\ \ttv > \ttx & \Rightarrow \ttv > 0
 \label{vc:ex3:good}
 \end{align}
 
@@ -1041,11 +747,11 @@ We formalize this intuition by type checking
 recursive procedures in a {termination-weakened environment}
 where the procedure itself may only be called with arguments 
 that are strictly smaller than the current parameter 
-(using terminating fixpoints of \Sref{sec:typing:stratify}.)
+(using terminating fixpoints of \Sref{sec:typing:stratify}).
 %
 For example, to prove @f@ terminates, we check its body in an environment 
 %
-$${\ttn} : {\FinTy{\ttNat}} \qquad {\ttf} : {\ttreft{\ttnp}{\FinTy{\ttNat}}{\ttnp < \ttn} \rightarrow \ttref{v=1}}$$
+$${\ttn} : {\FinTy{\ttNat}}, \qquad {\ttf} : {\ttreft{\ttnp}{\FinTy{\ttNat}}{\ttnp < \ttn} \rightarrow \ttref{v=1}}$$
 %
 where we have weakened the type of $\ttf$ to stipulate that it 
 \emph{only} be (recursively) called with $\ttNat$ values $\ttnp$ that are 
@@ -1055,12 +761,12 @@ as using the Abbreviations of Figure~\ref{fig:overview:syntax}
 the argument of \ttf is expanded to 
 $\ttreft{\ttnp}{\FinTy{\tint}}{\ttnp < \ttn \land \ttnp >= 0}$.
 The body
-type-checks as the recursive call generates the valid VC
+type-checks as the recursive call generates the valid VC:
 %
 $$0 \leq \ttn \wedge \lnot (0 = \ttn)  \Rightarrow \ttv = \ttn - 1 \Rightarrow (0 \leq \ttv < \ttn)$$
 
 \mypara{Example: Diverging Refinements}
-In this final example we discuss why refinements should always converge
+Finally, we discuss why refinements should always converge
 and how we statically ensure convergence.
 %
 Consider the invalid specification
