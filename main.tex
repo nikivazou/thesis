@@ -92,6 +92,10 @@
 % Start the document
 \begin{document}
 
+\input{text/refinedhaskell}
+
+
+\begin{comment}
 % Begin with frontmatter and so forth
 \frontmatter
 \maketitle
@@ -99,10 +103,7 @@
 \makesignature
 % Optional
 \begin{dedication}
-\setsinglespacing
-\raggedright % It would be better to use \RaggedRight from ragged2e
-\parindent0pt\parskip\baselineskip
-\center{ For my mother, father and sister.}
+\input{dedication}
 \end{dedication}
 % Optional
 \begin{epigraph}
@@ -114,10 +115,7 @@ Simplicity is the ultimate sophistication.
 \textit{Leonardo Da Vinci}\par}
 \end{epigraph}
 
-% Next comes the table of contents, list of figures, list of tables,
-% etc. If you have code listings, you can use \listoflistings (or
-% \lstlistoflistings) to have it be produced here as well. Same with
-% \listofalgorithms.
+
 \tableofcontents
 \listoffigures
 \listoftables
@@ -136,46 +134,7 @@ Simplicity is the ultimate sophistication.
 
 % Stupid vita goes next
 \begin{vita}
-\noindent
-\begin{cv}{}
-\begin{cvlist}{}
-% \item[2010] B.S. in  Computer Software \& Computer Systems, National Technical University of Athens
-\item[2010] B.S. in Computer Software, National Technical University of Athens
-\item[2016] Ph.D. in Computer Science, University of California, San Diego
-\end{cvlist}
-\end{cv}
-
-% This puts in the PUBLICATIONS header. Note that it appears inside
-% the vita environment. It is optional.
-\publications
-
-\noindent N. Vazou, M. Papakyriakou, and N. Papaspyrou, 
-``Memory Safety and Race Freedom in Concurrent Programming with Linear Capabilities'',
-FedCSIS, 2011.\\
-
-\noindent N. Vazou, P. Rondon, and R. Jhala,
-``Abstract Refinement Types'', 
-ESOP, 2013.\\
-
-\noindent N. Vazou, E. Seidel, R. Jhala, D. Vytiniotis, and S. Peyton-Jones,
-``Refinement Types for Haskell'', 
-ICFP, 2014.\\
-
-\noindent N. Vazou, E. Seidel, and R. Jhala,
-``LiquidHaskell: Experience with Refinement Types in the Real World'', 
-Haskell, 2014.\\
-
-\noindent E. Seidel, N. Vazou, and R. Jhala,
-``Type Targeted Testing'',
-ESOP, 2015.\\
-
-\noindent N. Vazou, A. Bakst, and R. Jhala,
-``Bounded Refinement Types'',
-ICFP, 2015.\\
-
-\noindent N. Vazou, and D. Leijen,
-``From Monads to Effects and Back'',
-PADL 2016.\\
+\input{vita}
 \end{vita}
 
 % Put your maximum 350 word abstract here.
@@ -193,18 +152,18 @@ PADL 2016.\\
 
 
 %% main 
-\input{text/refinedhaskell}
 \input{text/abstractrefinements}
 \input{text/boundedrefinements}
 \input{text/refinementreflection}
 \input{text/conclusion}
-
 
 %%\appendix
 %%\Blinddocument
 
 % Stuff at the end of the dissertation goes in the back matter
 \backmatter
+\end{comment}
+
 \bibliographystyle{plain} % Or whatever style you want like plainnat
 \bibliography{references}
 
