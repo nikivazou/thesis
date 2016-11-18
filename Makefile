@@ -1,6 +1,11 @@
-all:
-	latexmk -pdf main.tex
+## all:
+## 	latexmk -pdf main.tex
+
+all: 
+	pdflatex main
+	bibtex main 
+	pdflatex main
 
 .PHONY: clean
 clean:
-	latexmk -c main.tex
+	$(RM) *.log *.aux *.ps *.dvi *.bbl *.blg *.bak *.fdb_latexmk *~
