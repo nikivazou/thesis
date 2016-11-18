@@ -1,15 +1,17 @@
 \section{\toolname}\label{sec:liquidhaskell}
-\begin{figure*}[ht!]
+\begin{figure}[t!]
+\centering
+\captionsetup{justification=centering}
 \noindent\makebox[\textwidth]{\includegraphics[width=\textwidth]{text/realworldhaskell/liquidHaskell}}
 \caption{\toolname Workflow}
 	\label{fig:internals}
-\end{figure*}
+\end{figure}
 % 
 % link for workflow
 % https://www.draw.io/#G0Bwp_mIorSVqJb2RENnNVWVlQTmc
 %
-We will start with a short description of the \toolname workflow,
-summarized in Figure~\ref{fig:internals}, and continue with an 
+We start with a short description of the \toolname workflow,
+summarized in Figure~\ref{fig:internals} and continue with an 
 example driven overview of how properties are specified
 and verified using the tool. 
 
@@ -34,13 +36,16 @@ It takes as \emph{input}:
     from the type specifications suffices for inference.
 
 \mypara{Core}
-\toolname uses GHC to reduce the source to the Core IL~\cite{SulzmannCJD07}, 
+\toolname uses GHC to reduce the source to the Core IL~\cite{SulzmannCJD07}
 and, to facilitate source-level error reporting, creates a map from Core 
 expressions to locations in the Haskell source.
 
 \mypara{Constraints}
 Then, it uses the abstract interpretation framework of Liquid Typing~\cite{LiquidPLDI08}, 
-modified to ensure soundness under lazy evaluation~\citep{LiquidICFP14},
+modified to ensure soundness under lazy evaluation~\ref{chapter:refinedhaskell}
+and extended with Abstract~\ref{chapter:abstractrefinements}
+and Bounded~\ref{boundedrefinements} Refinement Types
+and Refinement Reflection~\ref{refinementrflection},
 to generate logical constraints from the Core IL.
      
 \mypara{Solution}
@@ -49,7 +54,7 @@ combined with an SMT solver to solve the constraints, and hence
 infers a valid refinement typing for the program. 
 %
 \toolname can use any solver that implements the SMT-LIB2
-standard~\cite{SMTLIB2}, including Z3~\citep{Z3}, CVC4~\citep{CVC4}, and
+standard~\cite{SMTLIB2}, including Z3~\citep{z3}, CVC4~\citep{CVC4}, and
 MathSat~\citep{MathSat}.
 
  
@@ -106,7 +111,7 @@ For example, we can define an alias for the above predicate
 and use it to define a \emph{type alias}
 %
 \begin{code}
-  type Rng Lo Hi = {v:Int | (Btwn Lo v Hi)} 
+  type Rng Lo Hi = {v:Int | Btwn Lo v Hi} 
 \end{code}
 %
 We can now describe the above integers as @(Rng 0 100)@.
@@ -128,7 +133,7 @@ between @lo@ and @hi@. There are three things worth
 noting.
 %
 First, we have binders to name the function's \emph{inputs} 
-(\eg, @lo@ and @hi@) and can use the binders inside the 
+(\eg @lo@ and @hi@) and can use the binders inside the 
 function's \emph{output}.
 %
 Second, the refinement in the \emph{input} type describes the 
@@ -153,7 +158,7 @@ Next, consider the following implementation for @range@:
 When we run \toolname on the above code, it reports an 
 error at the definition of @range@. This is unpleasant! 
 One way to debug the error is to determine what type has
-been \emph{inferred} for @range@, \eg, by hovering the 
+been \emph{inferred} for @range@, \eg by hovering the 
 mouse over the identifier in the web interface. 
 In this case, we see that the output type is essentially:
 %
@@ -178,11 +183,10 @@ where the second and third parameters define a range.
 We can give @rangeFind@ a refined specification:
 %
 \begin{code}
-  _ -> lo:_ -> hi:{Int | lo <= hi} 
-    -> Maybe (Rng lo hi)
+  _ -> lo:_ -> hi:{Int | lo <= hi} -> Maybe (Rng lo hi)
 \end{code}
 %
-where the @_@ is simply the unrefined Haskell type for the 
+where the @_@ is the unrefined Haskell type for the 
 corresponding position in the type.
 
 \mypara{Inference} Next, consider the implementation
@@ -215,11 +219,6 @@ type as the signature \ie, checks the implementation assuming
 arbitrary inputs.
 
 \subsection{Measures}\label{sec:tool:measures}
-%% \NV{DONE(R1)
-%% measure is introduced as something that gives the size of a value, 
-%% but it is later used for more general properties e.g. almostRB 
-%% over red-black trees.
-%% }
 So far, the specifications have been limited to comparisons and 
 arithmetic operations on primitive values. 
 We use \emph{measure functions}, or just measures, to 
@@ -235,7 +234,7 @@ of elements in a list.
 \end{code}
 %
 Measure definitions are \emph{not} arbitrary Haskell code but a very 
-restricted subset~\cite{LiquidICFP14}.
+restricted subset~\ref{sec:measures}.
 Each measure has a single equation per constructor that defines the
 value of the measure for that constructor. The right-hand side of the 
 equation is a term in the restricted refinement logic. Measures are 
@@ -283,13 +282,13 @@ describe a list that contains a @0@ as:
 \begin{code}
   measure hasZero :: [Int] -> Prop
   hasZero []      = false
-  hasZero (x:xs)  = x == 0 || (hasZero xs) 
+  hasZero (x:xs)  = x == 0 || hasZero xs
 \end{code}
 %
 We can then define lists containing a @0@ as:
 %
 \begin{code}
-  type HasZero = {v : [Int] | (hasZero v)} 
+  type HasZero = {v : [Int] | hasZero v } 
 \end{code}
 %
 Using the above, \toolname will accept 
@@ -362,12 +361,12 @@ the constructors' types.
 
 \subsection{Refined Type Classes}\label{sec:type-classes}
 
-Next, let us see how \toolname supports the verification of
+Next, let us see how \toolname allows verification of
 programs that use ad-hoc polymorphism via type classes.
 %
 While the implementation of each typeclass instance is 
-different, there is often a common interface that we 
-expect all instances to satisfy.
+different, there is often a common interface that 
+all instances should satisfy.
 
 \mypara{Class Measures}
 As an example, consider the class definition
@@ -445,6 +444,7 @@ Specifically, each call to @at@ is guarded by a check @i < size xs@
 and @i@ is  increasing 
 from 0, so \toolname proves that @xs `at` i@ will always be safe.
 
+\begin{comment}
 \subsection{Abstracting Refinements}
 
 So far, all the specifications have used \emph{concrete} refinements. Often it is
@@ -549,7 +549,7 @@ and then verify that:
 Now that we have a bird's eye view of the various specification mechanisms
 supported by \toolname, let us see how we can profitably apply them to
 statically check a variety of correctness properties in real-world codes.
-
+\end{comment}
 %%% Local Variables: 
 %%% mode: latex
 %%% TeX-master: "main"

@@ -1,4 +1,4 @@
-\section{Evaluation}\label{sec:evaluation}
+\section{Evaluation}\label{sec:refinedhaskell:evaluation}
 
 Our goal is to build a practical and effective 
 SMT \& refinement type-based verifier for Haskell. 
@@ -10,9 +10,8 @@ by eagerly proving termination, thereby optimizing
 the precision of the verifier.
 %
 Next, we describe an experimental evaluation of our 
-approach that uses \toolname to prove termination and 
-functional correctness properties of a suite of widely 
-used Haskell libraries totaling more than 10KLOC.
+approach that uses \toolname to prove termination 
+on the already verified libraries from Chapter~\ref{chapter:tool}.
 %
 Our evaluation seeks to determine whether our approach is
 %
@@ -21,32 +20,30 @@ Our evaluation seeks to determine whether our approach is
 \emph{usable}   without placing an unreasonably high burden on the user in the form of explicit termination annotations, and
 \emph{effective}  enough to  enable the verification of functional correctness properties.
 %
-For brevity, we omit a description of the properties other
-than termination, please see~\cite{realworldliquid14} for details.
 
-\spara{Implementation} \toolname takes as input:
-%
-(1)~A Haskell \emph{source} file, 
-%
-(2)~Refinement type \emph{specifications}, 
-    including refined datatype definitions,
-    measures, predicate and type aliases,
-    and function signatures, and
-%
-(3)~Predicate fragments called \emph{qualifiers}
-    which are used to infer refinement types using 
-    the abstract interpretation framework of Liquid
-    Typing~\cite{LiquidPLDI08}.
-%
-The verifier returns as output, \textsc{Safe} or \textsc{Unsafe}, 
-depending on whether the code meets the specifications or not, 
-and, importantly for debugging the code (or specification!) 
-the inferred types for all sub-expressions.
+%%\spara{Implementation} \toolname takes as input:
+%%%
+%%(1)~A Haskell \emph{source} file, 
+%%%
+%%(2)~Refinement type \emph{specifications}, 
+%%    including refined datatype definitions,
+%%    measures, predicate and type aliases,
+%%    and function signatures, and
+%%%
+%%(3)~Predicate fragments called \emph{qualifiers}
+%%    which are used to infer refinement types using 
+%%    the abstract interpretation framework of Liquid
+%%    Typing~\cite{LiquidPLDI08}.
+%%%
+%%The verifier returns as output, \textsc{Safe} or \textsc{Unsafe}, 
+%%depending on whether the code meets the specifications or not, 
+%%and, importantly for debugging the code (or specification!) 
+%%the inferred types for all sub-expressions.
 
 \spara{Benchmarks}
-As benchmarks, we used the following libraries:
+As benchmarks, we used the following famous Haskell libraries:
 %
-\texttt{GHC.List} and \texttt{Data.List}, which together implement many standard
+\texttt{GHC.List} and \texttt{Data.List}, which implement many standard
 list operations,
 \texttt{Data.Set.Splay}, which implements an splay functional set,
 \texttt{Data.Map.Base}, which implements a functional 
@@ -57,31 +54,25 @@ array-based sorting algorithms,
 \bytestring, a library for manipulating byte arrays, and
 \libtext, a library for high-performance Unicode text processing. 
 %
-These benchmarks represent a wide spectrum of idiomatic
-Haskell codes: the first three are widely used libraries 
-based on recursive data structures, the fourth and fifth 
-perform subtle, low-level arithmetic manipulation of array
-indices and pointers, and the last is a rich, high-level
-library with sophisticated application-specific invariants,
-well outside the scope of even Haskell's expressive type system.
-Thus, this suite provides a diverse and challenging test-bed 
-for evaluating \toolname.
-
-%% Thus, proving termination of functions in these libraries should
-%% require a variety of termination metrics, ranging from simple
-%% structural recursion to sophisticated numerical invariants, and should
-%% provide a rich test-bed for evaluating our approach.
-%% These last three libraries are especially representative as they pervasively 
-%% intermingle high level abstractions like higher-order loops, folds, and fusion, 
-%% with low-level pointer manipulations in order to deliver high-performance. 
-%% They are an appealing target for \toolname, as refinement types are an ideal 
-%% way to statically enforce critical invariants that are outside the scope of
-%% run-time checking as even Haskell's highly expressive type system.
+%%These benchmarks represent a wide spectrum of idiomatic
+%%Haskell code: the first three are widely used libraries 
+%%based on recursive data structures, the fourth and fifth 
+%%perform subtle, low-level arithmetic manipulation of array
+%%indices and pointers, and the last is a rich, high-level
+%%library with sophisticated application-specific invariants,
+%%well outside the scope of Haskell's expressive type system.
+%%Thus, this suite provides a diverse and challenging test-bed 
+%%for evaluating \toolname.
+The verification of functional correctness on our benchmarks
+is already discussed in~\S~\ref{sec:realword:evaluation}. 
+%
+Here we focus only on the extra proof obligations 
+required to reason about function termination. 
 
 \input{text/refinedhaskell/results}
 
 \spara{Results}
-Table~\ref{table:results} summarizes our experiments, which 
+Table~\ref{table:realworldhaskell:results} summarizes our experiments, which 
 covered 39 modules totaling 10,209 non-comment lines of 
 source code. % and 1,652 lines of specifications.
 %
@@ -117,7 +108,7 @@ properties in addition to termination. %; we only discuss the latter here.
 
   \item{\emph{Effective:}} Our approach is extremely effective at improving the
     precision of the overall verifier (by allowing the VC to use facts
-    about binders that provably reduce to values.) 
+    about binders that provably reduce to values).
     % As shown in the \textbf{Err} column in Table~\ref{table:results}, 
     Without the termination optimization, \ie by only using information 
     for matched-binders (thus in WHNF), \toolname reports 1,395 
@@ -125,21 +116,6 @@ properties in addition to termination. %; we only discuss the latter here.
     With termination information, this number goes to zero.
 \end{itemize}
 
-%%% Our default metric, namely the first parameter with an associated size
-%%% measure, suffices to prove 67\% of (recursive) functions terminating.
-%%% %
-%%% 30\% require a hint (\ie the position of the decreasing argument) or a
-%%% termination metric (3\% required both), and the remaining 3\% were marked as
-%%% potentially diverging.
-%%% %
-%%% Of the 18 functions marked @lazy@ (\ie potentially diverging), 
-%%% we suspect 6 actually terminate but were unable to prove so.
-%%% 
-%%% There are two important results to emphasize here:
-%%% %
-%%%     (1) \emph{most} Haskell functions terminate on finite inputs, and
-%%% %
-%%%     (2) the termination metrics are \emph{easily} specified in \toolname.
 
 
 \begin{comment}

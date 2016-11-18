@@ -1,4 +1,4 @@
-\section{Evaluation}\label{sec:evaluation}
+\section{Evaluation}\label{sec:realworld:evaluation}
 
 % We implemented our technique by extending \toolname~\cite{vazou13}. 
 % Next, we describe the tool, the benchmarks, 
@@ -61,7 +61,7 @@
 % way to statically enforce critical invariants that are outside the scope of
 % run-time checking as even Haskell's highly expressive type system.
 
-We now turn to a quantitative evaluation of our experiments with \toolname.
+We now present a quantitative evaluation of \toolname.
 
 \input{text/realworldhaskell/results}
 
@@ -96,7 +96,7 @@ We have used the following libraries as benchmarks:
       we verify the correctness of vector accessing, indexing, and slicing \etc.
 \end{itemize}
 
-Table~\ref{table:results} summarizes our experiments, which covered 56 modules
+Table~\ref{table:realworldhaskell:results} summarizes our experiments, which covered 56 modules
 totaling 11,512 non-comment lines of source code and 1,975 lines of specifications.
 %
 The results are on a machine with an Intel Xeon X5660 and 32GB of RAM~(no benchmark required more than 1GB.)
@@ -132,7 +132,7 @@ in isolation.
 %% }
 
 Our case studies also highlighted several limitations
-of \toolname that we will address in future work. 
+of \toolname. 
 In most cases, we could alter the code slightly to 
 facilitate verification. 
 
@@ -142,6 +142,10 @@ for the computation, but are necessary to prove
 various specifications. For example, the @piv@ 
 parameter in the @append@ function for red-black trees
 (\S~\ref{sec:redblack}).
+%
+Bounded Refinement Types (Chapter~\ref{boundedrefinements})
+provide a complete, but unfortunately not elegant way to 
+eliminated ghost parameters (\S~\ref{future:ghost}).
 
 \mypara{Fixed-width integer and floating-point numbers}
 \toolname uses the theories of linear arithmetic and
@@ -150,8 +154,9 @@ cases this causes us to lose precision, \eg when we have to
 approximate the behavior of bitwise operations. We could
 address this shortcoming by using the theory of bit-vectors
 to model fixed-width integers, but we are unsure of the
-effect this would have on \toolname's performance.
+effect this would have on \toolname's performance (\S~\ref{future:fp}).
 
+\begin{comment}
 \mypara{Higher-order functions} 
 must sometimes be \emph{specialized} because the 
 original type is not precise enough. 
@@ -175,6 +180,7 @@ Rather than complicating the type system with a very
 general higher-order type for @map@ we suspect the 
 best way forward will be to allow the user to specify
 inlining in a clean fashion.
+\end{comment}
 
 \mypara{Functions as Data} Several libraries like \lbtext
 encode data structures like (finite) streams using functions,
@@ -184,7 +190,7 @@ requires describing the sizes of input-output chains starting
 at a given seed input for the function. In future work, it will 
 be interesting to extend the measure mechanism to support 
 multiple parameters (\eg a stream and a seed) in order to reason
-about such structures. 
+about such structures (\S~\ref{future:continuations}). 
 
 \mypara{Lazy binders} sometimes get in the way of verification. 
 A common pattern in Haskell code is to define \emph{all} 
@@ -209,19 +215,16 @@ mathematical operators that are currently conservatively
 modeled in the refinement logic (\eg that multiplication 
 is commutative and associative). 
 These may be removed by using more advanced non-linear 
-arithmetic decision procedures.
+arithmetic decision procedures (\S~\ref{future:gradual}).
 
 \mypara{Error messages} are a crucial part of any type-checker.
 Currently, we report error locations in the provided source
-file and output the failed constraint(s). Unfortunately, the
-constraints often refer to intermediate values that
-have been introduced during the ANF-transformation, which
-obscures their relation to the program source. In future work,
-we may attempt to map these intermediate values back to their
-source expressions, which should increase the comprehensibility
-of our error messages. Another interesting possibility would be
-to search for concrete counterexamples when \toolname detects an
-invalid constraint.
+file and output the failed constraint(s). 
+% 
+In the future errors should be reported using an
+interactive interface with features including 
+code and type completion and counter example drive
+error explanation (\S~\ref{future:errorreporting}). 
 
 
 %% TECHREP

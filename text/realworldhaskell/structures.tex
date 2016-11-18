@@ -4,14 +4,14 @@
 
 So far, we have considered a variety of general, application independent
 correctness criteria. Next, let us see how we can use \toolname to specify 
-and statically verify critical application specific correctness properties,
-using two illustrative case studies: red-black trees, and the stack-set data
+and statically verify critical, application specific correctness properties,
+using two illustrative case studies: red-black trees and the stack-set data
 structure introduced in the \lbxmonad system.
 
 \subsection{Red-Black Trees}\label{sec:redblack}
 
 Red-Black trees have several non-trivial invariants that are ideal for 
-illustrating the effectiveness of refinement types, and contrasting with
+illustrating the effectiveness of refinement types and contrasting with
 existing approaches based on GADTs~\cite{Kahrs01}.
 %
 The structure can be defined via the following Haskell type:
@@ -52,26 +52,26 @@ To specify the color invariant, we define a \emph{black-rooted tree} as:
 \begin{code}
   measure isB           :: Tree a -> Prop 
   color (Node c x l r)  = c == B
-  color (Leaf)          = true
+  color (Leaf)          = True
 \end{code}
 %
 and then we can describe the color invariant simply as:
 %
 \begin{code}
   measure isRB        :: Tree a -> Prop
-  isRB (Leaf)         = true
+  isRB (Leaf)         = True
   isRB (Node c x l r) = isRB l && isRB r &&
                         c = R => (isB l && isB r)
 \end{code}
 %
 The insertion and deletion procedures create intermediate \emph{almost} 
 red-black trees where the color invariant may be violated at the root. 
-Rather than create new data constructors we can define almost red-black 
+Rather than create new data constructors we define almost red-black 
 trees with a measure that just drops the invariant at the root:
 %
 \begin{code}
   measure almostRB        :: Tree a -> Prop
-  almostRB (Leaf)         = true
+  almostRB (Leaf)         = True
   almostRB (Node c x l r) = isRB l && isRB r
 \end{code}
 
@@ -81,8 +81,7 @@ To specify the height invariant, we define a black-height measure:
 \begin{code}
   measure bh        :: Tree a -> Int
   bh (Leaf)         = 0
-  bh (Node c x l r) = bh l 
-                    + if c = R then 0 else 1
+  bh (Node c x l r) = bh l + if c = R then 0 else 1
 \end{code}
 %
 and we can now specify black-height balance as:
@@ -99,35 +98,25 @@ but this is legitimate, because @isBal@ will
 ensure the right subtree has the same @bh@.
 
 \mypara{Order Invariant}
-Finally, to encode the binary-search ordering property, we parameterize 
-the datatype with abstract refinements:
+We refine the data definition of @Tree@ 
+to encode the ordering property:
 %
 \begin{code}
-  data Tree a <l::a->a->Prop, r::a->a->Prop>
+  data Tree a
     = Leaf
     | Node { c   :: Col
            , key :: a
-           , lt  :: Tree<l,r> a<l key>
-           , rt  :: Tree<l,r> a<r key> }
+           , lt  :: Tree {v:a | v < key }
+           , rt  :: Tree {v:a | key < v } }
 \end{code}
 %
-Intuitively, @l@ and @r@ are relations between the root @key@ 
-and \emph{each} element in its left and right subtree respectively.
-Now the alias:
-%
-\begin{code}
-  type OTree a 
-    = Tree <{\k v -> v<k}, {\k v -> v>k}> a
-\end{code}
-%
-describes binary-search ordered trees!
 
 \mypara{Composing Invariants}
-Finally, we can compose the invariants, and define a 
+Finally, we can compose the invariants and define a 
 Red-Black tree with the alias:
 %
 \begin{code}
-  type RBT a = {v:OTree a | isRB v && isBal v}
+  type RBT a = {v:Tree a | isRB v && isBal v}
 \end{code}
 %
 An almost Red-Black tree is the above with @isRB@ 
@@ -199,7 +188,7 @@ disjoint.
 
 \mypara{Specification: Unique Lists} To specify that the set of elements
 in a list is unique, \ie there are no duplicates in the list we first define
-a measure denoting the set using Z3's~\citep{Z3} built-in theory of sets:
+a measure denoting the set using Z3's~\citep{z3} built-in theory of sets:
 %
 \begin{code}
   measure elts :: [a] -> Set a 
@@ -235,12 +224,9 @@ We can use @isUniq@ to define unique, \ie, duplicate free,
 using the aliases
 %
 \begin{code}
-  predicate Uniq1 V X    
-    = isUniq V  && notIn X V
-  predicate Uniq2 V X Y  
-    = Uniq1 V X && disjoint Y V
-  predicate disjoint X Y 
-    = cap (elts X) (elts Y) = emp
+  predicate Uniq1 V X    = isUniq V  && notIn X V
+  predicate Uniq2 V X Y  = Uniq1 V X && disjoint Y V
+  predicate disjoint X Y = cap (elts X) (elts Y) = emp
 \end{code}
 %
 \ie the field @up@ is a unique list of elements different 
@@ -267,13 +253,10 @@ using the predicate aliases
 \begin{code}
   predicate NoDups V 
     =  disjoint3 (hid V) (cur V) (vis V) 
-    && isUniq (vis V)
-    && isUniq (hid V)
+    && isUniq (vis V) && isUniq (hid V)
   
   predicate disjoint3 X Y Z 
-    =  disjoint X Y
-    && disjoint Y Z
-    && disjoint X Z
+    =  disjoint X Y && disjoint Y Z && disjoint X Z
 \end{code}
 %
 \toolname automatically turns the record selectors of 
@@ -378,7 +361,7 @@ a @StackSet@ named @x@.
 %%%% 
 %%%% Note that the above definitions crucially depend on set theoretic properties.
 %%%% Thus, verification of \lbxmonad is achieved using an SMT back-end 
-%%%% that supports set theory (like Z3~\citep{Z3}).
+%%%% that supports set theory (like Z3~\citep{z3}).
 %%%% 
 %%%% We slightly modify the above measure definition
 %%%% to define @dups@, a measure that returns the 
@@ -492,7 +475,7 @@ can be summarized as follows:
   For verification, we assumed that Prelude's @(++)@ satisfies this property.
   %
   But, not all arguments of @(++)@ are unique disjoint lists:
-  @"StackSet"++"error"@ is a trivial example that does not satisfy
+  @"StackSet" ++ "error"@ is a trivial example that does not satisfy
   the assumed preconditions of @(++)@ thus creating a type error.
   % 
   Currently, \toolname does not support intersection types, 
@@ -500,14 +483,13 @@ can be summarized as follows:
      
 \item\emph{Restrict the functions' domain.}
 %% \RJ{Seems like you HAVE to do this -- has nothing to do with LH?}
-  @modify@ is a @maybe@-like function that, given a default value @x@,
-  a function @f@, and a StackSet @s@, applies @f@ on the @Maybe (Stack a)@
+  @modify@ is a @maybe@-like function that given a default value @x@,
+  a function @f@, and a StackSet @s@, applies @f@ on the @Maybe@
   values inside @s@. 
   %
 \begin{code}
 modify :: x:{v:Maybe (Stack a) | isNothing v}
-       -> (y:Stack a 
-           -> Maybe {v:Stack a | SubElts v y})
+       -> (y:Stack a -> Maybe {v:Stack a | SubElts v y})
        -> UniqStackSet i l a s sd 
        -> UniqStackSet i l a s sd
 \end{code}
@@ -533,12 +515,10 @@ view :: (Eq s, Eq i) => i
      -> StackSet i l a s sd 
      -> StackSet i l a s sd
 view i s    
-  | Just x <- find ((i==).tag.workspace) 
-                     (visible s)
+  | Just x <- find ((i==).tag.workspace) (visible s)
   = s { current = x
       , visible = current s 
-                : deleteBy (equating screen) x 
-                           (visible s) } 
+                : deleteBy (equating screen) x (visible s) } 
 \end{code}
     %
     Verification of this code is difficult as we cannot suitably type @find@. 
@@ -549,7 +529,7 @@ view i s
 \end{itemize}
 
 Finally, \lbxmonad comes with an extensive suite of QuickCheck properties,
-that were formally verified in Coq~\cite{Swierstra2012}. In future work,
+that were formally verified in Coq~\cite{Swierstra2012}. In future work~\ref{chapter:conclusion},
 it would be interesting to do a similar verification with \toolname, 
 to compare the refinement types to proof-assistants.
 

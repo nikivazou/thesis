@@ -8,14 +8,14 @@ of verifying semantic properties of programs,
 by decorating types with predicates from logics 
 efficiently decidable by modern SMT solvers.
 For example, the refinement type 
-{@{v: Int | v > 0}@}
+@{v: Int | v > 0}@
 denotes the basic type \ttcode{Int} refined with a logical
 predicate over the ``value variable" \ttcode{v}.
 This type corresponds to the set of \ttcode{Int} values 
 \ttcode{v} which additionally satisfy the logical predicate, 
 \ie the set of positive integers.  
 The (dependent) function type 
-{@x:{v:Int| v > 0} -> {v:Int| v < x}@}
+@x:{v:Int| v > 0} -> {v:Int| v < x}@
 describes functions that take a positive argument 
 \ttcode{x} and return an integer less than \ttcode{x}.
 %
@@ -47,10 +47,6 @@ refinements (\ie invariants). For example, consider the
 following higher-order for-loop where @set i x v@ returns 
 the vector @v@ updated at index @i@ with the value @x@. 
 
-$$\centering
-\begin{tabular}{c}
-%
-%for :: lo:Int -> hi:Int -> a<p lo lo> -> (i:Int -> a<p lo i> -> a<p lo (i+1)>) -> a<p lo hi>
 \begin{code}
      for :: Int -> Int -> a -> (Int -> a -> a) -> a
      for lo hi x body      = loop lo x 
@@ -61,7 +57,6 @@ $$\centering
      initUpto :: Vec a -> a -> Int -> Vec a 
      initUpto a x n = for 0 n a (\i -> set i x) 
 \end{code}
-\end{tabular}$$
 
 We would like to 
 verify that @initUpto@ returns a vector whose \emph{first}

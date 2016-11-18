@@ -1,4 +1,4 @@
-\section{Conclusions \& Future Work}\label{sec:conclusion}
+\section{Conclusions \& Alternative Approaches}\label{sec:conclusion}
 
 Our goal is to use the recent advances in SMT solving to 
 build automated refinement type-based verifiers for 
@@ -111,7 +111,7 @@ A dependent function type
 ${\tfun{x}{\tint}{\tlref{\vv}{\tint}{}{\vv>\x}}}$
 would be transformed to
 ${\tfun{x}{(\tfunbasic{()}{\tint})}
-          {\tlref{\vv}{\tint}{}{\vv > \x\ ()}}}$
+          {\tlref{\vv}{\tint}{}{\vv > \x\ ()}}}$.
 %
 %%%\begin{code}
 %%%  f :: x:Int -> {v:Int | v > x}
@@ -184,15 +184,13 @@ supported by SMT solvers.
 %%with explicit $\isvalue{x}$ predicates:
 To see why, recall 
 the subtyping query %(\ref{sub:good}) 
-from @good@ in \Sref{sec:overview}. 
+from @good@. % in \Sref{sec:overview}. 
 With explicit value predicates, 
 this subtyping reduces to the VC:
 %
 \begin{align}
-\begin{array}{l}
-{(\isvalue{x} \Rightarrow x \geq 0)}\\ 
+{(\isvalue{x} \Rightarrow x \geq 0)}, \
 {(\isvalue{y} \Rightarrow y \geq 0)} 
-\end{array} 
 \Rightarrow
 {(v = y+1)}   \Rightarrow {(v > 0)}\label{vc:good:explicit}
 \end{align}
@@ -256,10 +254,8 @@ logic~\cite{bradleybook}. For instance, we could type
 the primitives:
 %
 \begin{code}
- (+) :: x:Int -> y:Int
-     -> {v | v  =  x + y && Val x && Val y}
- (<) :: x:Int -> y:Int 
-     -> {v | v <=> x < y && Val x && Val y}
+ (+) :: x:Int -> y:Int -> {v | v  =  x + y && Val x && Val y}
+ (<) :: x:Int -> y:Int -> {v | v <=> x < y && Val x && Val y}
 \end{code}
 %
 While this approach requires \emph{no} changes to the SMT 
@@ -278,7 +274,7 @@ specifications. Consider
 To reason about the output of @choose@ we must type it as:
 %
 \begin{code}
- choose :: Bool -> x:Int -> y:Int
+ choose :: Bool -> x:Int -> y:Int 
         -> {v|(v > x && Val x)||(v > y && Val y)}  
 \end{code}
 %
@@ -315,9 +311,9 @@ the value predicate.
 This explicit system would be \emph{more expressive} than our 
 stratified approach, \eg would let us check 
 %
-%\begin{code}
-  @let x = collatz 10 in 12 `div` x+1@
-%\end{code}
+\begin{code}
+  let x = collatz 10 in 12 `div` x + 1
+\end{code}
 %
 by encoding strictness inside the logic. Nevertheless, we suspect
 such a verifier would use stratification to eliminate the value

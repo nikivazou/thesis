@@ -47,7 +47,7 @@ We can specify this requirement by giving the error
 functions a @false@ pre-condition:
 %
 \begin{code}
-  patError :: {v:String | false } -> a
+  patError :: {v:String | False } -> a
 \end{code}
 %
 The pre-condition states that the input type is \emph{uninhabited}
@@ -97,7 +97,7 @@ exception.
 
 \mypara{Refinements and Totality} 
 While the @head@ example is quite simple, in general, refinements make
-it very easy to prove totality in complex situations, where we must track
+it easy to prove totality in complex situations, where we must track
 dependencies between inputs and outputs. For example, consider the @risers@
 function from \cite{catch}:
 %
@@ -140,8 +140,8 @@ user could a special measure:
 %
 \begin{code}
   measure nonEmp  :: [a] -> Prop
-  nonEmp (x:xs)   = true
-  nonEmp []       = false
+  nonEmp (x:xs)   = True
+  nonEmp []       = False
 
   predicate NonEmp X = nonEmp X
 \end{code}
@@ -153,7 +153,7 @@ After which, verification would proceed analagous to the above.
 @Control.Exception.Base@ has several others (@recSelError@, @irrefutPatError@, \etc) which serve the purpose of making 
 core translations total.
 %
-Rather than hunt down and specify @false@ preconditions one
+Rather than hunt down and specify @False@ preconditions one
 by one, the user may automatically turn on totality checking 
 by invoking \toolname with the \cmdtotality command line option, 
 at which point the tool systematically checks that all the above 
@@ -168,8 +168,8 @@ of which had previously been proven total by \texttt{catch}~\citep{catch}.
 is a widely used library for (immutable) key-value maps, implemented
 as balanced binary search trees.
 Totality verification of \lbmap was quite straightforward.
-We had previously verified termination and the crucial 
-binary search invariant~\citep{vazou13}. To verify 
+We had already verified termination and the crucial 
+binary search invariant~\ref{chapter:abstractrefinements}. To verify 
 totality it sufficed to simply re-run verification with
 the \cmdtotality argument.
 %
@@ -185,7 +185,7 @@ and no additional changes were needed to prove totality.
 %
 
 This case study illustrates an advantage of \toolname over specialized provers 
-(\eg, \texttt{catch}~\citep{catch}), namely it can be used to prove totality, termination and
+(\eg, \texttt{catch}~\citep{catch}): it can be used to prove totality, termination and
 functional correctness at the same time, facilitating a nice reuse of
 specifications for multiple tasks.
 
@@ -206,10 +206,11 @@ Thus, for a list @ls@ that starts with @breakS@
 the irrefutable pattern  @(_:mname:annots) = ls@
 should be total.
 %
-Currently it is somewhat cumbersome to specify such 
-properties, and these are interesting avenues for future work.
+Though possible, it is currently it is somewhat cumbersome to specify such 
+properties. 
 %
-Thus to prove totality, we added a dynamic check that 
+As an easy and practical solution, 
+to prove totality, we added a dynamic check that 
 validates that the length of the input @ls@ exceeds @2@.
 
 %% measure follows a b c = \case 
@@ -236,14 +237,14 @@ checks their well-formedness using
 %
 \begin{code}
   when (length f > 1) $ errorOut "..."
-\end{code}
+\end{code} %$
 %
 Currently \toolname does not support monadic reasoning that 
 allows assuming that @(length f <= 1)@
 holds when executing the action \emph{following} the @when@ check. 
 %
 Finally, code modifications were required to capture properties 
-that currently we do not know how to express with \toolname.
+that are cumbersome to express with \toolname.
 %
 For example, @trimContext@ checks if there is an element that 
 satisfies @p@ in the list @xs@; if so it defines 
@@ -253,8 +254,11 @@ satisfies @p@ in the list @xs@; if so it defines
 and computes @tail ys@.
 %
 By the check we know that @ys@ has at least one element, the 
-one that satisfies @p@, but this is a property that we could 
-not express in \toolname.
+one that satisfies @p@. 
+%
+Due to the complexity of this property, we preferred to rewrite the specific code 
+in a more verification friendly version. 
+
 
 %%% \mynote{Bug}
 %%% %
@@ -271,5 +275,5 @@ not express in \toolname.
 
 On the whole, while proving totality can be cumbersome 
 (as in \lbhscolour) it is a nice side benefit of refinement
-type checking, and can sometimes be a fully automatic corollary
+type checking and can sometimes be a fully automatic corollary
 of establishing more interesting safety properties (as in \lbmap).

@@ -1,18 +1,25 @@
 \section{Termination}\label{sec:termination}
 
-To soundly account for Haskell's non-strict evaluation, a refinement
-type checker must distinguish between terms that may potentially 
-diverge and those that will not~\cite{LiquidICFP14}.
+Program divergence is, more often than not,
+a bug rather than a feature. 
 %
-Thus, by default, \toolname proves termination of each recursive function.
+To account for the common cases, 
+by default, \toolname proves termination of each recursive function.
+%
 Fortunately, refinements make this onerous task quite straightforward. 
 We need simply associate a \emph{well-founded termination metric} % $\mu$
 on the function's parameters, and then use refinement typing to check 
 that the metric strictly decreases at each recursive call. In practice,
 due to a careful choice of defaults, this amounts to about a line 
 of termination-related hints per hundred lines of source. 
-Details about the termination checker may be found in \cite{LiquidICFP14}, 
-we include a brief description here to make the paper self-contained.
+%
+In Chapter~\ref{chapter:refinedhaskell}
+we prove soundness of our refinement type based termination checker 
+and also we explain how soundness of \toolname crucially depends on 
+the termination checker. 
+%
+Here, we provide an overview on how one can use \toolname 
+to prove termination.
 
 \mypara{Simple Metrics}
 As a starting example, consider the @fac@ function
@@ -33,7 +40,7 @@ with the @/[n]@.
 Termination checking is performed at the same 
 time as regular type checking, as it can be 
 reduced to refinement type checking with a 
-special terminating fixpoint combinator~\cite{LiquidICFP14}.
+special terminating fixpoint combinator~\ref{chapter:refinedhaskell}.
 Thus, if \toolname fails to prove that a given 
 termination metric is well-formed and decreasing, 
 it will report a @Termination Check@ @Error@. 

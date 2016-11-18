@@ -31,7 +31,7 @@ All write operations in \libtext are performed on @MArray@s
 in the @ST@ monad, but they are \emph{frozen} into @Array@s
 before being used by the @Text@ constructor.
 %
-We write a measure denoting the size of an @MArray@ and use
+We write a measure for the size of an @MArray@ and use
 it to type the write and freeze operations.
 %
 \begin{code}
@@ -47,7 +47,7 @@ it to type the write and freeze operations.
 \end{code}
 
 \spara{Reasoning about Unicode}
-The function @writeChar@ (abbreviating \texttt{UnsafeChar.unsafeWrite})
+The function @writeChar@ (abbreviating \texttt{unsafeWrite} from \texttt{UnsafeChar})
 writes a @Char@ into an @MArray@.
 \libtext uses UTF-16 to represent characters internally,
 meaning that every @Char@ will be encoded using two or 

@@ -1,60 +1,16 @@
-% Refinement types are unsound under Haskell's lazy semantics.
+When we started the \toolname project, 
+we built on the theory of standard refinement types 
+as implemented for example for ML~\cite{pfenningxi98,GordonRefinement09,LiquidPLDI08}.
 %
-Refinement types encode invariants
-by composing types with SMT-decidable refinement 
-predicates~\cite{Rushby98,pfenningxi98},
-generalizing Floyd-Hoare Logic 
-(\eg EscJava~\cite{ESCJava})
-for functional languages.
-%
-For example
-%
-\begin{code}
-   type Pos = {v:Int | v >  0}
-   type Nat = {v:Int | v >= 0}
-\end{code}
-%
-are the basic type @Int@ refined with logical predicates 
-that state that ``the values'' @v@ described by the type 
-are respectively strictly positive and non-negative.
-%
-We encode \emph{pre-} and \emph{post-}conditions (contracts) using 
-refined function types like 
-%
-\begin{code}
-   div :: n:Nat -> d:Pos -> {v:Nat | v <= n}
-\end{code}
-%
-which states that the function @div@ \emph{requires} inputs @n@ and @d@ that are 
-respectively non-negative and positive and \emph{ensures} that the 
-output is not greater than the input @n@.
-If a program containing @div@ statically type-checks, we can rest assured that
-executing the program will not lead to any divide-by-zero errors.
-%
-By combining types and SMT based validity checking,
-refinement types have automated the verification of 
-programs with recursive datatypes, higher-order 
-functions, and polymorphism.
-%
-Refinement types have been used to statically 
-verify properties ranging from simple array safety~\cite{pfenningxi98,LiquidPLDI08}
-to functional correctness of data structures~\cite{LiquidPLDI09}, 
-security protocols~\cite{GordonTOPLAS2011},  
-and compiler correctness~\cite{fstar}.
-
-Given the remarkable effectiveness of the technique, 
-we embarked on the project of developing a refinement 
-type based verifier for  Haskell.
-The previous systems were all developed for eager, 
+Standard refinement types were developed for the eager, 
 \emph{call-by-value} languages, but we presumed that
 the order of evaluation would surely prove irrelevant
 and that the soundness guarantees would translate 
 to Haskell's lazy, \emph{call-by-need} regime.
 
 We were wrong.
-\NV{TODO: update summary of chapter}
 %
-Our first contribution is to show that standard refinement 
+We start this chapter by showing that standard refinement 
 systems crucially rely on a property of eager languages:
 %
 when analyzing any term, one can assume that \emph{all} the
@@ -86,7 +42,7 @@ this purpose. (\Sref{sec:conclusion})
 %% makes the refinement logic three-valued, making it 
 %% impossible to use existing SMT machinery (\Sref{sec:conclusion}).
 
-Our second contribution is a novel approach that
+Next, we present a novel approach that
 enables sound and precise checking with existing 
 SMT solvers, using a \emph{stratified} type system that 
 labels binders as potentially diverging or not 
@@ -100,11 +56,12 @@ that allows the type system to automatically
 verify that a wide variety of recursive functions 
 actually terminate (\Sref{sec:haskell}).
 
-Our third contribution is an extensive empirical
+Finally, we provide an extensive empirical
 evaluation of our approach on more than $10,000$ 
 lines of widely used complex Haskell libraries.
 We have implemented our approach in \toolname, 
-an SMT based verifier for Haskell. 
+and use it to prove termination of 
+libraries verified in Chapter~\ref{chapter:tool}.
 %
 \toolname is able to prove 96\% of 
 all recursive functions terminating, requiring a modest 
@@ -112,6 +69,4 @@ all recursive functions terminating, requiring a modest
 of code, thereby enabling the sound, precise, 
 and automated verification of functional 
 correctness properties of real-world Haskell code 
-(\Sref{sec:evaluation}).
-
-\NV{END TODO}
+(\Sref{sec:refinedhaskell:evaluation}).

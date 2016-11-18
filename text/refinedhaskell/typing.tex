@@ -5,16 +5,6 @@
 
 \input{text/refinedhaskell/modifications}
 
-%%% \NV{Can we combine Fig 5 and 6?  Otherwise r::=p in Fig 5 looks really odd.
-%%% Fig 5: since predicates include terms, is ther any merit in having both p and u?  Then can't =, > be ordinray infix ops?
-%%% [12:58:21 PM] Simon Peyton Jones: Fig 5, can we say:
-%%% Constants ::= ...as Fig 3 ...
-%%% Values ::= as fig 3
-%%% }
-%%% \NV{Fig 6:p,u ::= ....}
-%%% \NV{Remove D from u, }
-%%% \NV{We use p for boolean-valued terms, which we also call predicates
-%%% }
 While \undeclang is sound, it cannot be \emph{implemented} 
 thanks to the undecidable denotational containment rule \rsubbase
 (Figure~\ref{fig:typing}).
@@ -53,28 +43,6 @@ Predicates $p$ include linear arithmetic constraints,
 function application where function symbols correspond
 to measures (as described in \Sref{sec:measures}), and 
 boolean combinations of sub-predicates.
-
-
-%% \NV{DONE: remove Measures \& Axioms}
-%%\mypara{Measures \& Axioms} 
-%%The only function symbols in \logiclang correspond to 
-%%\emph{measures} (as described in \Sref{sec:measures}), 
-%%which are inductively defined functions.
-%%%%Each measure definition is a sequence of equations,
-%%%%one per data constructor, where the body of each 
-%%%%equation is a term in \logiclang.
-%%%
-%%In the metatheory, we can characterize measures using axioms translated from the measure definition.
-%%%
-%%For example, @emp@ from \Sref{sec:overview} yields axioms:
-%%%
-%%\begin{align*}
-%%%%  \forall x.      & x = \dnull        \Rightarrow (\leisNull\ x) \\
-%%%%  \forall x,y,ys. & x = \dcons\ y\ ys \Rightarrow \lnot (\leisNull\ x) 
-%%  (\ttemp\ \dnull) &&
-%%  \forall x,xs. \lnot (\ttemp\ (\dcons\ x\ xs))
-%%\end{align*}
-%%\SPJ{What on earth does this (above) mean?}
 
 \mypara{Well-Formedness} 
 For a predicate to be well-formed it should be boolean and
@@ -136,7 +104,8 @@ To prove soundness, we need to formally connect the
 notion of logical models with the evaluation of a 
 refinement to \etrue.
 %
-We do this in several steps, briefly outlined for brevity.
+We do this in several steps, briefly outlined for brevity
+(the detailed proof is in~\cite{vazou14techrep}).
 %
 First, we introduce a primitive \emph{bottom expression} 
 \ebot that can have \emph{any} \Div type, but does not evaluate.
@@ -163,9 +132,9 @@ Now, we can connect evaluation and logical satisfaction:
 %
 \begin{theorem}\label{thm:equiv}
 If \dechastype{\emptyset}{\botsto(p)}{\FinTy{\tbool}}, then
-$$\evals{\botsto(p)}{\etrue}\ 
+$\evals{\botsto(p)}{\etrue}\ 
 \mbox{iff}\ \ 
-\forall \sigma \in \embed{\botsto}. \lmodels{\sigma}{p}$$
+\forall \sigma \in \embed{\botsto}. \lmodels{\sigma}{p}$.
 \end{theorem}
 
 \mypara{Restricting Refinements to Predicates}
@@ -176,7 +145,7 @@ appear in implications \isimplied{\Env}{\p_1}{\p_2}.
 Towards this goal, as shown in Figures~\ref{fig:declang:syntax}
 and~\ref{fig:declang:typing}, 
 we restrict the syntax and well-formedness of types to contain
-only predicates,
+only predicates
 %
 and we convert the program to ANF after which we can 
 restrict the application rule \rtappd to applications 
@@ -186,36 +155,6 @@ within the logic after substitution~\cite{LiquidPLDI08}.
 Recall, that this is not enough to ensure that refinements do converge, 
 as under lazy evaluation,
 even binders can refer to potentially divergent values.
-
-%% \NV{This is not enough, as variables are still diverging, 
-%% we need termination analysis}
-%%\mypara{Step 2: Preserving Restriction via ANF Translation}
-%%%
-%%Fortunately, there are several ways to ensure that 
-%%synthesized types\SPJ{What "synthesised types"?} remain within the refinement logic.
-%%%
-%%We can use existentials, as suggested by~\cite{Knowles09}, 
-%%or, more simply, we can convert the program to 
-%%\emph{Adminstrative Normal Form} (ANF)~\cite{Flanagan93},\SPJ{At this point I don't know what problem converting to ANF solves, or how ANF solves it.}
-%%after which all applications are to variables, 
-%%which ensures the intermediate refinements 
-%%created by substitutions, remain in the 
-%%restricted logic~\cite{LiquidPLDI08}.
-%%%
-%%For simplicity, we take the latter route, and assume that the 
-%%program is in ANF. Of course, while eager evaluation preserves 
-%%ANF, lazy evaluation does not. 
-%%%
-%%However, this is not an issue since we prove 
-%%preservation (and progress) using the declarative 
-%%system~\ref{thm:undec-sound}, and need only prove 
-%%the soundness of the VC for the \emph{initial} 
-%%ANF program~\ref{thm:vc-sound}.
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{Stratified Types}\label{sec:typing:stratify}
 
@@ -236,7 +175,7 @@ not diverge (\eg by computing the length of an infinite list)
 by ensuring that inductively defined measures are only applied 
 to finite values.
 %
-Next, we describe how we stratify types with labels, and 
+Next, we describe how we stratify types with labels and 
 then type the various constants, in particular the fixpoint 
 combinators, to enforce stratification.
 
@@ -244,7 +183,7 @@ combinators, to enforce stratification.
 We specify stratification using two \emph{labels} for types.
 %
 The label \trivial\ (resp. \finite) is assigned to types given 
-to expressions that reduce (using $\beta$-reduction as defined in Figure~\ref{fig:operational})  
+to expressions that reduce (using $\beta$-reduction from Figure~\ref{fig:operational})  
 to a value $w$ (resp. \emph{finite} value,
 \ie an element of the inductively defined \dom).
 %
@@ -324,7 +263,7 @@ of their types.
 
 Note that the above types are restricted in that they can only be applied to finite arguments.
 %
-In future work, we could address this issue with unrefined versions of primitive types
+In future work~\ref{chapter:conclusion}, we could address this issue with unrefined versions of primitive types
 that soundly allow operation on arbitrary arguments.
 %
 For example, with the current type for $\mathtt{+}$, addition of potentially 
@@ -500,13 +439,13 @@ denotation inclusion into logical implication
 such that:
 %
 \begin{itemize}
-\item $\sto \in \interp{\Env}$ iff all $\sigma \in \embed{\sto}$ 
+\item $\sto \in \interp{\Env}$ \textit{iff} all $\sigma \in \embed{\sto}$ 
      satisfy $\embed{\Env}$, and 
 %%\item $\evals{\sto(p_i)}{\etrue}$ iff each $\sigma \in \embed{\sto}$ 
 %%     satisfies $p_i$, and
 \item ${\sto}{\ttreft{\vv}{\mathit{B}}{\p_1}}\subseteq {\sto}{\ttreft{\vv}{\mathit{B}}{\p_2}}$ 
-		iff all $\sigma \in \embed{\sto}$ satisfy $p_1 \Rightarrow p_2$.
-\end{itemize} %%NV each -> all to fit in 1 line after b -> B
+		\textit{iff} all $\sigma \in \embed{\sto}$ satisfy $p_1 \Rightarrow p_2$.
+\end{itemize} 
 
 %%Thus, we will translate $\Env$, $p_1$, and $p_2$ into logical
 %%formulas $\embed{\Env}$, $\embed{p_1}$, and $\embed{p_2}$ such 
@@ -528,12 +467,12 @@ $\sto(x) \in \interp{\thetasub{\sto}{\typ}}$. Thus,
 \embed{\tbind{x_1}{\typ_1},\ldots,\tbind{x_n}{\typ_n}} \defeq &
   \embed{\tbind{x_1}{\typ_1}} \wedge \ldots \wedge \embed{\tbind{x_n}{\typ_n}}\\
 \intertext{How should we translate a single binding? Since a binding denotes}
-\interp{\tref{x}{\tbase}{}{p}} \defeq &
+\interp{\tref{x}{\ttbase}{}{p}} \defeq &
   \{ e \mid \mbox{if } \evals{e}{w}\ \mbox{then}\ \evals{\SUBST{p}{x}{w}}{\etrue} \}\\
 \intertext{a direct translation would require a logical value 
   predicate $\isvalue{x}$, which we could use to obtain the logical 
   translation}
-\embed{\tref{x}{\tbase}{}{p}} \defeq & \lnot \isvalue{x} \vee p
+\embed{\tref{x}{\ttbase}{}{p}} \defeq & \lnot \isvalue{x} \vee p
 \end{align*}
 %
 This translation poses several theoretical and 
@@ -541,10 +480,10 @@ practical problems that preclude the use of existing
 SMT solvers (as detailed in \Sref{sec:conclusion}). 
 However, our stratification guarantees 
 (cf. (\ref{eq:trivial}), (\ref{eq:finite}))
-that labeled types reduces to values, and 
+that labeled types reduce to values and 
 so we can simply conservatively translate 
 the \Div and labeled (\Wnf, \Fin) bindings as:
-$$\embed{\tref{x}{\tbase}{}{p}}\ \defeq\ \etrue \qquad  \embed{\tref{x}{\tbase}{l}{p}}\ \defeq\ p$$
+$$\embed{\tref{x}{\ttbase}{}{p}}\ \defeq\ \etrue \qquad  \embed{\tref{x}{\ttbase}{l}{p}}\ \defeq\ p$$
 
 
 \mypara{Soundness} We prove soundness by showing that
@@ -553,7 +492,7 @@ the undecidable \rimpl.
 
 \begin{theorem}{}\label{thm:approximation} If \decissubref{\Env}{p_1}{p_2} is
   valid then 
-  $$\undecissubtype{\Env}{\ttreft{\vv}{\Base}{\p_1}}{\ttreft{\vv}{\Base}{\p_2}}$$
+  $\undecissubtype{\Env}{\ttreft{\vv}{\Base}{\p_1}}{\ttreft{\vv}{\Base}{\p_2}}$.
 \end{theorem}
 
 %% \begin{theorem}{[Approximation]}\label{thm:approximation} Let $\VC \defeq \VCOND{\Env}{p_1}{p_2}$.
@@ -586,7 +525,7 @@ to prove that the validity of the \VC demonstrates
 the denotational containment
 $\forall \sto\in \interp{\Env}. 
   		 \interp{\thetasub{\sto}{\ttreft{\vv}{\miBase}{\p_1}}} 
-  		\subseteq   \interp{\thetasub{\sto}{\ttreft{\vv}{\miBase}{\p_2}}}$.
+  		$ $\subseteq$ $\interp{\thetasub{\sto}{\ttreft{\vv}{\miBase}{\p_2}}}$.
 %
 The soundness of algorithmic typing follows from
 Theorems~\ref{thm:approximation} and~\ref{thm:safety}:
@@ -608,7 +547,7 @@ of validity that respects the measure axioms.
 %
 %\RJ{CHECK}
 However, since our implementation does not use axioms and instead, 
-without loss of soundness or precision, treats measures as uninterpreted 
+without loss of precision, treats measures as uninterpreted 
 during SMT validity checking, we omit further discussion of axioms 
 for clarity.
 

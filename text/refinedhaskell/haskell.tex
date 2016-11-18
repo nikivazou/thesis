@@ -2,10 +2,14 @@
 
 \newcommand\factyp{\typ}
 
-\section{Implementation: \toolname}\label{sec:haskell}
+\section{Implementation in \toolname}\label{sec:haskell}
 
-We have implemented \declang in \toolname (\Sref{sec:overview}). 
-Next, we describe the key steps in the transition from \declang to \lhaskell.
+We have implemented \declang in \toolname. 
+% 
+In \S~\ref{sec:termination} we saw real world termination checks.
+%
+Here claim soundness of \toolname's termination checker, 
+as the checker derives as a the transition from \declang to \lhaskell.
 
 \subsection{Termination}
 
@@ -17,7 +21,7 @@ equivalent to ${\mathtt{let}\ f = \ \etfix{\typ}\ (\efun{n}{}{\efun{f}{}{e}})}$.
 Given the type of $\etfix{\typ}$, checking that $f$ has 
 type $\tfunbasic{\FinTy{\tnat}}{\typ}$ reduces to checking
 $e$ in a \emph{termination-weakened environment} where
-$$f \ \colon \ \tfunbasic{\tref{v}{\tnat}{\finite}{v < n}}{\typ}$$
+$$\tbind{f}{\tfunbasic{\tref{v}{\tnat}{\finite}{v < n}}{\typ}}$$
 %
 Thus, \toolname proves termination just as \declang 
 does: by checking the body in the above environment, 
@@ -34,12 +38,12 @@ For example, \toolname proves that
 has type $\tfunbasic{\FinTy{\tnat}}{\FinTy{\tnat}}$ 
 by typechecking the body of @fac@ 
 in a termination-weakened environment 
-${\mathtt{fac}\ : \tfunbasic{\tref{\ttv}{\tnat}{\finite}{\ttv < \ttn}}{\FinTy{\tnat}}}$
-The recursive call generates the subtyping query:
+${\mathtt{fac}\ : \tfunbasic{\tref{\ttv}{\tnat}{\finite}{\ttv < \ttn}}{\FinTy{\tnat}}}$.
+The recursive call generates the query:
 \begin{align*}
 \tbind{\ttn}{\{0 \leq \ttn\}}, \lnot (\ttn = 0) \vdash_D &\  \subt{\ttref{v=n-1}}{\ttref{0 \leq v \wedge v < n}}\\ 
 %\tlref{n}{\tint}{\finite}{0 \leq n}, \lnot (n = 0) \vdash_D &\  \subt{\ttref{v=n-1}}{\ttref{0 \leq v \wedge v < n}}\\ 
-\intertext{Which reduces to the valid VC}
+\intertext{Which reduces to the valid VC:}
 0 \leq \ttn \wedge \lnot (\ttn = 0) \Rightarrow &\   (\ttv = \ttn-1) \Rightarrow (0 \leq \ttv \wedge \ttv < \ttn)
 \end{align*}
 %
@@ -100,7 +104,7 @@ it is important to refine the last argument,
 so that all arguments are in scope, with the fact that @d@ is the termination metric.
 
 To generalize, desugaring of termination metrics proceeds as follows.
-Let $f$ be a recursive function with parameters $\overline{x}$, and 
+Let $f$ be a recursive function with parameters $\overline{x}$ and 
 termination metric $\mu(\overline{x})$. Then \toolname will
 \begin{itemize}
 \item add a $\tnat$-valued ghost first parameter $d$ in the definition of $f$, 
@@ -120,7 +124,7 @@ but there is some \emph{expression} that forms the decreasing metric.
 %Sometimes, none of the parameters themselves decrease across recursive calls,
 %but there is some \emph{expression} that forms the decreasing metric.
 %
-Consider @range lo hi@, which returns the list of 
+Consider @range lo hi@ (as in~\S~\ref{sec:termination}), which returns the list of 
 @Int@s from @lo@ to @hi@:
 %
 We generalize the explicit metric specification to 
@@ -192,7 +196,7 @@ Finally, in many functions there is no single argument
 whose (measure) provably decreases. For example, consider:
 %
 \begin{code}
-  merge :: xs:_ -> ys:_ -> _ / [sz xs + sz ys]
+  merge :: xs:L a -> ys:L a -> L a / [sz xs + sz ys]
   merge (C x xs) (C y ys)
     | x < y     = x `C` (merge xs  (y `C` ys))
     | otherwise = y `C` (merge (x `C` xs)  ys)
@@ -204,7 +208,7 @@ decreases, but the \emph{sum} of their sizes does.
 As before \toolname desugars the decreasing expression into 
 a ghost parameter and thereby proves termination (assuming, 
 of course, that the inputs were finite lists, \ie 
-$\FinTy{\mathtt{L}}\ a$.)
+$\FinTy{\mathtt{L}}\ a$).
 
 \mypara{Automation: Default Size Measures}
 Structural recursion on the first argument is a common pattern 
@@ -240,7 +244,7 @@ prove 67\% of recursive functions terminating.
 \subsection{Non-termination}
 
 By default, \toolname checks that every function is 
-terminating. We show in \Sref{sec:evaluation} that 
+terminating. We show in \Sref{sec:refinedhaskell:evaluation} that 
 this is in fact the overwhelmingly common case in practice.
 %
 However, annotating a function as @lazy@ deactivates 
@@ -263,6 +267,14 @@ We cannot use the $\etfix{}$ combinators to
 represent this kind of recursion, and hence, 
 use the non-terminating $\efix{}$ combinator 
 instead. 
+%
+I \toolname, we use the @lazy@ keyword to denote 
+potentially diverging definitions 
+defined using the non-terminating $\efix{}$ combinator.
+
+
+\begin{comment}
+Abstract Streams
 
 Let us see how we can use refinements to statically 
 distinguish between finite and infinite streams. 
@@ -369,6 +381,8 @@ $\DivTy{\mathtt{L}}\ a$ represents
 computations that may diverge or 
 produce a finite or infinite list.
 
+\end{comment}
+
 \subsection{User Specifications and Type Inference}
 
 In program verification it is common that the user provides functional
@@ -382,7 +396,7 @@ that is used by \declang.
 $$
 \inference{
 	\hastype{\Gamma}{e_x}{\tau_{x}} &&
-	\hastype{\Gamma,x\colon\tau_x}{e}{\tau} &&
+	\hastype{\Gamma,\tbind{x}{\tau_x}}{e}{\tau} &&
 	\iswellformed{\Gamma}{\tau}
 }{
 	\hastype{\Gamma}{\elet{x}{e_x}{e}}{\tau}
@@ -390,13 +404,13 @@ $$
 $$
 %
 Note that \rtlet \emph{guesses} an appropriate type $\tau_x$
-for $e_x$ and binds this type to $x$ to typecheck $e$.
+for $e_x$ and binds it to $x$ to typecheck $e$.
 
 \toolname allows the user to specify the type $\tau_x$ for top level bindings.
 %
 For every binding \elet{x}{e_x}{\dots}, if the user provides a type specification $\tau_x$,
 \toolname checks using the appropriate environment 
-(1)~that the specified type is well-formed, and 
+(1)~that the specified type is well-formed and 
 (2)~that the expression $e_x$ typechecks under the specification $\tau_x$.
 %
 For the other top level bindings, \ie those without user-provided specifications, 
@@ -404,394 +418,4 @@ as well as all local bindings, \toolname uses the Liquid Types~\citep{LiquidPLDI
 framework to infer refinement types, thus greatly reducing the number of annotations 
 required from the user.
 
-%%
-%%\mypara{Liquid Types} 
-%%The Liquid Types method infers refinements in three steps. 
-%%%
-%%First, we create refinement \emph{templates} for the unknown, 
-%%to-be-inferred refinement types. The \emph{shape} of the template 
-%%is determined by the Haskell's unrefined type it corresponds to. 
-%%The template is just the shape refined with fresh refinement variables
-%%$\kappa$ denoting the unknown refinements at each type position. 
-%%For example, from a type ${\tfun{x}{t_x}{t}}$ we create 
-%%the template ${\tfun{x}{\tref{v}{t_x}{}{\kappa_x}}{\tref{v}{t}{}{\kappa}}}$.
-%%%
-%%Second, we perform type checking using the templates (in place of the
-%%unknown types.) Each wellformedness check becomes a wellformedness
-%%constraint over the templates, and hence over the individual $\kappa$,
-%%constraining which variables can appear in $\kappa$.
-%%Each subsumption check becomes a subtyping constraint
-%%between the templates, which can be further simplified, via syntactic
-%%subtyping rules, to a logical implication query between the variables
-%%$\kappa$.
-%%%
-%%Third, we solve the resulting system of logical implication constraints
-%%(which can be cyclic) via abstract interpretation --- in particular,
-%%monomial predicate abstraction over a set of logical qualifiers
-%%\cite{Houdini,LiquidPLDI08}. The solution is a map from $\kappa$ to
-%%conjunctions of qualifiers, which, when plugged back into the templates,
-%%yields the inferred refinement types.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%%%%%%%   \section{Implementation: \toolname}\label{sec:haskell}
-%%%%%%%%   We implemented \undeclang in \toolname (\S~\ref{sec:overview}), 
-%%%%%%%%   a type based verifier for \lhaskell.
-%%%%%%%%   %
-%%%%%%%%   Before~\citep{vazou13} \toolname assumed 
-%%%%%%%%   eager semantics. 
-%%%%%%%%   %
-%%%%%%%%   We modified the tool as suggested in 
-%%%%%%%%   \S~\ref{sec:language}: 
-%%%%%%%%   the environment of each VC 
-%%%%%%%%   contains refinements of
-%%%%%%%%   only provably terminating bindings.
-%%%%%%%%   %
-%%%%%%%%   This modification enables us to 
-%%%%%%%%   reason about coinductive data, like @Streams@
-%%%%%%%%   (\S~\ref{subsec:infinite})
-%%%%%%%%   and forces us to prove termination (\S~\ref{subsec:termination})
-%%%%%%%%   
-%%%%%%%%   \subsection{Reasoning about Streams}\label{subsec:infinite}
-%%%%%%%%   We use Abstract Refinements~\citep{vazou13} to 
-%%%%%%%%   define a list data type parameterized with
-%%%%%%%%    a type @a@ and a predicate @p@:
-%%%%%%%%   \begin{code}
-%%%%%%%%     data L [size] a <p :: L a -> Prop> 
-%%%%%%%%     	= N
-%%%%%%%%     	| C (x:a) ({xs: L <p> a | p xs})  
-%%%%%%%%   \end{code}
-%%%%%%%%   Ignoring the @[size]@ annotation,
-%%%%%%%%   the above defines a list @L@
-%%%%%%%%   such that for any type @a@
-%%%%%%%%   and any predicate @p@,
-%%%%%%%%   if a value has type @L <p> a@
-%%%%%%%%   it is either @N@ or
-%%%%%%%%   @C x xs@ where
-%%%%%%%%   the tail @xs@ satisfies the predicate @p@.
-%%%%%%%%   %
-%%%%%%%%   The predicate should recursively hold, 
-%%%%%%%%   thus, \emph{all} the tails of a @List <p> a@
-%%%%%%%%   satisfy @p@.
-%%%%%%%%   
-%%%%%%%%   But what is a property that all tails satisfy?
-%%%%%%%%   By definition, a Stream
-%%%%%%%%   is a list in which @N@ does not appear, 
-%%%%%%%%   \ie a list in which \emph{all} the tails 
-%%%%%%%%   are constructed by @C@.
-%%%%%%%%   %
-%%%%%%%%   We use an @isCons@ measure that checks if a list is 
-%%%%%%%%   constructed by @C@ to define 
-%%%%%%%%   a @Stream@ type alias:
-%%%%%%%%   \begin{code}
-%%%%%%%%   type Stream a = {v: L <isCons> a | isCons v}
-%%%%%%%%   
-%%%%%%%%   measure isCons :: L a -> Prop
-%%%%%%%%    isCons N        = false
-%%%%%%%%    isCons (C x xs) = true
-%%%%%%%%   \end{code}
-%%%%%%%%   
-%%%%%%%%   In \toolname, 
-%%%%%%%%   the above definitions, 
-%%%%%%%%   translate into the appropriate t
-%%%%%%%%   types for lists data constructors:
-%%%%%%%%   \begin{code}
-%%%%%%%%   N :: forall a, <p :: L a -> Prop>. 
-%%%%%%%%          {v: L <p> a | not (isCons v)}
-%%%%%%%%   C :: forall a, <p :: L a -> Prop>.
-%%%%%%%%           a -> {xs : L <p> a | p xs}
-%%%%%%%%        -> {v: L <p> a | isCons v}
-%%%%%%%%   \end{code}
-%%%%%%%%   %
-%%%%%%%%   Thus @N@ returns a list that falsifies @isCons@
-%%%%%%%%   and has any abstract
-%%%%%%%%   predicate @<p>@,
-%%%%%%%%   while @C x xs@ returns a list that satisfies
-%%%%%%%%   @isCons@ and
-%%%%%%%%   has any abstract refinements
-%%%%%%%%   that is satisfied by @xs@, \ie @p xs@ holds.
-%%%%%%%%   %
-%%%%%%%%   When in the type of @C@ the abstract refinement is instantiated 
-%%%%%%%%   with @isCons@ we get that
-%%%%%%%%   ``a list is a @Stream@ \emph{iff} so is its tail'':
-%%%%%%%%   \vbox{@C :: a -> Stream a -> Stream a@}
-%%%%%%%%   %
-%%%%%%%%   Given so, we prove that @repeat x@ returns a @Stream@:
-%%%%%%%%   \begin{code}
-%%%%%%%%   repeat :: a -> Stream a
-%%%%%%%%   repeat x = x `C` xs where xs = repeat x 
-%%%%%%%%   \end{code}
-%%%%%%%%   Assuming the type of @repeat@ we get that
-%%%%%%%%   @xs :: Stream a@.
-%%%%%%%%   %
-%%%%%%%%   Thus @C x xs@ is also a @Stream@.
-%%%%%%%%   
-%%%%%%%%   Finally, we prove that one can safely @take@ @n@ elements from a @Stream@:
-%%%%%%%%   \begin{code}
-%%%%%%%%   take :: Nat -> Stream a -> a
-%%%%%%%%   take 0 _           = N
-%%%%%%%%   take n ys@(C x xs) = x `C` take (n-1) xs
-%%%%%%%%   \end{code}
-%%%%%%%%   To prove @take@ safe we need to prove that 
-%%%%%%%%   at the recursive call @xs :: Stream a@; but 
-%%%%%%%%   this is provable as @ys :: Stream@.
-%%%%%%%%   %%Even though this information exists, it is generally guarded 
-%%%%%%%%   %%by the requirement of @ys@ begin a value.
-%%%%%%%%   %%But the recursive call happens after @ys@ is matched
-%%%%%%%%   %%thus @ys@'s is indeed a value, which unguards its type
-%%%%%%%%   %%and concludes our proof.
-%%%%%%%%   
-%%%%%%%%   With these types for @take@ and @repeat@, 
-%%%%%%%%   \toolname soundly proves 
-%%%%%%%%   @take n $ repeat x@
-%%%%%%%%   safe for any @n@ and @x@.
-%%%%%%%%   
-%%%%%%%%   \subsection{Proving Termination}\label{subsec:termination} %$
-%%%%%%%%   Typing @repeat@ did not require 
-%%%%%%%%   information from the environment, but (\S~\ref{sec;overview})
-%%%%%%%%   this is not the general case.
-%%%%%%%%   In \undeclang, to use information from the environment, 
-%%%%%%%%   you need to prove termination.
-%%%%%%%%   This is not really a problem, as \toolname 
-%%%%%%%%   implements a rather practical termination prover.
-%%%%%%%%   
-%%%%%%%%   Assume the definition of a recursive \lhaskell function 
-%%%%%%%%   @f = \n -> e@ with type specification 
-%%%%%%%%   @f :: n:Nat -> t[n/x]@.
-%%%%%%%%   %
-%%%%%%%%   To map @f@ in \declang we need to use the 
-%%%%%%%%   $\mathtt{fix}$ constant.
-%%%%%%%%   By the definition of \etfix{\tau}, 
-%%%%%%%%   @f@ behaves exactly as its fixed point version, 
-%%%%%%%%   or typing @f@ is equivalent to typing:
-%%%%%%%%   $\etfix{\tau}\ (\efun{n}{}{\efun{f}{}{e}})
-%%%%%%%%      \colon\colon
-%%%%%%%%      \tfun{n}{\tnat^\lfinite}{\tau\sub{x}{n}}
-%%%%%%%%   $
-%%%%%%%%   %
-%%%%%%%%   Which, by the \rtapp rule reduces to 
-%%%%%%%%   \begin{align*}
-%%%%%%%%   \efun{n}{}{\efun{f}{}{e}}
-%%%%%%%%      &\colon\colon
-%%%%%%%%   \tfun{n}{\tnat^\lfinite}{
-%%%%%%%%   \tfunbasic{(
-%%%%%%%%   	\tfunbasic{\tref{n'}{\tnat}{\lfinite}{n' < n}}{\tau\sub{x}{n'}}
-%%%%%%%%   )}{\tau\sub{x}{n}}}
-%%%%%%%%   \end{align*}
-%%%%%%%%   %
-%%%%%%%%   Interestingly, the above allows 
-%%%%%%%%   the result type of @f@ to be finite, 
-%%%%%%%%   thus its success implies that
-%%%%%%%%   @f@ terminates!
-%%%%%%%%   %
-%%%%%%%%   So, \toolname proves @f@ terminates, 
-%%%%%%%%   if its body typechecks 
-%%%%%%%%   assuming a second argument
-%%%%%%%%   \begin{code}
-%%%%%%%%     f :: {n' : Nat | n' < n} -> t[n'/x]
-%%%%%%%%   \end{code}
-%%%%%%%%   
-%%%%%%%%   As a concrete example, 
-%%%%%%%%   \toolname proves that
-%%%%%%%%   fibonacci function terminates exactly
-%%%%%%%%   as \undeclang would prove it.
-%%%%%%%%   %
-%%%%%%%%   \begin{code}
-%%%%%%%%     fib  :: Nat -> Int
-%%%%%%%%     fib 0 = 1
-%%%%%%%%     fib 1 = 1
-%%%%%%%%     fib n = fib (n-1) + fib (n-2)
-%%%%%%%%   \end{code}
-%%%%%%%%   %
-%%%%%%%%   To typecheck the body of @fib@,
-%%%%%%%%   \toolname assumes a second argument
-%%%%%%%%    @fib :: {n':Nat | n' < n} -> Int@
-%%%%%%%%   and checks that each call to @fib@, 
-%%%%%%%%   \ie each recursive call, is performed with 
-%%%%%%%%   decreasing arguments, proving that @fib@
-%%%%%%%%   \emph{must} terminate.
-%%%%%%%%   
-%%%%%%%%   \newcommand{\tmetric}{metric\xspace}
-%%%%%%%%   \newcommand{\smetric}{\ensuremath{\mu}\xspace}
-%%%%%%%%   Now consider a @range l h@ function
-%%%%%%%%   that returns a list ranging from @l@ to @h@:
-%%%%%%%%   
-%%%%%%%%   \begin{code}
-%%%%%%%%   range :: l:Nat -> h:Nat -> [Nat]
-%%%%%%%%   range l h | l < h     = l : range (l+1) h
-%%%%%%%%             | otherwise = [] 
-%%%%%%%%   \end{code}
-%%%%%%%%   We cannot apply the previous reasoning 
-%%%%%%%%   to prove @range@ terminating.
-%%%%%%%%   Yet, @range@ does terminate as at each recursive 
-%%%%%%%%   call the \tmetric $\smetric(l, h) = h - l$ decreases.
-%%%%%%%%   %
-%%%%%%%%   One option would be to use a ghost first argument 
-%%%%%%%%   that captures exactly this \tmetric.
-%%%%%%%%   %
-%%%%%%%%   Then, at a recursive call with actual parameters 
-%%%%%%%%   $e_l$ and $e_h$ we should prove that the 
-%%%%%%%%   termination condition 
-%%%%%%%%   $TC \doteq 0 \leq \smetric(e_l, e_h) < \smetric(l, h)$ holds.
-%%%%%%%%   
-%%%%%%%%   \toolname captures exactly this behaviour.
-%%%%%%%%   We annotate the type of @range@ with the
-%%%%%%%%   \emph{termination \tmetric} $\smetric(l, h)$, 
-%%%%%%%%   \ie an integer expression that refers to @range@'s arguments
-%%%%%%%%   \begin{code}
-%%%%%%%%   range :: l:Nat -> h:Nat -> [Nat] / [h - l]
-%%%%%%%%   \end{code}
-%%%%%%%%   at each function call \toolname checks whether
-%%%%%%%%   $TC$ holds; 
-%%%%%%%%   and either succeeds and proves termination
-%%%%%%%%   or fails with a ``Termination Check Error''.
-%%%%%%%%   
-%%%%%%%%   \begin{comment}
-%%%%%%%%   Next, consider the Ackermann function.
-%%%%%%%%   %
-%%%%%%%%   \begin{code}
-%%%%%%%%     ack m n 
-%%%%%%%%       | m == 0    = n + 1
-%%%%%%%%       | n == 0    = ack (m-1) 1 
-%%%%%%%%       | otherwise = ack (m-1) (ack m (n-1))
-%%%%%%%%   \end{code}
-%%%%%%%%   %
-%%%%%%%%   There exists no integer termination metric that decreases at each recursive call.
-%%%%%%%%   %
-%%%%%%%%   However @ack@ terminates because at each call \emph{either}
-%%%%%%%%   @m@ decreases \emph{or} @m@ remains the same and @n@ decreases. 
-%%%%%%%%   %
-%%%%%%%%   In other words, the pair @(m,n)@ strictly decreases according to
-%%%%%%%%   \emph{lexicographic} ordering. 
-%%%%%%%%   %
-%%%%%%%%   To capture this requirement we extend termination metric
-%%%%%%%%   from an integer to a list of integers
-%%%%%%%%   and at each recursive call we check that this list is
-%%%%%%%%   lexicographically decreasing.
-%%%%%%%%   %
-%%%%%%%%   In the case of
-%%%%%%%%   @ack@ this list will simply be the parameters @m@
-%%%%%%%%   and @n@:
-%%%%%%%%   %
-%%%%%%%%   \begin{code}
-%%%%%%%%     ack :: m:Nat -> n:Nat -> Nat / [m,n]
-%%%%%%%%   \end{code}
-%%%%%%%%   %
-%%%%%%%%   Thus, \toolname uses lexicographic ordering on 
-%%%%%%%%   a list of natural numbers to prove termination.
-%%%%%%%%   %
-%%%%%%%%   Termination metrics could be generalized to 
-%%%%%%%%   any \emph{well-found} metric.
-%%%%%%%%   
-%%%%%%%%   \spara{Mutual Recursion}
-%%%%%%%%   %
-%%%%%%%%   Equipped with termination metrics
-%%%%%%%%   \toolname instantiates a powerful
-%%%%%%%%   termination checker that like~\citep{XiTerminationLICS01}
-%%%%%%%%   proves termination even for mutual recursive functions.
-%%%%%%%%   %
-%%%%%%%%   Consider the mutual recursive functions @isEven@ and @isOdd@
-%%%%%%%%   \begin{code}
-%%%%%%%%   {-@ isEven :: n:Nat -> Bool / [n, 0] @-}
-%%%%%%%%   {-@ isOdd  :: n:Nat -> Bool / [n, 1] @-}
-%%%%%%%%   
-%%%%%%%%   isEven 0 = True
-%%%%%%%%   isEven n = isOdd $ n-1
-%%%%%%%%   
-%%%%%%%%   isOdd n  = not $ isEven n 
-%%%%%%%%   \end{code}
-%%%%%%%%   Each call terminates as either @isEven@
-%%%%%%%%   calls @isOdd@ with a decreasing argument, 
-%%%%%%%%   or the argument remains the same, and @isOdd@
-%%%%%%%%   calls @isEven@ that should then decrease the argument.
-%%%%%%%%   % 
-%%%%%%%%   We capture this reasoning using two lexicographic pairs:
-%%%%%%%%   each function has its own metric, 
-%%%%%%%%   and when @isEven@ calls @isOdd@
-%%%%%%%%   the metric of the caller $(n, 0)$
-%%%%%%%%   should be greater that callee's metric
-%%%%%%%%   $(n-1, 1)$.
-%%%%%%%%   %
-%%%%%%%%   Similarly, at @isEven@'s call-site 
-%%%%%%%%   \toolname verifies that	
-%%%%%%%%   $(n, 1) > (n, 0)$.
-%%%%%%%%   %
-%%%%%%%%   For example, the call @isEven m@
-%%%%%%%%   will fire the decreasing metric sequence
-%%%%%%%%   $(m, 0) > (m-1, 1) > (m-1, 0) > (m-2, 1) > \dots$
-%%%%%%%%   that ultimate terminates for \textit{any}
-%%%%%%%%   natural number $m$.
-%%%%%%%%   \end{comment}
-%%%%%%%%   \NV{ack and isEven used to be here}
-%%%%%%%%   
-%%%%%%%%   \spara{Measuring the Size of Structures}
-%%%%%%%%   Consider again the list \emph{user-defined} data type 
-%%%%%%%%   and let us define define its @size@ by a measure:
-%%%%%%%%   \begin{code}
-%%%%%%%%     size (C x xs) = 1 + size xs
-%%%%%%%%     size N        = 0
-%%%%%%%%   \end{code}
-%%%%%%%%   %
-%%%%%%%%   From our discussion so far, 
-%%%%%%%%   \toolname can prove that a @map@
-%%%%%%%%   function terminates:
-%%%%%%%%   \begin{code}
-%%%%%%%%   map :: (a -> b) -> xs:L a -> L b / [size xs]
-%%%%%%%%   map f (C x xs) = C (f x) (map f xs)
-%%%%%%%%   map f N        = N
-%%%%%%%%   \end{code}
-%%%%%%%%   Turns out that structural recursion on the 
-%%%%%%%%   first recursive argument is 
-%%%%%%%%   a common pattern in \lhaskell code, so
-%%%%%%%%   \toolname proves @map@ terminating 
-%%%%%%%%   \emph{without} the need
-%%%%%%%%   of the termination metric.
-%%%%%%%%   %
-%%%%%%%%   If no termination metric is provided, 
-%%%%%%%%   \toolname assumes that the first
-%%%%%%%%   argument with size information decreases.
-%%%%%%%%   %
-%%%%%%%%   Data type definitions%, like the one for list @L@
-%%%%%%%%   can be annotated
-%%%%%%%%   with a measure defining the size of the type;
-%%%%%%%%   for @L a@ this measure is @size@.
-%%%%%%%%   %
-%%%%%%%%   \toolname comes with two build-in sizing information.
-%%%%%%%%   For @Int@s it uses their value and for standard lists @[a]@
-%%%%%%%%   uses @len@ as defined in \S~\ref{sec:overview}.
-%%%%%%%%   %
-%%%%%%%%   Even na\"{\i}ve, the above heuristic turns out to be 
-%%%%%%%%   quite useful in practise\ref{sec:evaluation}. 
-%%%%%%%%   
-%%%%%%%%   \mypara{Using Measure Information}
-%%%%%%%%   In many functions there is no argument that 
-%%%%%%%%   provably decreases its size; 
-%%%%%%%%   still the sizes of the arguments can be used to 
-%%%%%%%%   express sophisticated termination metrics, as
-%%%%%%%%   in the bellow @merge@ function that 
-%%%%%%%%   merges two sorted lists.
-%%%%%%%%   \begin{code}
-%%%%%%%%   merge :: xs:L a -> ys:L a -> L a 
-%%%%%%%%          / [size xs + size ys]
-%%%%%%%%   merge (C x xs) (C y ys)
-%%%%%%%%     | x < y     = x `C` merge xs     (y:ys)
-%%%%%%%%     | otherwise = y `C` merge (x:xs) ys
-%%%%%%%%   \end{code}
-%%%%%%%%   Here the default metric, \ie @size xs@
-%%%%%%%%   is not decreasing,
-%%%%%%%%   instead we use @size@ to express the more complicated 
-%%%%%%%%   termination metric @size xs + size ys@, which witch \toolname
-%%%%%%%%   happily proves termination.
-%%%%%%%%   
-%%%%%%%%   Finally, annotating a function as @lazy@ will deactivate
-%%%%%%%%   \toolname's termination check,
-%%%%%%%%   %
-%%%%%%%%   which concludes how \toolname proves termination:
-%%%%%%%%   \begin{itemize}
-%%%%%%%%   \item No termination check for @lazy@ functions
-%%%%%%%%   \item Termination metrics are used to prove termination, if provided
-%%%%%%%%   \item The \textit{first} argument 
-%%%%%%%%   	with sizing information should decrease.
-%%%%%%%%   \end{itemize}

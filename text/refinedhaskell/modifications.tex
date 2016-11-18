@@ -5,7 +5,8 @@
 
 
 \begin{figure}[t!]
-\hrule width 0.48\textwidth \vspace{0.05in}
+\centering
+\captionsetup{justification=centering}
 $$
 \begin{array}{rrcl}
 \multicolumn{4}{l}{\text{\emphbf{Expressions}, \emphbf{Values}, \emphbf{Constants}, \emphbf{Basic types}:
@@ -14,8 +15,8 @@ see Figure~\ref{fig:undeclang}}} \\[0.05in]
 \emphbf{Types} \quad 
   & \tau
   & ::=  
-  & 	 \tref{v}{\tbase}{}{\refi}
-  \spmid \tref{v}{\tbase}{l}{\refi}\\
+  & 	 \tref{v}{\ttbase}{}{\refi}
+  \spmid \tref{v}{\ttbase}{l}{\refi}\\
   &&
   \spmid & \tfunref{x}{\tau}{\tau}{v}{\refi}   \\[0.05in]
 
@@ -99,13 +100,15 @@ $$
 
 
 \begin{figure}[t!]
-\hrule width 0.48\textwidth \vspace{0.05in}
+\centering
+\captionsetup{justification=centering}
+
 All rules as in Figure~\ref{fig:typing} except as follows: \\
 
 \judgementHead{Well-Formedness}{\deciswellformed{\Gamma}{\tau}}
 $$
 \inference{
-	\dechastype{\Gamma, v\colon \Base}{\restrictdecidable{p}{r}}{\FinTy{\tbool}}
+	\dechastype{\Gamma, \tbind{v}{\Base}}{\restrictdecidable{p}{r}}{\FinTy{\tbool}}
 }{
 	\deciswellformed{\Gamma}{\tref{v}{\Base}{}{\restrictdecidable{p}{r}}}
 }[\rwbased]
@@ -206,14 +209,14 @@ $$
 $$
 }
 $$\inference{
-	l \not \in \{\finite, \trivial\} \Rightarrow \tau \ \text{is}\ \Div \\
+	l \not \in \{\finite, \trivial\} \Rightarrow \tau \ \text{is}\ \Div &&
 	\dechastype{\Gamma}{e}{\tref{v}{T}{l}{r}} &&
 	 \deciswellformed{\Gamma}{\tau}\\
-	\forall i. \constty{D_i} = \overline{y_j}{\tau_j} \rightarrow \tref{v}{T}{}{r_i} \\
-	\dechastype{\Gamma,  \overline{y_j \colon \tau_j},
-				x \colon \tref{v}{T}{\restrictdecidable{\trivial}
+	\forall i. \constty{D_i} = \overline{y_j}{\tau_j} \rightarrow \tref{v}{T}{}{r_i} &&
+	\dechastype{\Gamma,  \overline{\tbind{y_j}{\tau_j}},
+				\tbind{x}{\tref{v}{T}{\restrictdecidable{\trivial}
 				{\ltrivial}
-				}{r \land r_i}}{e_i}{\tau}	
+				}{r \land r_i}}}{e_i}{\tau}	
 }{
 	\dechastype{\Gamma}{\ecase{e}{D_i}{\overline{y_j}}{e_i}{x}}{\tau}
 }[\rtcased]$$

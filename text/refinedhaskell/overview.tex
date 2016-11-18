@@ -636,7 +636,7 @@ ${(\etrue \Rightarrow\  \ttv = 1 \Rightarrow\ \ttv > 0)}$
 which the SMT solver proves valid, verifying @ex1@.
 
 \mypara{Example: Improving Precision By Forcing Evaluation}
-\label{sec:pattern-match}
+\label{sec:overview:pattern-match}
 If all binders in the environment have \Div-types then, effectively, 
 the verifier can make \emph{no} assumptions about the context in 
 which a term evaluates, which leads to a drastic loss of precision. 
@@ -678,10 +678,10 @@ the call to @div@ yields the subtyping query:
 \begin{align}
    \ttbind{\ttx}{\ttreft{\ttx}{\WnfTy{\ttInt}}{\ttx = 1}},\
    \ttbind{\tty}{\ttreft{\tty}{\ttInt}{\tty > \ttx}}      	
-	& \vdash\ \subtref{v > \ttx}{v > 0}\label{sub:ex3:good}
+	& \vdash\ \subtref{v > \ttx}{v > 0}\label{sub:pm:ex3:good}
 \intertext{As $\ttx$ is \Wnf, we accept \texttt{ex2} by proving the validity of the VC:} 
    \ttx = 1 \Rightarrow\  \ttv > \ttx & \Rightarrow \ttv > 0
-\label{vc:ex3:good}
+\label{vc:pm:ex3:good}
 \end{align}
 
 \mypara{Example: Improving Precision By Termination}

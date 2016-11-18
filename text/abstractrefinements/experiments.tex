@@ -230,7 +230,7 @@ Furthermore @blo@ (resp. @bhi@) are specified as option
 Fortunately, refinements suffice to encode such properties. 
 First, we define measures
 %
-$$\centering\begin{tabular}{c}\begin{code}
+\begin{code}
 measure isJust     :: Maybe a -> Bool 
 isJust (Just x)    = true
 isJust (Nothing)   = false
@@ -244,22 +244,22 @@ isBin (Tip)         = false
 
 measure key :: Tree k v -> k 
 key (Bin k _ _ _)   = k 
-\end{code}\end{tabular}$$
+\end{code}
 %
 which respectively embed the @Maybe@ and @Tree@ root value into the
 refinement logic, after which we can type the @trim@ function as
-$$\centering\begin{tabular}{c}\begin{code}
+\begin{code}
 trim :: (Ord k) => blo:Maybe k 
                 -> bhi:Maybe k 
                 -> BST k a 
                 -> {v:BST k a | bound(blo, v, bhi)}
-\end{code}\end{tabular}$$
+\end{code}
 where @bound@ is simply a refinement alias
-$$\centering\begin{tabular}{c}\begin{code}
+\begin{code}
 refinement bound(lo, v, hi) 
   =  isBin(v) => isJust(lo) => fromJust(lo) < key(v) 
   && isBin(v) => isJust(hi) => fromJust(hi) > key(v)
-\end{code}\end{tabular}$$
+\end{code}
 That is, the output refinement states that the root is appropriately 
 lower- and upper- bounded if the relevant terms are defined. 
 Thus, refinement types allow one to formalize the crucial behavior as
@@ -279,14 +279,14 @@ We address this with a special @append@ parameterized on @pivot@
 %append :: k:a -> IncrList {v:a|v<k} -> IncrList {v:a|v>k} -> IncrList a
 %append :: k:a -> IncList {v:a|v < k} -> IncList {v:a|v > k} 
 %       -> IncList a
-$$\centering\begin{tabular}{c}\begin{code}
+\begin{code}
 append :: pivot:a                    
        -> IncrList {v:a | v < pivot}  
        -> IncrList {v:a | v > pivot}  
        -> IncrList a              
 append pivot [] ys     = pivot : ys
 append pivot (x:xs) ys = x : append pivot xs ys
-\end{code}\end{tabular}$$
+\end{code}
 %%after which \toolname infers that
 %%$$\centering\begin{tabular}{c}\begin{code}
 %%\end{code}\end{tabular}$$
