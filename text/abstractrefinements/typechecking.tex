@@ -9,7 +9,7 @@ via a reduction to contract calculi \cite{Knowles10,Greenberg11}
 
 \subsection{Syntax}\label{sec:syntax}
 
-Figure~\ref{fig:syntax} summarizes the syntax of our core 
+Figure~\ref{fig:abstractrefinements:syntax} summarizes the syntax of our core 
 calculus \corelan which is a polymorphic $\lambda$-calculus 
 extended with abstract refinements. 
 %
@@ -47,7 +47,7 @@ inside $e$, and the corresponding refinement application $\epapp{e}{e}$.
 A \emph{concrete refinement} \reft is a boolean valued expression \reft 
 drawn from a strict subset of the language of expressions which
 includes only terms that 
-(a)~neither diverge nor crash, and 
+(a)~neither diverge nor crash and 
 (b)~can be embedded into an SMT decidable refinement logic including 
 the theory of linear arithmetic and uninterpreted functions.
 %
@@ -76,6 +76,7 @@ variables to yield abstract refinement schemas.
 
 \begin{figure}[t!]
 \centering
+\captionsetup{justification=centering}
 $$
 \begin{array}{rrcl}
 \emphbf{Expressions} \quad 
@@ -84,8 +85,8 @@ $$
   &      x 
   \spmid c 
   \spmid \efunt{x}{\tau}{e} 
-  \spmid \eapp{e}{e} 
-  \spmid \etabs{\alpha}{e} 
+  \spmid \eapp{e}{e} \\
+  &&\spmid &\etabs{\alpha}{e} 
   \spmid \etapp{e}{\tau} 
   \spmid \epabs{\rvar}{\tau}{e}
   \spmid \epapp{e}{e} 
@@ -122,8 +123,8 @@ $$
   \\[0.05in]
 \end{array}
 $$
-\caption{\textbf{Syntax of Expressions, Refinements, Types and Schemas}}
-\label{fig:syntax}
+\caption[Syntax of \corelan.]{\textbf{Syntax of Expressions, Refinements, Types and Schemas of \corelan.}}
+\label{fig:abstractrefinements:syntax}
 \end{figure}
 
 \subsection{Static Semantics}\label{sec:typing}
@@ -134,44 +135,35 @@ Next, we describe the static semantics of \corelan by describing the typing
 judgments and derivation rules. Most of the rules are 
 standard~\cite{Ou2004,LiquidPLDI08,Knowles10,GordonTOPLAS2011}; we 
 discuss only those pertaining to abstract refinements.
+%
 
 \mypara{Judgments}
 A type environment $\Gamma$ is a sequence of type bindings $x:\sigma$.
-We use environments to define three kinds of typing judgments:
+We use environments to define three kinds of typing judgments.
 
-\begin{itemize}
-\item{\emphbf{Wellformedness judgments} (\isWellFormed{\Gamma}{\sigma})} 
+\mypara{Wellformedness judgments (\isWellFormed{\Gamma}{\sigma})}
 state that a type schema $\sigma$ is well-formed under environment
 $\Gamma$, that is, the refinements in $\sigma$ are boolean 
 expressions in the environment $\Gamma$.
-
-\item{\emphbf{Subtyping judgments} (\isSubType{\Gamma}{\sigma_1}{\sigma_2})} 
-state that the type schema $\sigma_1$ is a subtype of the type schema
-$\sigma_2$ under environment $\Gamma$, that is, when the free variables
-of $\sigma_1$ and $\sigma_2$
-are bound to values described by $\Gamma$, the set of values described
-by $\sigma_1$ is contained in the set of values described by $\sigma_2$. 
-
-\item{\emphbf{Typing judgments} (\hastype{\Gamma}{e}{\sigma})} state that
-the expression $e$ has the type schema $\sigma$ under environment $\Gamma$,
-that is, when the free variables in $e$ are bound to values described by 
-$\Gamma$, the expression $e$ will evaluate to a value described by $\sigma$.
-\end{itemize}
-
-\mypara{Wellformedness Rules}
+%
 The wellformedness rules check that the concrete and abstract
 refinements are indeed $\tbbool$-valued expressions in the 
 appropriate environment.
 The key rule is \wtBase, which checks, as usual, that the (concrete) 
-refinement $\reft$ is boolean, and additionally, that the abstract
+refinement $\reft$ is boolean and additionally, that the abstract
 refinement $\areft$ applied to the value $\vref$ is also boolean.
 This latter fact is established by \wtRVApp which checks that 
 each refinement variable application $\rvapp{\rvar}{e}\ \vref$ 
 is also of type \tbbool in the given environment.
 
-\mypara{Subtyping Rules}
-The subtyping rules stipulate when the set of values described 
-by schema $\sigma_1$ is subsumed by the values described by $\sigma_2$.
+\mypara{Subtyping judgments}
+(\isSubType{\Gamma}{\sigma_1}{\sigma_2}) 
+state that the type schema $\sigma_1$ is a subtype of the type schema
+$\sigma_2$ under environment $\Gamma$, that is, when the free variables
+of $\sigma_1$ and $\sigma_2$
+are bound to values described by $\Gamma$, the set of values described
+by $\sigma_1$ is contained in the set of values described by $\sigma_2$. 
+%
 The rules are standard except for \tsubVar, which encodes the base types' 
 abstract refinements $\areft_1$ and $\areft_2$ with conjunctions of 
 \emph{uninterpreted predicates} 
@@ -190,7 +182,12 @@ arguments $\overline{e}$.
 
 
 
-\mypara{Type Checking Rules}
+\mypara{Typing judgments}
+(\hastype{\Gamma}{e}{\sigma}) state that
+the expression $e$ has the type schema $\sigma$ under environment $\Gamma$,
+that is, when the free variables in $e$ are bound to values described by 
+$\Gamma$, the expression $e$ will evaluate to a value described by $\sigma$.
+%
 The type checking rules are standard except for \tpgen and \tpinst, which
 pertain to abstraction and instantiation of abstract refinements.
 %
@@ -204,10 +201,6 @@ $\rvar$ inside $\sigma$ with the appropriate (concrete) refinement $\reft'$
 with the parameters $\overline{x}$ replaced with arguments at that application.
 Formally, this is represented as $\rpinst{\sigma}{\rvar}{\efunbar{x:\tau}{\reft'}}$
 which is $\sigma$ with each base type transformed as
-%%$$\rpinst{\tpref{b}{\areft}{\reft}}{\rvar}{z}
-%%  \defeq \tpref{b}{\areft''}{\reft \land \reft''} 
-%%  \quad \mbox{where} (\areft'', \reft'') =
-%%  \rpapply{\areft}{\rvar}{z}{\true}{\true}$$
 \begin{align*}
 \rpinst{\tpref{b}{\areft}{\reft}}{\rvar}{z}
   & \defeq \tpref{b}{\areft''}{\reft \land \reft''} \\
@@ -269,7 +262,9 @@ translation to define the dynamic semantics and establish soundness.
 We translate \corelan schemes $\sigma$ to \conlan schemes $\tx{\sigma}$
 as by translating abstract refinements into contracts,
 and refinement abstraction into function types:
-$$\begin{array}{rclcrcl}
+
+\[\arraycolsep=0.5pt
+\begin{array}{rclcrcl}
 \tx{\true\ \vref} & \defeq 
   & \true  
   & \quad \quad &
@@ -292,16 +287,17 @@ $$\begin{array}{rclcrcl}
   & \tfun{x}{\tx{\tau_1}}{\tx{\tau_2}} 
 %\tx{\trfun{x}{\tau_1}{\tau_2}{\reft}} \defeq 
 %  & \trfun{x}{\tx{\tau_1}}{\tx{\tau_2}}{\tx{\reft}} \\
-\end{array}$$
+\end{array}\]
 Similarly, we translate \corelan terms $e$ to \conlan 
 terms $\tx{e}$ by converting refinement abstraction and application 
 to $\lambda$-abstraction and application
-$$\begin{array}{rclcrcl}
+\[\arraycolsep=0.5pt
+\begin{array}{rclcrcl}
 \tx{x} & \defeq & x & \quad \quad \quad & \tx{c} & \defeq & c \\
 \tx{\efunt{x}{\tau}{e}} & \defeq & \efunt{x}{\tx{\tau}}{\tx{e}} & \quad & \tx{\eapp{e_1}{e_2}} & \defeq & \eapp{\tx{e_1}}{\tx{e_2}} \\
 \tx{\etabs{\alpha}{e}} & \defeq & \etabs{\alpha}{\tx{e}} & \quad & \tx{\etapp{e}{\tau}} & \defeq & \eapp{\tx{e}}{\tx{\tau}} \\
 \tx{\epabs{\rvar}{\tau}{e}} &\defeq & \efunt{\rvar}{\tx{\tau}}{\tx{e}} & \quad & \tx{\epapp{e_1}{e_2}} &\defeq & \eapp{\tx{e_1}}{\tx{e_2}}
-\end{array}$$
+\end{array}\]
 
 %%\begin{align*}
 %%\tx{\true\ \vref} \defeq 
@@ -375,7 +371,7 @@ perform type inference via Liquid typing, which is crucial for
 making the system usable by eliminating the tedium of instantiating 
 refinement parameters all over the code. (With value-dependent 
 refinements, one cannot simply use, say, unification to determine
-the appropriate instantations, as is done for classical type systems.)
+the appropriate instantations, as is done for classical type systems).
 We briefly recall how Liquid types work, and sketch how they are 
 extended to infer refinement instantiations.
 
@@ -393,7 +389,7 @@ For example, from a type ${\tfun{x}{\tbint}{\tbint}}$ we create
 the template ${\tfun{x}{\tref{\tbint}{\kappa_x}}{\tref{\tbint}{\kappa}}}$.
 %
 Second, we perform type checking using the templates (in place of the
-unknown types.) Each wellformedness check becomes a wellformedness
+unknown types). Each wellformedness check becomes a wellformedness
 constraint over the templates, and hence over the individual $\kvar$,
 constraining which variables can appear in $\kvar$.
 Each subsumption check becomes a subtyping constraint

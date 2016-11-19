@@ -1,0 +1,39 @@
+\section{Conclusion}\label{sec:abstractrefinements:conclusion}
+We presented \emph{abstract refinement types} which enable 
+quantification over the refinements of data- and 
+function-types. Our key insight is that we 
+can avail of quantification while preserving SMT-based 
+decidability, simply by encoding refinement parameters
+as \emph{uninterpreted} propositions within the 
+refinement logic.
+%
+We showed how this mechanism yields a variety 
+of sophisticated means for reasoning about programs, including:
+\emph{parametric} refinements for reasoning with 
+type classes,
+\emph{index-dependent} refinements for reasoning about 
+key-value maps,
+\emph{recursive} refinements for reasoning about 
+recursive data types, and
+\emph{inductive} refinements for reasoning about 
+higher-order traversal routines.
+%
+We implemented our approach in \toolname and present 
+experiments using our tool to verify correctness invariants 
+of various programs.
+
+As discussed in~\ref{sec:experiments},
+verification many times required code modifications
+and definition of ``ghost'' variables (\eg to verify @append@), 
+that is, extra arguments not used at run time
+but required for specifications.
+%
+In next chapter we raise this limitation by 
+introducing Bounded Refinement Types, 
+that impose constrains in the abstract refinements
+to further increase the expressiveness of decidable specifications.
+%
+Abstract and Bounded Refinement Types lead to a relatively complete~\cite{TerauchiPOPL13}
+specification system, 
+that is the system can express any specification (relatively to the underlying logic)
+without the requirement of code modifications and ``ghost'' variables. 

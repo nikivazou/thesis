@@ -11,11 +11,11 @@ Suppose we had a generic comparison @(<=) :: a -> a -> Bool@ as in
 \ocaml.
 We could use it to write: 
 \begin{code}
-max     :: a -> a -> a
-max x y = if x <= y then y else x 
+  max     :: a -> a -> a
+  max x y = if x <= y then y else x 
 
-maximum :: [a] -> a
-maximum (x:xs) = foldr max x xs
+  maximum :: [a] -> a
+  maximum (x:xs) = foldr max x xs
 \end{code}
 In essence, the type given for @maximum@ states that
 \emph{for any} @a@, if a list of @a@ values is passed
@@ -29,11 +29,11 @@ Thus, we can use refinement types \cite{LiquidPLDI08}
 to verify
 %
 \begin{code}
-type Even = {v:Int | v % 2 = 0 }
+  type Even = {v:Int | v % 2 = 0 }
 
-maxEvens :: [Int] -> Even
-maxEvens xs = maximum (0 : xs') 
-  where xs' = [ x | x <- xs, x `mod` 2 = 0]
+  maxEvens :: [Int] -> Even
+  maxEvens xs = maximum (0 : xs') 
+    where xs' = [ x | x <- xs, x `mod` 2 == 0]
 \end{code}
 %
 Here the @%@ represents the modulus operator in the refinement logic
@@ -46,7 +46,7 @@ To this end, the type parameter of @maximum@ is instantiated with the
 \emph{refined} type @Even@, yielding the instance:
 %
 \begin{code}
-maximum :: [Even] -> Even
+  maximum :: [Even] -> Even
 \end{code}
 %
 Then, @maximum@'s argument should be proved to have type
@@ -55,7 +55,7 @@ So, the type parameter of @(:)@
 is instantiated with {@Even@}, yielding the instance: 
 %
 \begin{code}
-(:) :: Even -> [Even] -> [Even]
+  (:) :: Even -> [Even] -> [Even]
 \end{code}
 %
 Finally, the system infers that {@0 :: Even@} and {@xs' :: [Even]@}, 
@@ -71,7 +71,7 @@ Here, once
 is added to the set of qualifiers, either manually or (as done by 
 our implementation) by automatically scraping predicates from 
 refinements appearing in specification signatures, the 
-refinement type instantiations, and hence verification, proceed 
+refinement type instantiations and hence verification, proceed 
 automatically.
 %
 Thus, parametric polymorphism offers an easy means of encoding 
@@ -79,21 +79,21 @@ second-order invariants, \ie of quantifying over or parametrizing
 the invariants of inputs and outputs of functions. 
 
 \mypara{Parametric Invariants via Abstract Refinements}
-Instead, suppose that the comparison operator was monomorphic, and only
+Instead, suppose that the comparison operator was monomorphic and only
 worked for @Int@ values. The resulting (monomorphic) signatures
 \begin{code}
-max     :: Int -> Int -> Int
-maximum :: [Int] -> Int
+  max     :: Int -> Int -> Int
+  maximum :: [Int] -> Int
 \end{code}
 preclude the verification of @maxEvens@ (\ie typechecking against the 
 signature shown earlier). This is because the new type of @maximum@ 
-merely states that \emph{some} @Int@  is returned as output, and not 
+merely states that \emph{some} @Int@  is returned as output and not 
 necessarily one that enjoys the properties of the values in the input
 list. This is a shame, since the property clearly still holds.
 We could type
 %@max :: forall t <: Int. t -> t -> t@
 \begin{code}
-max :: forall t <: Int. t -> t -> t
+  max :: forall t <: Int. t -> t -> t
 \end{code}
 but this route would introduce the complications
 that surround bounded quantification which could render checking 
@@ -104,9 +104,9 @@ which let us
 quantify or parameterize a type over its constituent refinements.
 For example, we can type @max@ as
 \begin{code}
-max :: forall <p::Int->Bool>. Int<p> -> Int<p> -> Int<p>
+  max :: forall <p :: Int -> Bool>. Int<p> -> Int<p> -> Int<p>
 \end{code}
-where @Int<p>@ is an abbreviation for the refinement type {@{v:Int | p(v)}@}.
+where @Int<p>@ is an abbreviation for the refinement type {@{v:Int | p v}@}.
 Intuitively, an abstract refinement @p@ is encoded in the refinement logic 
 as an \emph{uninterpreted function symbol}, which satisfies the
 \emph{congruence} axiom~\cite{Nelson81}
@@ -115,13 +115,13 @@ $$\forall \overline{X}, \overline{Y}: (\overline{X} = \overline{Y})
 \Rightarrow P(\overline{X}) = P(\overline{Y})$$
 %
 Thus, it is trivial to verify, with an SMT solver, that @max@ 
-enjoys the above type: the input types ensure that both @p(x)@ and @p(y)@ 
+enjoys the above type: the input types ensure that both @p x@ and @p y@ 
 hold and hence the returned value in either branch satisfies 
-the refinement  @{v:Int | p(v)}@, thereby ensuring the output 
+the refinement  @{v:Int | p v}@, thereby ensuring the output 
 type. By the same reasoning, we can generalize the type of @maximum@ 
 to
 \begin{code}
-maximum :: forall <p :: Int -> Bool>. [Int<p>] -> Int<p>
+  maximum :: forall <p :: Int -> Bool>. [Int<p>] -> Int<p>
 \end{code}
 Consequently, we can recover the verification of @maxEvens@.
 Now, instead of instantiating a \emph{type} parameter, we simply instantiate
@@ -139,12 +139,12 @@ The example above regularly arises in practice, due to type classes.
 In Haskell, the functions above are typed
 %
 \begin{code}
-(<=)    :: (Ord a) => a -> a -> Bool
-max     :: (Ord a) => a -> a -> a
-maximum :: (Ord a) => [a] -> a
+  (<=)    :: (Ord a) => a -> a -> Bool
+  max     :: (Ord a) => a -> a -> a
+  maximum :: (Ord a) => [a] -> a
 \end{code}
 %
-We might be tempted to ignore the typeclass constraint, 
+We might be tempted to ignore the typeclass constraint 
 and treat \ttcode{maximum} as @[a] -> a@. 
 This would be quite unsound, as typeclass predicates preclude
 universal quantification over refinement types. 
@@ -165,12 +165,12 @@ arbitrary refinement types? First, via the same analysis as
 the monomorphic @Int@ case, we establish that
 %
 \begin{code}
-max:: forall <p::a->Bool>. (Ord a)=> a<p> -> a<p> -> a<p>
-maximum:: forall <p::a ->Bool>. (Ord a) => [a<p>] -> a<p>
+  max    :: forall <p :: a -> Bool>. (Ord a) => a<p> -> a<p> -> a<p>
+  maximum:: forall <p :: a -> Bool>. (Ord a) => [a<p>] -> a<p>
 \end{code}
 %
 Next, at the call-site for @maximum@ in @maxEvens@ we
-instantiate the type variable @a@ with @Int@, and 
+instantiate the type variable @a@ with @Int@ and 
 the abstract refinement @p@ with @{\v -> v % 2 = 0}@
 after which, the verification proceeds as described
 earlier (for the @Int@ case).
@@ -187,14 +187,14 @@ encoded, for purposes of illustration, as functions from @Int@ to
 some generic range @a@. Formally, we specify vectors as 
 %
 \begin{code}
-data Vec a <dom :: Int -> Bool, rng :: Int -> a -> Bool> 
-  = V (i:Int<dom> -> a <rng i>)
+  data Vec a <dom :: Int -> Bool, rng :: Int -> a -> Bool> 
+    = V (i:Int<dom> -> a <rng i>)
 \end{code}
 %
 Here, we are parameterizing the definition of the type @Vec@ 
 with \emph{two} abstract refinements, @dom@ and @rng@, which
 respectively describe the \emph{domain} and \emph{range} of the vector.
-That is, @dom@ describes the set of \emph{valid} indices, 
+That is, @dom@ describes the set of \emph{valid} indices
 and @r@ specifies an invariant relating each @Int@ index
 with the value stored at that index.
 
@@ -202,15 +202,15 @@ with the value stored at that index.
 We can use the following basic functions to create vectors:
 %
 \begin{code}
-empty :: forall <p::Int->a->Bool>.Vec<{\_ -> False}, p> a
-empty = V (\_ -> error "Empty Vec")
+  empty :: forall <p :: Int -> a -> Bool>.Vec<{\_ -> False}, p> a
+  empty = V (\_ -> error "Empty Vec")
 
-create :: x:a -> Vec <{\_ -> True}, {\_ v -> v = x}> a
-create x = V (\_ -> x)
+  create :: x:a -> Vec <{\_ -> True}, {\_ v -> v = x}> a
+  create x = V (\_ -> x)
 \end{code}
 %
 The signature for @empty@ states that its domain is empty (\ie is
-the set of indices satisfying the predicate @False@), and that the
+the set of indices satisfying the predicate @False@) and that the
 range satisfies @any@ invariant. The signature for @create@,
 instead, defines a \emph{constant} vector that maps every index to the
 constant @x@.
@@ -220,9 +220,9 @@ We can write the following @get@ function for reading the contents
 of a vector at a given index:
 %
 \begin{code}
-get :: forall <d :: Int -> Bool, r :: Int -> a -> Bool>
-          i:Int<d> -> Vec<d, r> a -> a<r i>
-get i (V f) = f i
+  get :: forall <d :: Int -> Bool, r :: Int -> a -> Bool>
+            i:Int<d> -> Vec<d, r> a -> a<r i>
+  get i (V f) = f i
 \end{code}
 %
 The signature states that for any domain @d@ and range @r@,
@@ -235,17 +235,17 @@ a given index, is even more interesting, as it allows us to
 \emph{extend} the domain of the vector:
 %
 \begin{code}
-set :: forall <d :: Int -> Bool, r :: Int -> a -> Bool>
-          i:Int<d>
-       -> a<r i>
-       -> Vec<d && {\k -> k != i}, r> a
-       -> Vec<d, r> a
-set i v (V f) = V (\k -> if k == i then v else f k)
+  set :: forall <d :: Int -> Bool, r :: Int -> a -> Bool>
+         i:Int<d>
+      -> a<r i>
+      -> Vec<d && {\k -> k != i}, r> a
+      -> Vec<d, r> a
+  set i v (V f) = V (\k -> if k == i then v else f k)
 \end{code}
 %
 The signature for @set@ requires that 
 (a)~the input vector is defined everywhere at @d@ \emph{except}
-the index @i@, and 
+the index @i@ and 
 (b)~the value supplied must be of type @a<r i>@, \ie satisfy the range 
 relation at the index @i@ at which the vector is being updated.
 The signature ensures that the output vector is defined at
@@ -261,21 +261,21 @@ subtype of that required by (a).
 a value given by some function.
 %
 \begin{code}
-initialize :: forall <r :: Int -> a -> Bool>.
-              (z: Int -> a<r z>) 
-           -> i: {v: Int | v >= 0} 
-           -> n: Int 
-           -> Vec <{\v -> 0 <= v && v < i}, r> a 
-           -> Vec <{\v -> 0 <= v && v < n}, r> a 
+  initialize :: forall <r :: Int -> a -> Bool>.
+                (z: Int -> a<r z>) 
+             -> i: {v: Int | v >= 0} 
+             -> n: Int 
+             -> Vec <{\v -> 0 <= v && v < i}, r> a 
+             -> Vec <{\v -> 0 <= v && v < n}, r> a 
 
-initialize f i n a 
-  | i >= n    = a
-  | otherwise = initialize f (i+1) n (set i (f i) a)
+  initialize f i n a 
+    | i >= n    = a
+    | otherwise = initialize f (i+1) n (set i (f i) a)
 \end{code}
 %
 The signature requires that 
 (a)~the higher-order function @f@ produces values that satisfy 
-the range refinement @r@, and 
+the range refinement @r@ and 
 (b)~the vector is initialized from @0@ to @i@.
 %
 The function ensures that the output vector is initialized from @0@
@@ -284,8 +284,8 @@ through @n@.
 We can thus verify that
 %
 \begin{code}
-idVec  :: Vec <{\v -> 0<=v && v<n}, {\i v -> v=i}> Int
-idVec n = initialize (\i -> i) 0 n empty
+  idVec   :: Vec <{\v -> 0<=v && v<n}, {\i v -> v=i}> Int
+  idVec n = initialize (\i -> i) 0 n empty
 \end{code}
 %
 \ie @idVec@ returns a vector of size @n@ where each
@@ -302,8 +302,8 @@ represented as @Char@ vectors for ease of exposition.
 Formally, a null-terminated string of size @n@ has the type
 %
 \begin{code}
-type NullTerm n 
-  = Vec <{\v -> 0<=v<n}, {\i v -> i=n-1 => v='\0'}> Char
+  type NullTerm n 
+    = Vec <{\v -> 0<=v<n}, {\i v -> i=n-1 => v='\0'}> Char
 \end{code}
 %%Vec <{\v -> 0 <= v && v < n},
 %%     {\i v -> i = n - 1 => v = '\0'}>
@@ -329,11 +329,12 @@ uppercasing each one until it encounters the null terminator:
 %               then s
 %               else ucs (i + 1) (set i (toUpper c) s)
 \begin{code}
-upperCase :: n:{v: Int| v>0} -> NullTerm n -> NullTerm n
-upperCase n s = ucs 0 s where
-  ucs i s = case get i s of
-              '\0' -> s
-              c    -> ucs (i + 1) (set i (toUpper c) s)
+  upperCase :: n:{v: Int| v>0} -> NullTerm n -> NullTerm n
+  upperCase n s = ucs 0 s 
+    where
+      ucs i s = case get i s of
+                  '\0' -> s
+                  c    -> ucs (i + 1) (set i (toUpper c) s)
 \end{code}
 %
 Note that the length parameter @n@ is provided solely as a ``witness''
@@ -373,18 +374,18 @@ definition of the Fibonacci function via an uninterpreted function
 @fib@ and an axiom:
 %
 \begin{code}
-measure fib :: Int -> Int
-axiom: forall i. fib(i) = i<=1 ? 1 : fib(i-1) + fib(i-2)
+  measure fib :: Int -> Int
+  axiom: forall i. (fib i) = if i <= 1 then 1 else fib (i-1) + fib (i-2)
 \end{code}
 %axiom_fib :: i:Int -> {v: Bool | (? v) <=> (fib(i) = i <= 1 ? 1 : fib(i-1) + fib(i-2))}
 %
 Next, we define a type alias @FibV@ for the vector 
-whose values are either @0@ (\ie undefined), or 
+whose values are either @0@ (\ie undefined) or 
 equal to the Fibonacci number of the corresponding index. 
 %(We use @Int@ instead of @Maybe Int@ as the domain for brevity.)
 %
 \begin{code}
-type FibV = Vec<{\_->True},{\i v-> v!=0 => v=fib(i)}> Int 
+  type FibV = Vec<{\_->True},{\i v-> v != 0 => v = fib i}> Int 
 \end{code}
 %
 Finally, we can use the above alias to verify @fastFib@, 
@@ -392,19 +393,19 @@ an implementation of the Fibonacci function, which uses
 a vector memoize intermediate results 
 %
 \begin{code}
-fastFib :: n:Int -> {v:Int | v = fib(n)}
-fastFib n = snd $ fibMemo (create 0) n
+  fastFib   :: n:Int -> {v:Int | v = fib(n)}
+  fastFib n = snd $ fibMemo (create 0) n
 
-fibMemo :: FibV -> i:Int -> (FibV, {v: Int | v = fib(i)})   
-fibMemo t i 
-  | i <= 1    = (t, 1)
-  | otherwise = case get i t of   
-                  0 -> let (t1, n1) = fibMemo t  (i-1)
-                           (t2, n2) = fibMemo t1 (i-2)
-                           n        = n1 + n2 
-                       in  (set i n t2,  n)
-                  n -> (t, n)
-\end{code}
+  fibMemo :: FibV -> i:Int -> (FibV, {v: Int | v = fib(i)})   
+  fibMemo t i 
+    | i <= 1    = (t, 1)
+    | otherwise = case get i t of   
+                    0 -> let (t1, n1) = fibMemo t  (i-1)
+                             (t2, n2) = fibMemo t1 (i-2)
+                             n        = n1 + n2 
+                         in  (set i n t2,  n)
+                    n -> (t, n)
+\end{code} %$ 
 %
 %% axiom_fib :: i:Int -> {v: Bool | (? v) <=> (fib(i) = i <= 1 ? 1 : fib(i-1) + fib(i-2))}
 %%
@@ -429,15 +430,15 @@ a variety of precise invariants.
 
 \subsection{Recursive Invariants}\label{sec:overview:rec}
 
-Next, we turn our attention to recursively defined datatypes, and show 
+Next, we turn our attention to recursively defined datatypes and show 
 how abstract refinements allow us to specify and verify high-level
 invariants that relate the elements of a recursive structure.
 Consider the following refined definition for lists:
 %
 \begin{code}
-data [a] <p :: a -> a -> Bool> where
-  []  :: [a]<p>
-  (:) :: h:a -> [a<p h>]<p> -> [a]<p>
+  data [a] <p :: a -> a -> Bool> where
+    []  :: [a]<p>
+    (:) :: h:a -> [a<p h>]<p> -> [a]<p>
 \end{code}
 %data List <p :: a -> a -> Bool> a where
 %  Nil  :: List<p> a 
@@ -461,9 +462,9 @@ Thus, by plugging in appropriate concrete refinements,
 we can define the following aliases, which correspond 
 to the informal notions implied by their names:
 \begin{code}
-type IncrList a = [a]<{\h v -> h <= v}>
-type DecrList a = [a]<{\h v -> h >= v}>
-type UniqList a = [a]<{\h v -> h != v}>
+  type IncrList a = [a]<{\h v -> h <= v}>
+  type DecrList a = [a]<{\h v -> h >= v}>
+  type UniqList a = [a]<{\h v -> h != v}>
 \end{code}
 %%
 %\begin{code}
@@ -473,14 +474,14 @@ type UniqList a = [a]<{\h v -> h != v}>
 %\end{code}
 %
 That is, @IncrList a@ (resp. @DecrList a@) describes a list sorted
-in increasing (resp. decreasing) order, and @UniqList a@ describes
+in increasing (resp. decreasing) order and @UniqList a@ describes
 a list of \emph{distinct} elements, \ie not containing any duplicates.
 We can use the above definitions to verify
 %
 \begin{code}
-[1, 2, 3, 4] :: IncrList Int
-[4, 3, 2, 1] :: DecrList Int
-[4, 1, 3, 2] :: UniqList Int
+  [1, 2, 3, 4] :: IncrList Int
+  [4, 3, 2, 1] :: DecrList Int
+  [4, 1, 3, 2] :: UniqList Int
 \end{code}
 %
 %
@@ -499,15 +500,15 @@ More interestingly, we can verify that the usual algorithms
 produce sorted lists:
 %
 \begin{code}
-insertSort :: (Ord a) => [a] -> IncrList a 
-insertSort []     = []
-insertSort (x:xs) = insert x (insertSort xs) 
-
-insert :: (Ord a) => a -> IncrList a -> IncrList a 
-insert y []       = [y]
-insert y (x:xs) 
-  | y <= x        = y : x : xs
-  | otherwise     = x : insert y xs
+  insertSort :: (Ord a) => [a] -> IncrList a 
+  insertSort []     = []
+  insertSort (x:xs) = insert x (insertSort xs) 
+  
+  insert :: (Ord a) => a -> IncrList a -> IncrList a 
+  insert y []       = [y]
+  insert y (x:xs) 
+    | y <= x        = y : x : xs
+    | otherwise     = x : insert y xs
 \end{code}
 %
 %insertSort        :: (Ord a) => List a -> IncList a 
@@ -538,12 +539,12 @@ For example, consider the following refined version of a type used
 to encode functional maps (\ttcode{Data.Map}):
 %
 \begin{code}
-data Tree k v <l :: k->k->Bool, r :: k->k->Bool>
-  = Bin { key   :: k
-        , value :: v 
-        , left  :: Tree <l, r> (k <l key>) v 
-        , right :: Tree <l, r> (k <r key>) v }
-  | Tip
+  data Tree k v <l :: k -> k -> Bool, r :: k -> k -> Bool>
+    = Bin { key   :: k
+          , value :: v 
+          , left  :: Tree <l, r> (k <l key>) v 
+          , right :: Tree <l, r> (k <r key>) v }
+    | Tip
 \end{code}
 %
 The abstract refinements \ttcode{l} and \ttcode{r} relate each \ttcode{key}
@@ -553,9 +554,9 @@ subtrees of \ttcode{key}, as those keys are respectively of type
 %
 Thus, if we instantiate the refinements with the following predicates
 \begin{code}
-type BST k v     = Tree<{\x y -> x> y},{\x y-> x< y}> k v
-type MinHeap k v = Tree<{\x y -> x<=y},{\x y-> x<=y}> k v
-type MaxHeap k v = Tree<{\x y -> x>=y},{\x y-> x>=y}> k v
+  type BST k v     = Tree<{\x y -> x> y},{\x y-> x< y}> k v
+  type MinHeap k v = Tree<{\x y -> x<=y},{\x y-> x<=y}> k v
+  type MaxHeap k v = Tree<{\x y -> x>=y},{\x y-> x>=y}> k v
 \end{code}
 then @BST k v@, @MinHeap k v@ and @MaxHeap k v@ 
 denote exactly binary-search-ordered, min-heap-ordered, and
@@ -575,24 +576,24 @@ lists within the refinement logic. To do so, we define a special
 \ttcode{len} measure by structural induction
 %
 \begin{code}
-measure len :: [a] -> Int 
-len []      = 0 
-len (x:xs)  = 1 + len(xs)
+  measure len :: [a] -> Int 
+  len []      = 0 
+  len (x:xs)  = 1 + len(xs)
 \end{code}
 %
 We use the measures to automatically strengthen the 
-types of the data constructors\cite{LiquidPLDI09}:
+types of the data constructors~\ref{sec:measures}:
 %
 \begin{code}
-data [a] where 
-  []  :: forall a.{v:[a] | len(v) = 0}
-  (:) :: forall a.a -> xs:[a] -> {v:[a]|len(v)=1+len(xs)}
+  data [a] where 
+    []  :: {v:[a] | len v = 0}
+    (:) :: a -> xs:[a] -> {v:[a]| len v = 1 + len xs}
 \end{code}
 %
 Note that the symbol \ttcode{len} is encoded as an \emph{uninterpreted}
 function in the refinement logic, and is, except for the congruence axiom,
 opaque to the SMT solver. The measures are guaranteed, by construction, 
-to terminate, and so we can soundly use them as uninterpreted 
+to terminate and so we can soundly use them as uninterpreted 
 functions in the refinement logic. Notice also, that we can define 
 \emph{multiple} measures for a type; in this case we simply conjoin 
 the refinements from each measure when refining each data constructor.
@@ -602,15 +603,15 @@ that @append@ produces a list whose length is the sum of the input lists'
 lengths:
 %
 \begin{code}
-append :: l:[a] -> m:[a] -> {v:[a]|len(v)=len(l)+len(m)}
-append []     zs = zs
-append (y:ys) zs = y : append ys zs
+  append :: l:[a] -> m:[a] -> {v:[a]| len v = len l + len m}
+  append []     zs = zs
+  append (y:ys) zs = y : append ys zs
 \end{code}
 %
 However, consider an alternate definition of @append@ that uses @foldr@
 %
 \begin{code}
-append ys zs = foldr (:) zs ys 
+  append ys zs = foldr (:) zs ys 
 \end{code}
 %
 where @foldr :: (a -> b -> b) -> b -> [a] -> b@.
@@ -627,13 +628,13 @@ whilst remaining firmly within the boundaries of SMT-based
 decidability. We write a slightly modified fold:
 %
 \begin{code}
-foldr :: forall <p :: [a] -> b -> Bool>. 
-             (xs:[a] -> x:a -> b <p xs> -> <p (x:xs)>) 
-          -> b<p []> 
-          -> ys:[a]
-          -> b<p ys>
-foldr op b []     = b
-foldr op b (x:xs) = op xs x (foldr op b xs) 
+  foldr :: forall <p :: [a] -> b -> Bool>. 
+           (xs:[a] -> x:a -> b <p xs> -> <p (x:xs)>) 
+        -> b<p []> 
+        -> ys:[a]
+        -> b<p ys>
+  foldr op b []     = b
+  foldr op b (x:xs) = op xs x (foldr op b xs) 
 \end{code}
 %
 The trick is simply to quantify over the relationship @p@
@@ -660,11 +661,11 @@ for the above @foldr@ to verify various inductive properties
 of client functions:
 %
 \begin{code}
-length :: zs:[a] -> {v: Int | v = len(zs)}
-length = foldr (\_ _ n -> n + 1) 0
+  length :: zs:[a] -> {v: Int | v = len zs}
+  length = foldr (\_ _ n -> n + 1) 0
 
-append :: l:[a] -> m:[a] -> {v:[a]| len(v)=len(l)+len(m)}
-append ys zs = foldr (\_ -> (:)) zs ys 
+  append :: l:[a] -> m:[a] -> {v:[a]| len v = len l + len m}
+  append ys zs = foldr (\_ -> (:)) zs ys 
 \end{code}
 %
 The verification proceeds by just (automatically) instantiating the 
@@ -672,8 +673,8 @@ refinement parameter \ttcode{p} of \ttcode{foldr} with the concrete
 refinements, via Liquid typing:
 %
 \begin{code}
-{\xs v -> v = len(xs)}                 -- for length
-{\xs v -> len(v) = len(xs) + len(zs)}  -- for append
+  {\xs v -> v = len xs}                 -- for length
+  {\xs v -> len v = len xs + len zs}    -- for append
 \end{code}
 
 %%This concludes a tour of the many kinds of expressive specifications

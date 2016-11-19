@@ -305,3 +305,70 @@ checking and abstract interpretation~\cite{LiquidPLDI08}
 which makes the tool predictable and the overall workflow
 scale to the verification of large, real-world
 code bases.
+
+\section{Abstract Refinement Types}\label{sec:related}
+
+The notion of type refinements was introduced by Freeman and
+Pfenning~\cite{FreemanPfenning91}, with refinements limited to
+restrictions on the structure of algebraic datatypes, for which
+inference is decidable.
+%
+Our present notion of refinement types has its roots in the
+\emph{indexed types} of Xi and Pfenning~\cite{pfenningxi98}, wherein
+data types' ranges are restricted by \emph{indices}, analogous to our
+refinement predicates, drawn from a decidable domain; in the example
+case explored by Xi and Pfenning, types were indexed by terms from
+Presburger arithmetic.
+%
+Since then, several approaches to developing richer refinement type
+systems and accompanying methods for type checking have been
+developed.
+%
+Knowles and Flanagan~\cite{Knowles10} allow refinement predicates to
+be arbitrary terms of the language being typechecked and present a
+technique for deciding some typing obligations statically and
+deferring others to runtime.
+%; Gronksi \etal~\cite{Gronski06} present animplementation of such a system.
+%
+Findler and Felleisen's~\cite{Findler02} higher-order contracts, which
+extend Eiffel's~\cite{MeyerBook} first-order contracts --- ordinary
+program predicates acting as dynamic pre- and post-conditions --- to
+the setting of higher-order programs, eschew any form of static
+checking, and can be seen as a dynamically-checked refinement type
+system.
+%
+Bengtson \etal~\cite{GordonTOPLAS2011} present a refinement type
+system in which type refinements are drawn from a decidable logic,
+making static type checking tractable.
+%
+Greenberg \etal~\cite{Greenberg11} gives a rigorous treatment of the
+metatheoretic properties of such a refinement type system.
+
+Refinement types have been applied to the verification of a variety of
+program properties~\cite{pfenningxi98,Dunfield,GordonTOPLAS2011,FournetCCS11}.
+%
+In the most closely related work to our own, Kawaguchi \etal~\cite{LiquidPLDI09} 
+introduce \emph{recursive} and \emph{polymorphic} refinements for data
+structure properties.
+%
+The present work unifies and generalizes these two somewhat ad-hoc notions 
+into a single, strictly and significantly more expressive mechanism of
+abstract refinements.
+
+%  Higher-order logics: Coq/HTT/F*/Agda which have explicit predicates, quantification 
+A number of higher-order logics and corresponding verification tools
+have been developed for reasoning about programs.
+%
+Example of systems of this type include NuPRL \cite{Constable86},
+%F$_{<:}$ \cite{Cardelli91},
+Coq \cite{coq-book}, F$^\star$ \cite{SwamyCFSBY11} and Agda \cite{norell07}
+which support the development and verification of higher-order, 
+pure functional programs.
+%
+While these systems are highly expressive, their expressiveness comes at the
+cost of making logical validity checking undecidable.
+%
+To help automate validity checking, both built-in and user-provided
+tactics are used to attempt to discharge proof obligations; however,
+the user is ultimately responsible for manually proving any
+obligations which the tactics are unable to discharge.

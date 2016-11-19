@@ -1,19 +1,10 @@
 \section{Evaluation}\label{sec:experiments}
 
-%%1. Toy                          = toy examples from overview
-%%2. Array                        = pat's array thing
-%%3. FibMemo                      = toy-fibMemo from overview
-%%4. NullTerm                     = pat claims to be working on this, TBD
-%%5. Folds                        = ex0.hs + ex1.hs and suchlink
-%%6. tests/pos/ListSort.hs
-%%7. tests/pos/GhcListSort.hs
-%%8. containers/Data/Map/Base.hs
-%%9. llrb/Data/Set/Splay.hs (?)
-
 \input{text/abstractrefinements/numbers}
 
 \begin{table}[t!]
 \centering
+% \captionsetup{justification=centering}
 \begin{tabular}{lrrrrr}
 \hline
 \textbf{Program}& \textbf{LOC} & \textbf{Specs} & \textbf{Annot} &  \textbf{Time (s)} \\ 
@@ -27,7 +18,7 @@
 \hline
 \textbf{Total}  & \locTot   & \specTot   & \annTot   &  \timeTot     \\
 \end{tabular}
-\caption{ 
+\caption[A quantitative evaluation of Abstract Refinements.]{ 
 \textbf{(LOC)} is the number of non-comment Haskell source code lines as reported by \textit{sloccount},
 %
 \textbf{(Specs)} is the number of lines of type specifications,
@@ -41,11 +32,16 @@ datatype definitions, type aliases and measures, required for verification,
 \end{table}
 
 In this section, we empirically evaluate the expressiveness and
-usability of abstract refinement types by exploring the process of
-typechecking a set of challenging benchmark programs using a prototype
-type checker for Haskell. (We defer the task of extending the metatheory
-to a call-by-name calculus to future work.)
+usability of abstract refinement types by 
+implementing abstract refinement in \toolname 
+as uninterpreted functions.
+%
+We use \toolname to 
+typecheck a set of challenging benchmark programs.
+%
+(We defer the task of extending the metatheory to a call-by-name calculus to future work).
 
+\begin{comment}
 \mypara{\toolname} We have implemented abstract refinement 
 in \toolname, a refinement type checker for Haskell.
 \toolname verifies Haskell source one module (.hs file) at a time. 
@@ -123,6 +119,7 @@ If so, the program is reported to be \emph{safe}.
 Otherwise, each unsatisfiable constraint is mapped back to the
 corresponding program source location that generated it and a
 potential error is reported at that line in the program.
+\end{comment}
 
 \mypara{Benchmarks}
 We have evaluated \toolname over the following list of benchmarks
@@ -231,34 +228,34 @@ Fortunately, refinements suffice to encode such properties.
 First, we define measures
 %
 \begin{code}
-measure isJust     :: Maybe a -> Bool 
-isJust (Just x)    = true
-isJust (Nothing)   = false
+  measure isJust     :: Maybe a -> Bool 
+  isJust (Just x)    = true
+  isJust (Nothing)   = false
 
-measure fromJust   :: Maybe a -> a 
-fromJustS (Just x) = x 
+  measure fromJust   :: Maybe a -> a 
+  fromJustS (Just x) = x 
 
-measure isBin       :: Tree k v -> Bool
-isBin (Bin _ _ _ _) = true
-isBin (Tip)         = false
+  measure isBin       :: Tree k v -> Bool
+  isBin (Bin _ _ _ _) = true
+  isBin (Tip)         = false
 
-measure key :: Tree k v -> k 
-key (Bin k _ _ _)   = k 
+  measure key :: Tree k v -> k 
+  key (Bin k _ _ _)   = k 
 \end{code}
 %
 which respectively embed the @Maybe@ and @Tree@ root value into the
 refinement logic, after which we can type the @trim@ function as
 \begin{code}
-trim :: (Ord k) => blo:Maybe k 
-                -> bhi:Maybe k 
-                -> BST k a 
-                -> {v:BST k a | bound(blo, v, bhi)}
+  trim :: (Ord k) => blo:Maybe k 
+                  -> bhi:Maybe k 
+                  -> BST k a 
+                  -> {v:BST k a | bound(blo, v, bhi)}
 \end{code}
 where @bound@ is simply a refinement alias
 \begin{code}
-refinement bound(lo, v, hi) 
-  =  isBin(v) => isJust(lo) => fromJust(lo) < key(v) 
-  && isBin(v) => isJust(hi) => fromJust(hi) > key(v)
+  refinement bound(lo, v, hi) 
+    =  isBin(v) => isJust(lo) => fromJust(lo) < key(v) 
+    &&  isBin(v) => isJust(hi) => fromJust(hi) > key(v)
 \end{code}
 That is, the output refinement states that the root is appropriately 
 lower- and upper- bounded if the relevant terms are defined. 
@@ -280,17 +277,18 @@ We address this with a special @append@ parameterized on @pivot@
 %append :: k:a -> IncList {v:a|v < k} -> IncList {v:a|v > k} 
 %       -> IncList a
 \begin{code}
-append :: pivot:a                    
-       -> IncrList {v:a | v < pivot}  
-       -> IncrList {v:a | v > pivot}  
-       -> IncrList a              
-append pivot [] ys     = pivot : ys
-append pivot (x:xs) ys = x : append pivot xs ys
+  append :: pivot:a                    
+         -> IncrList {v:a | v < pivot}  
+         -> IncrList {v:a | v > pivot}  
+         -> IncrList a              
+  append pivot [] ys     = pivot : ys
+  append pivot (x:xs) ys = x : append pivot xs ys
 \end{code}
 %%after which \toolname infers that
 %%$$\centering\begin{tabular}{c}\begin{code}
 %%\end{code}\end{tabular}$$
 %thereby proving @quickSort@ returns a sorted list.
+
 
 %\mypara{Challenges for Future Work}
 %\subsection{Challenges}

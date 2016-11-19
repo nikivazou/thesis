@@ -1,16 +1,5 @@
-\newcommand\etal{et al.}
 \section{Related Work}\label{sec:related}
 
-% comparison
-%                decidability      | expressiveness             | annotation burden
-% -------------------------------------------------------------------------------------------
-% abstract ref | SMT FOL           | encode notion of functions | only specifications
-% liquid       |  -||-             | no functions in ref        |  -||-
-% refinements  | depends on domain | arbitraty refinements      | manually annotate 
-% HOL          | NO                | -||-                       | interactive proofs tactics
-% dyn constact | on run time       | -||-                       | only specifications
-%
-% refinement types
 The notion of type refinements was introduced by Freeman and
 Pfenning~\cite{FreemanPfenning91}, with refinements limited to
 restrictions on the structure of algebraic datatypes, for which
@@ -50,41 +39,13 @@ metatheoretic properties of such a refinement type system.
 Refinement types have been applied to the verification of a variety of
 program properties~\cite{pfenningxi98,Dunfield,GordonTOPLAS2011,FournetCCS11}.
 %
-%Xi and Pfenning~\cite{pfenningxi98} show that refinement types
-%can be used to show the absence of array bounds violations in a number of 
-%higher-order ML programs.
-%%
-%Dunfield~\cite{Dunfield} shows that refinement types can be used to verify
-%the correctness of data structure implementations.
-%%; he shows, for example, that an implementation of red-black tree operations
-%%maintains the required color invariant. 
-%%
-%Bengtson \etal~\cite{GordonTOPLAS2011} use refinement types to show
-%correctness of cryptographic protocol implementations.
-%%
-%In each of the preceding works, the verification was done by manually
-%annotating each function in the program with refinement types, with
-%annotation burdens of upwards of 10\% of the total lines of source
-%code, compared to \pmr{cite a number?} in the present work.
-%%
-%\pmr{Although, note, we can't directly compare because we didn't do
-%the same benchmarks, so we'd have to note that.}
-%%
 In the most closely related work to our own, Kawaguchi \etal~\cite{LiquidPLDI09} 
 introduce \emph{recursive} and \emph{polymorphic} refinements for data
 structure properties.
-%in combination with Liquid type
-%inference, use these constructs to automatically verify a number of
-%data structure properties.
 %
 The present work unifies and generalizes these two somewhat ad-hoc notions 
 into a single, strictly and significantly more expressive mechanism of
 abstract refinements.
-%which is strictly more expressive
-%than the previously-presented combination recursive refinements and
-%polymorphic refinements: as just one example, the @maximum@ example of
-%\S~\ref{sec:overview} cannot be verified with the prior approach, nor
-%can many other examples shown in this work.
 
 %  Higher-order logics: Coq/HTT/F*/Agda which have explicit predicates, quantification 
 A number of higher-order logics and corresponding verification tools

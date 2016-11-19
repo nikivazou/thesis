@@ -1,1 +1,25 @@
 \todonum{intro}
+
+Refinement types offer an automatic means 
+of verifying semantic properties of programs, 
+by decorating types with predicates from logics 
+efficiently decidable by modern SMT solvers.
+For example, the refinement type 
+@{v: Int | v > 0}@
+denotes the basic type \ttcode{Int} refined with a logical
+predicate over the ``value variable" \ttcode{v}.
+This type corresponds to the set of \ttcode{Int} values 
+\ttcode{v} which additionally satisfy the logical predicate, 
+\ie the set of positive integers.  
+The (dependent) function type 
+@x:{v:Int| v > 0} -> {v:Int| v < x}@
+describes functions that take a positive argument 
+\ttcode{x} and return an integer less than \ttcode{x}.
+%
+Refinement type checking reduces to \emph{subtyping} queries 
+of the form ${\cstr{\Gamma}{\valu}{\tau}{p}{\tau}{q}}$,
+where $p$ and $q$ are refinement predicates. 
+These subtyping queries reduce to logical \emph{validity} 
+queries of the form
+${\dbrkts{\Gamma} \wedge p \Rightarrow q}$, which can be 
+automatically discharged using SMT solvers~\cite{z3}. 

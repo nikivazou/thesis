@@ -1,4 +1,6 @@
-\begin{figure}[ht!]
+\begin{figure}[p]
+\centering
+\captionsetup{justification=centering}
 \judgementHead{Well-Formedness}{\isWellFormed{\Gamma}{\sigma}}
 
 $$\begin{array}{ccc}
@@ -16,7 +18,7 @@ $$\begin{array}{ccc}
     {\isWellFormed{\Gamma}{(\areft \wedge \rvapp{\rvar}{e})(\vref)}}
     [\wtRVApp]
 \end{array}$$
-
+%
 $$\inference
     {\hastype{\Gamma, \vref:b}{\reft}{\tbbool} \quad 
 %     \isWellFormed{\Gamma, \vref:b}{\areft(\vref)}
@@ -25,7 +27,7 @@ $$\inference
     {\isWellFormed{\Gamma}{\tpref{b}{\areft}{\reft}}}
     [\wtBase]
 $$
-
+%
 $$
 \inference
     {
@@ -37,7 +39,7 @@ $$
     {\isWellFormed{\Gamma}{\trfun{x}{\tau_x}{\tau}{\reft}}}
     [\wtFun]
 $$
-
+%
 $$\begin{array}{ccc}
 \inference
   {\isWellFormed{\Gamma, \rvar:\tau}{\sigma}}
@@ -61,7 +63,7 @@ $$
    {\isSubType{\Gamma}{\tpref{b}{\areft_1}{\reft_1}}{\tpref{b}{\areft_2}{\reft_2}}}
    [\tsubBase]
 $$
-
+%
 $$
 \inference
    {%\text{Valid}(\inter{\Gamma}\land \inter{e_1} \Rightarrow \inter{e_2}) \\
@@ -73,8 +75,7 @@ $$
 	  {\trfun{x_2}{\tau_2}{\tau_2'}{\true}}
 }[\tsubFun]
 $$
-
-
+%
 $$
 \begin{array}{ccc}
 \inference
@@ -93,76 +94,58 @@ $$
 
 \medskip \judgementHead{Type Checking}{$\hastype{\Gamma}{e}{\sigma}$}
 
-$$\begin{array}{cc}
-
-\inference
+$$\inference
   {  \hastype{\Gamma}{e}{\sigma_2} && \isSubType{\Gamma}{\sigma_2}{\sigma_1} 
   && \isWellFormed{\Gamma}{\sigma_1}
   }
   {\hastype{\Gamma}{e}{\sigma_1}}
   [\tsub]
-&
-
+\quad
 \inference
   {}
   {\hastype{\Gamma}{c}{\tc{c}}}
   [\tconst]
-
-%\end{array}$$
-%$$\begin{array}{ccc}
-
-\\[0.2in]
-
+$$
+$$
 \inference
   {x: \tpref{b}{\areft}{\reft} \in \Gamma}
   {\hastype{\Gamma}{x}{\tpref{b}{\areft}{e \land \vref = x}}}
   [\tbase]
-
-&
-
+\quad
 \inference
   {x:\tau \in \Gamma}
   {\hastype{\Gamma}{x}{\tau}} 
   [\tvariable]
-%\end{array}$$
-%$$\begin{array}{ccc}
-
-\\[0.2in]
-
+$$
+$$
 \inference
    {\hastype{\Gamma, x:\tau_x}{e}{\tau} 
     && \isWellFormed{\Gamma}{\tau_x}
    }
    {\hastype{\Gamma}{\efunt{x}{\tau_x}{e}}{\tfun{x}{\tau_x}{\tau}}}
    [\tfunction]
-
-& 
-
-\label{tapp}
+\quad
 \inference
    {\hastype{\Gamma}{e_1}{\tfun{x}{\tau_x}{\tau}} 
    &&  \hastype{\Gamma}{e_2}{\tau_x}
    }
    {\hastype{\Gamma}{\eapp{e_1}{e_2}}{\SUBST{\tau}{x}{e_2}}}
    [\tapp]
-
-\\[0.2in]
-
+$$
+$$
 \inference
   {\hastype{\Gamma, \alpha}{e}{\sigma}}
   {\hastype{\Gamma}{\etabs{\alpha}{e}}{\ttabs{\alpha}{\sigma}}}
   [\tgen]
-
-&  
+\quad
 \inference
   {\hastype{\Gamma}{e}{\ttabs{\alpha}{\sigma}} && 
    \isWellFormed{\Gamma}{\tau}
   }
   {\hastype{\Gamma}{\etapp{e}{\tau}}{\SUBST{\sigma}{\alpha}{\tau}}}
   [\tinst]
-
-\\[0.2in]
-
+$$
+$$
 \inference
     {\hastype{\Gamma, \rvar:\tau}{e}{\sigma} &&
      \isWellFormed{\Gamma}{\tau} 
@@ -172,8 +155,7 @@ $$\begin{array}{cc}
     }
     {\hastype{\Gamma}{\epabs{\rvar}{\tau}{e}}{\tpabs{\rvar}{\tau}{\sigma}}}
     [\tpgen]
-&  
-
+\ \
 \inference
     {\hastype{\Gamma}{e}{\tpabs{\rvar}{\tau}{\sigma}} && 
      \hastype{\Gamma}{\efunbar{x:\tau_x}{\reft'}}{\tau}
@@ -184,8 +166,8 @@ $$\begin{array}{cc}
      %        {\sigma\sub{\eapp{p}{\overline{e_p}}}{\eapp{\reft'}{\overline{e_p}}}}
     }
     [\tpinst]
-\end{array}$$
-\caption{\textbf{Static Semantics: Well-formedness, Subtyping and Type Checking}}
+$$
+\caption[Type checking of \corelan.]{Well-formedness, Subtyping and Type Checking of \corelan.}
 \label{fig:rules}
 \end{figure}
 

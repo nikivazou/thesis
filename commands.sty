@@ -1,4 +1,11 @@
 
+
+\newcommand\makequote[2]{
+\setsinglespacing
+{\flushright
+{#1}
+\vskip\baselineskip
+-- \textit{#2}\par}\hspace{30 mm}}
 \usepackage{xcolor}
 \definecolor{green}{rgb}{0,1,0}
 \definecolor{red}{rgb}{1,0,0}
@@ -87,8 +94,8 @@
 \newcommand\SATURN{\textsc{Saturn}\xspace}
 
 \def\pred{\varphi}
-\def\true{\textit{true}}
-\def\false{\textit{false}}
+\def\true{\textit{True}}
+\def\false{\textit{False}}
 
 \newcommand{\ExpSet}{\mathsf{Exp}}
 \newcommand{\PredSet}{\mathsf{Pred}}

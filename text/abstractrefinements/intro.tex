@@ -1,8 +1,10 @@
-%\lstinline[language=HaskellUlisses]|showsPrec Vec a|
-%@Vec (List a) showsPrec Vec a@
 
-\section{Introduction}\label{sec:intro}
-
+We have presented \toolname, 
+a refinement type checker to Haskell 
+adjusted (using a termination checker)
+to ensure soundness under Haskell's lazy evaluation. 
+%
+\begin{comment}
 Refinement types offer an automatic means 
 of verifying semantic properties of programs, 
 by decorating types with predicates from logics 
@@ -19,22 +21,15 @@ The (dependent) function type
 describes functions that take a positive argument 
 \ttcode{x} and return an integer less than \ttcode{x}.
 %
-Refinement type checking reduces to \emph{subtyping} queries 
+\end{comment}
+Following standard refinement typing, \toolname reduces
+refinement type checking to \emph{subtyping} queries 
 of the form ${\cstr{\Gamma}{\valu}{\tau}{p}{\tau}{q}}$,
 where $p$ and $q$ are refinement predicates. 
 These subtyping queries reduce to logical \emph{validity} 
 queries of the form
 ${\dbrkts{\Gamma} \wedge p \Rightarrow q}$, which can be 
 automatically discharged using SMT solvers~\cite{z3}. 
- 
-Several groups have shown how refinement types 
-can be used to verify properties ranging from partial 
-correctness concerns like array bounds 
-checking~\cite{pfenningxi98,LiquidPLDI08} and data structure
-invariants~\cite{LiquidPLDI09} to the correctness of security
-protocols~\cite{GordonTOPLAS2011}, web applications 
-\cite{SwamyOAKLAND11} and implementations of cryptographic 
-protocols~\cite{FournetCCS11}. 
 
 Unfortunately, the automatic verification 
 %% (\ie automatic type \emph{checking} not inference)
@@ -48,14 +43,14 @@ following higher-order for-loop where @set i x v@ returns
 the vector @v@ updated at index @i@ with the value @x@. 
 
 \begin{code}
-     for :: Int -> Int -> a -> (Int -> a -> a) -> a
-     for lo hi x body      = loop lo x 
-       where loop i x 
-               | i < hi    = loop (i+1) (body i x)
-               | otherwise = x
-     
-     initUpto :: Vec a -> a -> Int -> Vec a 
-     initUpto a x n = for 0 n a (\i -> set i x) 
+  for :: Int -> Int -> a -> (Int -> a -> a) -> a
+  for lo hi x body      = loop lo x 
+    where loop i x 
+            | i < hi    = loop (i+1) (body i x)
+            | otherwise = x
+  
+  initUpto :: Vec a -> a -> Int -> Vec a 
+  initUpto a x n = for 0 n a (\i -> set i x) 
 \end{code}
 
 We would like to 
@@ -72,10 +67,9 @@ of \emph{abstracting} over possible invariants, each of which can
 %
 Higher-order logics like Coq and Agda permit such quantification 
 over invariants. Alas, validity in such logics is well outside the 
-realm of decidability, and hence their use precludes automatic 
-verification. %type checking.
+realm of decidability, precluding automatic verification. 
 
-In this paper, we present \emph{abstract refinement types} 
+In this chapter, we present \emph{abstract refinement types} 
 which enable abstraction (quantification) over the refinements 
 of data- and function-types. Our key insight is that we can 
 preserve SMT-based decidable type checking by encoding 
@@ -83,31 +77,29 @@ abstract refinements as \emph{uninterpreted} propositions
 in the refinement logic. 
 %This insight yields the following contributions.
 This yields several contributions:
-\begin{itemize}
-\item First, we illustrate how abstract refinements yield a variety 
+%
+First, we illustrate how abstract refinements yield a variety 
 of sophisticated means for reasoning about high-level program 
 constructs (\S \ref{sec:overview}), including:
 \emph{parametric} refinements for type classes,
 \emph{index-dependent} refinements for key-value maps,
 \emph{recursive} refinements for data structures, and
 \emph{inductive} refinements for higher-order traversal routines.
-
-\item Second, we demonstrate that type checking remains 
+%
+Second, we demonstrate that type checking remains 
 decidable (\S \ref{sec:check}) by showing a fully automatic
 procedure that uses SMT solvers, or to be precise, 
 decision procedures based on congruence closure~\cite{Nelson81}
 to discharge logical subsumption queries over abstract refinements.
-
-\item Third, we show that the crucial problem of \emph{inferring}
+%
+Third, we show that the crucial problem of \emph{inferring}
 appropriate instantiations for the (abstract) refinement 
 parameters boils down to inferring (non-abstract) refinement
 types (\S \ref{sec:check}), which we have previously automated 
 via the abstract interpretation framework of Liquid Types~\cite{LiquidPLDI08}. 
-
-\item Finally, we have implemented abstract refinements in \toolname, 
-a new Liquid Type-based verifier for Haskell. We present 
-experiments using \toolname to concisely specify and 
+%
+Finally, we have implemented abstract refinements in \toolname.
+We present experiments using \toolname to concisely specify and 
 verify a variety of correctness properties of several 
 programs ranging from microbenchmarks to some widely 
 used libraries (\S \ref{sec:experiments}).
-\end{itemize}

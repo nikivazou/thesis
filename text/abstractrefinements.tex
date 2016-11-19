@@ -1,5 +1,8 @@
 \chapter{Abstract Refinement Types}\label{chapter:abstractrefinements}
-\todonum{abstract refinements}
+\makequote
+{The purpose of abstraction is not to be vague,\\
+but to create a new semantic level in which one can be absolutely precise.}
+{Edsger W. Dijkstra}
 
 
 \renewcommand{\reft}{\ensuremath{e}\xspace}
@@ -17,8 +20,11 @@
 	\mathtt{case}\ #5 = #1\ \mathtt{of}\ \{ #2\ #3 \rightarrow #4\}
 }}
 
+\renewcommand\corelan{$\lambda_{P}$\xspace}
+
 
 \input{text/abstractrefinements/intro}
 \input{text/abstractrefinements/overview}
 \input{text/abstractrefinements/typechecking}
 \input{text/abstractrefinements/experiments}
+\input{text/abstractrefinements/conclusion}
