@@ -1,6 +1,22 @@
 \section{Capability Safe Scripting via \RIO}
 \label{sec:files}\label{subsec:state:files}
-\input{text/boundedrefinements/fsapi}
+
+%% Remove this figure if easy
+\begin{figure}[t]
+\begin{mcode}
+pread, pwrite, plookup, pcontents,
+pcreateD, pcreateF, pcreateFP :: Priv -> Bool
+
+active   :: World -> Set FH 
+caps     :: World -> Map FH Priv
+
+pset p h = \w -> p (select (caps w) h) && 
+                 h $\in$ active w
+\end{mcode}
+\caption{Privilege Specification.}
+\label{fig:fstypes} 
+\end{figure}
+
 %%%%\input{copycode}
 %%%%\input{findcode}
 

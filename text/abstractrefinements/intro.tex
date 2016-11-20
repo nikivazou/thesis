@@ -78,28 +78,30 @@ in the refinement logic.
 %This insight yields the following contributions.
 This yields several contributions:
 %
-First, we illustrate how abstract refinements yield a variety 
+\begin{itemize}
+\item First, we illustrate how abstract refinements yield a variety 
 of sophisticated means for reasoning about high-level program 
 constructs (\S \ref{sec:overview}), including:
 \emph{parametric} refinements for type classes,
 \emph{index-dependent} refinements for key-value maps,
 \emph{recursive} refinements for data structures, and
 \emph{inductive} refinements for higher-order traversal routines.
-%
-Second, we demonstrate that type checking remains 
+
+\item Second, we demonstrate that type checking remains 
 decidable (\S \ref{sec:check}) by showing a fully automatic
 procedure that uses SMT solvers, or to be precise, 
 decision procedures based on congruence closure~\cite{Nelson81}
 to discharge logical subsumption queries over abstract refinements.
 %
-Third, we show that the crucial problem of \emph{inferring}
+\item Third, we show that the crucial problem of \emph{inferring}
 appropriate instantiations for the (abstract) refinement 
 parameters boils down to inferring (non-abstract) refinement
 types (\S \ref{sec:check}), which we have previously automated 
 via the abstract interpretation framework of Liquid Types~\cite{LiquidPLDI08}. 
 %
-Finally, we have implemented abstract refinements in \toolname.
+\item Finally, we have implemented abstract refinements in \toolname.
 We present experiments using \toolname to concisely specify and 
 verify a variety of correctness properties of several 
 programs ranging from microbenchmarks to some widely 
 used libraries (\S \ref{sec:experiments}).
+\end{itemize}

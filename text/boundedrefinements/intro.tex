@@ -1,5 +1,4 @@
-\section{Introduction} \label{sec:intro}
-
+\begin{comment}
 Must program verifiers always choose between expressiveness
 and automation?
 %
@@ -38,38 +37,33 @@ limit the logical formulas appearing in specification types
 to decidable (typically quantifier free) first order theories,
 thereby precluding \emph{higher-order} specifications that
 are essential for \emph{modular} verification.
+\end{comment}
 
-In this paper, we introduce \emph{Bounded Refinement Types}
-which reconcile expressive higher order specifications
-with automatic SMT based verification. Our approach
-comprises two key ingredients.
+In this chapter we introduce \emph{Bounded Refinement Types} which enable 
+\emph{bounded quantification} over refinements. 
 %
-Our first ingredient is a mechanism, developed by \cite{vazou13},
-for \emph{abstracting} refinements over type signatures.
-This mechanism is the analogue of parametric polymorphism
-in the refinement setting: it increases expressiveness by
-permitting generic signatures that are universally quantified
-over the (concrete) refinements that hold at different
-call-sites.
+Previously (Chapter~\ref{chapter:abstractrefinements}) 
+we developed Abstract Refinement Types, a mechanism
+for quantifying type signatures over abstract refinement parameters.
 %
-However, we observe that for modular verification, we
-additionally need to \emph{constrain} the abstract refinement
-parameters, typically to specify fine grained dependencies
-between the parameters.
+We preserved decidability of checking and inference
+by encoding abstractly refined types with uninterpreted functions
+obeying the decidable axioms of congruence~\cite{NelsonOppen}. 
 %
-Our second ingredient provides a technique
-for enriching function signatures with \emph{subtyping constraints}
-(or \emph{bounds}) between abstract refinements that must be
-satisfied by the concrete refinements at instantiation.
-Thus, constrained abstract refinements are the analogue of bounded
-quantification in the refinement setting and in this paper, we
-show that this simple technique proves to be remarkably effective.
+While useful,
+refinement quantification was not enough to enable higher order abstractions
+requiring fine grained \emph{dependencies between} abstract refinements.
+%
+In this chapter, we solve this problem by enriching signatures
+with bounded quantification. 
+%
+The \emph{bounds} correspond to Horn
+implications between abstract refinements, which, as in the classical
+setting, correspond to subtyping constraints that must be satisfied 
+by the concrete refinements used at any call-site. This
+addition proves to be remarkably effective.
 
-%% We preserved decidability of checking and
-%% inference by encoding abstractly refined
-%% types with uninterpreted functions obeying the
-%% decidable axioms of congruence~\cite{NelsonOppen}.
-
+\NV{HERE}
 \begin{itemize}
 \item
 First, we demonstrate via a series of short examples how bounded refinements
@@ -107,7 +101,7 @@ at a fine-granularity, ensuring that functions only access specified
 resources~(\S~\ref{sec:files}).
 \end{itemize}
 
-We have implemented Bounded Refinement Types in \toolname~\citep{LiquidICFP14}.
+We have implemented Bounded Refinement Types in \toolname.
 The source code of the examples (with slightly more verbose concrete syntax)
 is at \cite{liquidhaskellgithub}.
 %
@@ -122,12 +116,10 @@ and most importantly
 %
 enable retroactive or \emph{gradual} verification as when
 erase the refinements, we get valid programs in the
-host language~(\S~\ref{sec:related}).
+host language.
 %
-%In~(\S~\ref{sec:related}) we further compare this work with dependent type systems.
-%
-Thus, bounded refinements point a way towards keeping our automation, and
-perhaps having expressiveness too.
+Thus, bounded refinements point a way towards 
+both automated and expressive verification. 
 %
 %%% Local Variables:
 %%% mode: latex

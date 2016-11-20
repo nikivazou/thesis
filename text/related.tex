@@ -372,3 +372,150 @@ To help automate validity checking, both built-in and user-provided
 tactics are used to attempt to discharge proof obligations; however,
 the user is ultimately responsible for manually proving any
 obligations which the tactics are unable to discharge.
+
+\section{Bounded Refinement Types}\label{sec:abstractrefinements:related}
+
+\paragraph{Higher order Logics and Dependent Type Systems}
+%
+including
+NuPRL~\citep{Constable86},
+Coq~\citep{coq-book}, Agda~\citep{norell07},
+and even to some extent, \haskell~\citep{JonesVWW06, McBride02},
+occupy the maximal extreme of the expressiveness spectrum.
+However, in these settings, checking requires explicit
+proof terms which can add considerable programmer overhead.
+%
+Our goal is to eliminate the programmer overhead of
+proof construction by restricting specifications to
+decidable, first order logics and to see how far
+we can go without giving up on expressiveness.
+%
+The \fstar system enables full dependent typing via
+SMT solvers via a higher-order universally quantified
+logic that permit specifications similar to ours
+(\eg @compose@, @filter@ and @foldr@).
+%% https://github.com/FStarLang/FStar/
+%
+While this approach is at least as expressive
+as bounded refinements it has two drawbacks.
+%
+First, due to the quantifiers, the generated VCs
+fall outside the SMT decidable theories.
+This renders the type system undecidable (in theory),
+forcing a dependency on the solver's unpredictable
+quantifier instantiation heuristics (in practice).
+%
+Second, more importantly, % perhaps more importantly,
+the higher order
+predicates must be \emph{explicitly} instantiated,
+placing a heavy annotation burden on the programmer.
+%
+In contrast, bounds permit decidable
+checking, and are automatically instantiated
+via Liquid Types.
+
+
+\paragraph{Our notion of Refinement Types}
+%
+has its roots in the predicate subtyping
+of PVS~\cite{Rushby98} and \emph{indexed types}
+(DML~\cite{pfenningxi98}) where types are constrained
+by predicates drawn from a logic.
+%
+To ensure decidable checking several refinement
+type systems including~\citep{pfenningxi98,Dunfield07,LiquidICFP14}
+restrict refinements to decidable, quantifier free logics.
+%
+While this ensures predictable checking and inference~\cite{LiquidPLDI08}
+it severely limits the language of specifications, and makes it hard to
+fashion simple higher order abstractions like @filter@ (let alone the more
+complex ones like relational algebras and state transformers.)
+
+\paragraph{To Reconcile Expressiveness and Decidability}
+%
+\catalyst~\citep{catalyst} permits a form of
+higher order specifications where refinements
+are relations which may themselves be parameterized
+by other relations, which allows for example, a
+way to precisely type @filter@ by suitably
+composing relations.
+%
+However, to ensure decidable checking, \catalyst
+is limited to relations that can be specified as
+catamorphisms over inductive types, precluding
+for example, theories like arithmetic.
+More importantly, (like \fstar), \catalyst provides
+no inference: higher order relations must be
+\emph{explicitly} instantiated.
+%
+Bounded refinements build directly upon
+abstract refinements~\citep{vazou13},
+a form of refinement polymorphism
+analogous to parametric polymorphism.
+%
+While \cite{vazou13} adds expressiveness via
+abstract refinements, without bounds we cannot
+specify any \emph{relationships between} the
+abstract refinements. The addition of bounds
+makes it possible to specify and verify the examples
+shown in this paper,
+while preserving decidability and inference.
+
+\paragraph{Our Relational Algebra Library} builds on a long
+line of work on type safe database access.
+%
+The HaskellDB~\citep{haskellDB}
+showed how phantom types could be used to eliminate
+certain classes of errors.
+%
+Haskell's HList library~\citep{heterogeneous}
+extends this work with type-level computation
+features to encode heterogeneous lists, which
+can be used to encode database schema, and
+(unlike HaskellDB) statically reject accesses
+of ``missing'' fields.
+%
+The HList implementation is non-trivial,
+requiring new type-classes for new operations
+(\eg @append@ing lists); \citep{thepipower}
+shows how a dependently typed language greatly
+simplifies the implementation.
+%
+Much of this simplicity can be recovered in
+Haskell using the @singleton@ library~\citep{Weirich12}.
+%
+Our goal is to show that bounded refinements
+are expressive enough to permit the construction
+of rich abstractions like a relational algebra
+and generic combinators for safe database access
+while using SMT solvers to provide decidable
+checking and inference. Further, unlike the
+HList based approaches, refinements they can
+be used to \emph{retroactively} or \emph{gradually}
+verify safety; if we erase the types we still
+get a valid Haskell program operating over
+homogeneous lists.
+
+
+\paragraph{Our Approach for Verifying Stateful Computations} using monads
+indexed by pre- and post-conditions is inspired by the method of
+Filli\^atre~\citep{Filliatre98}, which was later enriched with
+separation logic in Ynot~\citep{ynot}. In future work it would
+be interesting to use separation logic based refinements to specify
+and verify the complex sharing and aliasing patterns allowed by Ynot.
+%
+\fstar encodes stateful computations in a special Dijkstra
+Monad~\citep{dijkstramonad} that replaces the two assertions with
+a single (weakest-precondition) predicate transformer which
+can be composed across sub-computations to yield a transformer
+for the entire computation.
+%
+Our \RIO approach uses the idea of indexed monads but
+has two concrete advantages.
+%
+First, we show how bounded refinements alone suffice to
+let us fashion the \RIO abstraction from scratch.
+%
+Consequently, second, we automate inference of pre- and
+post-conditions and loop invariants as refinement instantiation
+via Liquid Typing~\citep{LiquidPLDI08}.

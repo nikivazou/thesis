@@ -1,0 +1,319 @@
+\newcommand\ifextended[2]{#2}
+
+
+\renewcommand{\reft}{\ensuremath{e}\xspace}
+\renewcommand\tref[2]{\ensuremath{\left\lbrace \vref : #1\mid #2\right\rbrace}}
+\renewcommand\tref[2]{\ensuremath{\left\lbrace \vref : #1\mid #2\right\rbrace}}
+
+\renewcommand\subt{\preceq}
+\renewcommand\corelan{$\lambda_\downarrow$\xspace}
+\renewcommand\sub[2]{\ensuremath{ \left[ #1 \mapsto #2 \right] }}
+\renewcommand\shape{\ensuremath{\text{shape}}\xspace}
+\renewcommand\tfun[3]{\ensuremath{{(#1:#2)} \rightarrow #3}}
+
+
+\renewcommand\ecase[5]{\ensuremath{
+	\mathtt{case}\ #5 = #1\ \mathtt{of}\ \{ #2\ #3 \rightarrow #4\}
+}}
+
+\renewcommand\corelan{$\lambda_{P}$\xspace}
+
+
+
+\providecommand\eletn[4]{\ensuremath{\nhaskell{let} \ {#1_1 = #2_1, \ldots, #1_{#4} = #2_{#4}} \ \nhaskell{in} \ #3}}
+\providecommand\elett[3]{\ensuremath{\nhaskell{let} \ #1 = #2 \ \nhaskell{in} \ #3}}
+\providecommand\elet[4]{\ensuremath{\nhaskell{let} \ \tbind{#1}{#4} = #2 \ \nhaskell{in} \ #3}}
+\providecommand\eletrec[3]{\ensuremath{\nhaskell{let rec} \ #1 = #2 \ \nhaskell{in} \ #3}}
+\providecommand\ecase[4]{\ensuremath{\nhaskell{case} \ (#1 = #2) \ \nhaskell{of} \ \mid_i  #3 \ \rightarrow \ #4}}
+
+
+\providecommand\txexpr[4]{\ensuremath{ #1; #2 \vdash #3 \rightsquigarrow #4}}
+
+\providecommand\cenv{\ensuremath{\Gamma}\xspace}
+\providecommand\benv{\ensuremath{\Phi}\xspace}
+\providecommand\ctofun[1]{\ensuremath{\mathsf{Const}(#1)}}
+
+\providecommand\closure[4]{\ensuremath{\mathsf{Inst}(#1, #2, #3)}}
+\providecommand\wraplet[2]{\ensuremath{\mathsf{Wrap}(#1, #2)}}
+\providecommand\cands[2]{\ensuremath{\mathsf{Instances}(#1, #2)}}
+
+\providecommand\CONS[2]{#1 : #2}
+\providecommand\NIL{[]}
+\providecommand\EXT[3]{#1,\tbind{#2}{#3}}
+\providecommand\EXTT[3]{#1,{#3}}
+
+
+\providecommand\tologic[2]{\ensuremath{\ulcorner #2 \urcorner^{#1}}}
+
+\providecommand\toshape[1]{\mathsf{Shape}(#1)} 
+
+\providecommand{\hasty}{::}
+\providecommand{\tyvar}{\alpha\xspace}
+\providecommand{\tyvarb}{\beta}
+\providecommand{\rvar}{\pi}
+\providecommand{\tvar}{\alpha}
+\providecommand\rtyp{t}
+%% \providecommand\utyp{t}
+\providecommand\utyp{\tau}
+
+
+\renewcommand\bind{\cc{>>=}}
+\providecommand\tconstraint[2]{\ensuremath{\{ {#1} \} \carrow #2 }}
+\renewcommand\conlan{\ensuremath{\mathrm{F_H}}\xspace}
+\providecommand\boundedletcorelan{$\lambda_{\{\} + \texttt{let}}$\xspace}
+\providecommand\letcorelan{\ensuremath{\lambda_{P +\texttt{let}}}\xspace}
+% \providecommand\boundedcorelan{\ensuremath{\lambda_{\{\}}}\xspace}
+% \providecommand\corelan{\ensuremath{\lambda_{P}}\xspace}
+\providecommand\boundedcorelan{\ensuremath{\lambda_{B}}\xspace}
+
+\renewcommand\corelanm{$\lambda_{LP}$'\xspace}
+
+
+%% Bounded Types
+
+\providecommand\bt{\ensuremath{\rho}}
+
+
+\providecommand\constraint{\ensuremath{\phi}}
+\providecommand\carrow{\ensuremath{\Rightarrow}}
+
+\renewcommand\colon{\ensuremath{\text{:}}}
+
+\providecommand{\dbrkts}[1]{[\![#1]\!]}
+
+\newenvironment{grammar}{\csname align*\endcsname}{\csname endalign*\endcsname}
+\providecommand\grammardef[2]{\ensuremath{#1\ \text{::}&\text{=} && \text{\textit{#2}}}\\}
+\providecommand\grammardefnoalt[3]{\ensuremath{#1\ \text{::}&\text{=} #2 && \text{\textit{#3}}}\\}
+\providecommand\grammardefbare[2]{\ensuremath{#1\ \ & && \text{\textit{#2}}}\\}
+\providecommand\grammaralt[2]{\ensuremath{&\mid #1 && \text{#2}}\\}
+
+
+\providecommand\phide[1]{}
+\providecommand\lhide[1]{}
+\providecommand\hide[1]{}
+
+\providecommand\rulename[1]{\textsc{#1}\xspace}
+
+\providecommand\hastype[3]{\ensuremath{#1 \vdash #2 : #3}}
+\providecommand\eval[2]{\ensuremath{#1 \hookrightarrow #2 }}
+
+\providecommand\rtyp{t}
+%% \providecommand\utyp{t}
+\providecommand\utyp{\tau}
+
+
+%predicate type
+\providecommand\predty{\ensuremath{t}}
+
+
+%basic
+\providecommand\vref{\ensuremath{v}}
+\providecommand\tyDef[1]{\ensuremath{\mathbb{#1}}}
+\providecommand\tyDefArg[2]{\ensuremath{\tyDef{#1}\left(\tyDef{#2}\right)}}
+\providecommand\nhaskell[1]{\mathsf{#1}}
+
+
+%rule names
+
+\providecommand\txCAbs{\rulename{CAbs}}
+\providecommand\txCApp{\rulename{CApp}}
+\providecommand\txFun{\rulename{Fun}}
+\providecommand\txApp{\rulename{App}}
+\providecommand\txLet{\rulename{Let}}
+\providecommand\txVar{\rulename{Var}}
+\providecommand\txCon{\rulename{Con}}
+\providecommand\txTAbs{\rulename{TAbs}}
+\providecommand\txTApp{\rulename{TApp}}
+\providecommand\txPAbs{\rulename{PAbs}}
+\providecommand\txPApp{\rulename{PApp}}
+
+
+\providecommand\wfGammaEmpty{\rulename{Wf-$\Gamma$-Emp}}
+\providecommand\wfGammaNonEmpty{\rulename{Wf-$\Gamma$}}
+\providecommand\tfunction{\rulename{T-Fun}}
+\providecommand\tapp{\rulename{T-App}}
+\providecommand\tsub{\rulename{T-Sub}}
+\providecommand\tpTrue{\rulename{T-True}}
+\providecommand\tpRVApp{\rulename{T-RApp}}
+\providecommand\tconst{\rulename{T-Const}}
+\providecommand\tinst{\rulename{T-Inst}}
+\providecommand\tgen{\rulename{T-Gen}}
+\providecommand\tlet{\rulename{T-Let}}
+\providecommand\tpinst{\rulename{T-PInst}}
+\providecommand\tpgen{\rulename{T-PGen}}
+\providecommand\tcase{\rulename{T-Case}}
+\providecommand\tbase{\rulename{T-Var-Base}}
+\providecommand\tvariable{\rulename{T-Var}}
+
+
+\providecommand\wsEmp{\rulename{WS-Empty}}
+\providecommand\wfBounded{\rulename{WF-Constraint}}
+\providecommand\wsExt{\rulename{WS-Ext}}
+\providecommand\wsGxt{\rulename{WS-Gxt}}
+
+\providecommand\wstEmp{\rulename{WTS-Empty}}
+\providecommand\wstExt{\rulename{WTS-Ext}}
+\providecommand\wstGxt{\rulename{WTS-Gxt}}
+
+\providecommand\wtTrue{\rulename{WF-True}}
+\providecommand\wtRVApp{\rulename{WF-RApp}}
+\providecommand\wtVar{\rulename{WF-Var}}
+\providecommand\wtBase{\rulename{WF-Base}}
+\providecommand\wtFun{\rulename{WF-Fun}}
+\providecommand\wtApp{\rulename{WF-App}}
+\providecommand\wtPred{\rulename{WF-Abs-$\rvar$}}
+\providecommand\wtPoly{\rulename{WF-Abs-$\tvar$}}
+
+\providecommand\tdsubBase{$\subt$\rulename{-Dec-Base}}
+\providecommand\tsubBase {$\subt$\rulename{-Base}}
+\providecommand\tsubFun  {$\subt$\rulename{-Fun}}
+\providecommand\tsubVar  {$\subt$\rulename{-Var}}
+\providecommand\tsubApp  {$\subt$\rulename{-App}}
+\providecommand\tsubClass{$\subt$\rulename{-Class}}
+\providecommand\tsubPred {$\subt$\rulename{-RVar}}
+\providecommand\tsubPoly {$\subt$\rulename{-Poly}}
+
+
+%translation
+
+\providecommand\erase[1]{\ensuremath{\text{erase}(#1)}} 
+
+\providecommand\txex[1]{\ensuremath{\langle\!| #1 |\!\rangle}}
+\providecommand\txbound[1]{\ensuremath{\langle\!| #1 |\!\rangle}}
+\providecommand\txinv[1]{\ensuremath{\langle| #1 |\rangle^{-1}}}
+%%\providecommand\tx[1]{\ensuremath{\text{tx}(#1)}}
+%%\providecommand\txinv[1]{\ensuremath{\text{tx}^{-1}(#1)}}
+\providecommand\isWellFormedH[2]{\ensuremath{\tx{#1} \vdash_H \tx{#2}}}
+\providecommand\isSubTypeH[3]{\ensuremath{\tx{#1} \vdash_H {\tx{#2}} <: {\tx{#3}}}}
+\providecommand\hastypeH[3]{\ensuremath{#1 \vdash_H #2 : #3}}
+
+
+%types
+\providecommand\tconstraint[2]{\ensuremath{\{ {#1} \} \carrow #2 }}
+\providecommand\conlan{\ensuremath{\mathrm{F_H}}\xspace}
+\providecommand\boundedletcorelan{$\lambda_{\{\} + \texttt{let}}$\xspace}
+\providecommand\letcorelan{\ensuremath{\lambda_{P +\texttt{let}}}\xspace}
+% \providecommand\boundedcorelan{\ensuremath{\lambda_{\{\}}}\xspace}
+\renewcommand\corelan{\ensuremath{\lambda_{P}}\xspace}
+\providecommand\boundedcorelan{\ensuremath{\lambda_{B}}\xspace}
+
+\providecommand\corelanm{$\lambda_{LP}$'\xspace}
+
+\providecommand{\creft}{\ensuremath{p}\xspace}
+\providecommand{\reft}{\ensuremath{r}\xspace}
+\providecommand{\areft}{\ensuremath{a}\xspace}
+\providecommand\rvapp[2]{\ensuremath{{#1 \ \overline{#2}}}} 
+\providecommand\tref[2]{\ensuremath{\left\lbrace \vref : #1\mid #2\right\rbrace}}
+% sort trefs to fit in one line
+\providecommand\stref[2]{\ensuremath{\left\lbrace \vref\text{:}#1\mid #2\right\rbrace}}
+\providecommand\sxref[3]{\ensuremath{\left\lbrace #3\text{:}#1\mid #2\right\rbrace}}
+\providecommand{\tpp}[2]{{#1 \langle #2 \rangle}}
+\providecommand\tpref[3]{\tref{\tpp{#1}{#2}}{#3}}
+
+\providecommand\tbint{\ensuremath{\texttt{Int}}\xspace}
+\providecommand\tbbool{\ensuremath{\texttt{Bool}}\xspace}
+\providecommand\tbunit{\ensuremath{\texttt{Unit}}\xspace}
+\providecommand\tc[1]{\ensuremath{tc\left(#1\right)}}
+\providecommand\tfun[3]{\ensuremath{{(#1:#2)} \rightarrow #3}}
+\providecommand\tcfun[2]{\ensuremath{{#1 \rightarrow #2}}}
+\providecommand\ptype[1]{\tcfun{#1}{\tbbool}}
+\providecommand\rpinst[3]{\ensuremath{{#1}[{#3}/{#2}]}}
+\providecommand\rpapply[5]{\ensuremath{\mathsf{Apply}(#1,#2,#3,#4,#5)}}
+
+
+
+\providecommand\trfun[4]{\ensuremath{\tref{\tfun{#1}{#2}{#3}}{#4}}}
+\providecommand\trfuntop[3]{\ensuremath{#1 : #2 \rightarrow #3}}
+\providecommand\tpabs[3]{\ensuremath{\forall #1 : #2 . #3}}
+\providecommand\ttabs[2]{\ensuremath{\forall #1 . #2}}
+
+
+\providecommand\tbool{\tbbool}
+% \providecommand\tvar[2]{\tref{#1}{#2}}
+\providecommand\tcon[4]{\ensuremath{\tref{\nhaskell{#1} \ #3 \ #4}{#2}}}
+\providecommand\tclass[2]{\ensuremath{\nhaskell{#1} \ #2}}
+\providecommand\tforallPr[2]{\ensuremath{\forall #1 . #2}}
+\providecommand\tforallTy[2]{\ttabs{#1}{#2}}
+
+
+\providecommand\pdVar[3]{\ensuremath{#1}} %it seems that the pred var is just a var...
+%\providecommand\pdVar[3]{\ensuremath{#1 : #2 \left\langle #3 \right\rangle }}
+
+\providecommand\unifyTypes[3]{\ensuremath{ \left\langle {#1} , {#2} \right\rangle \models {#3}}}
+\providecommand\refa[3]{\ensuremath{ \left\lbrace #1 : #2 \mid #3 \right\rbrace }}
+\providecommand\sub[2]{\ensuremath{ \left[ #1 \mapsto #2 \right] }}
+\providecommand\subP[2]{\ensuremath{\left[#1\mapsto_\star #2\right]}}
+\providecommand\freshP[1]{\ensuremath{\text{fresh}\ \left( #1\right)}}
+\providecommand\freshT[1]{\ensuremath{\text{fresh}\ \left( #1\right)}}
+\providecommand\subT[2]{\ensuremath{\sub{#1}{#2}}}
+
+
+\providecommand\pdTy{\ensuremath{{T_P}}}
+\providecommand\lTy{\ensuremath{\hat{T}}}
+\providecommand\dTy{\ensuremath{T}}
+
+\providecommand\appTy[2]{\ensuremath{\parAny{#1} \left( #2 \right)  }}
+\providecommand\parTy[2]{\ensuremath{\parAny{#1} \left( \parAny{#2} \right)  }}
+\providecommand\parAny[1]{\ensuremath{\mathbb{#1}}}
+\providecommand\listOf[1]{\ensuremath{\left\langle #1 \right\rangle}}
+
+
+\providecommand\tyConPs[1]{\ensuremath{\text{predicates} \left( #1 \right)}}
+\providecommand\valid[2]{\ensuremath{#1 \Rightarrow #2}}
+\providecommand\inter[1]{\ensuremath{\dbrkts{#1}}}
+
+%types
+\providecommand\conlan{\ensuremath{\mathrm{F_H}}\xspace}
+\providecommand\corelan{$\lambda_{P}$\xspace}
+\providecommand\corelanm{$\lambda_{LP}$'\xspace}
+
+\providecommand{\areft}{\ensuremath{p}\xspace}
+\providecommand\rvapp[2]{\ensuremath{{#1 \ \overline{#2}}}} 
+\providecommand{\tpp}[2]{{#1 \langle #2 \rangle}}
+\providecommand\tpref[3]{\tref{\tpp{#1}{#2}}{#3}}
+
+
+
+\providecommand\tbool{\tbbool}
+% \providecommand\tvar[2]{\tref{#1}{#2}}
+\providecommand\tcon[4]{\ensuremath{\tref{\nhaskell{#1} \ #3 \ #4}{#2}}}
+\providecommand\tclass[2]{\ensuremath{\nhaskell{#1} \ #2}}
+\providecommand\tforallPr[2]{\ensuremath{\forall #1 . #2}}
+\providecommand\tforallTy[2]{\ttabs{#1}{#2}}
+
+%expressions
+\providecommand\econstantconstraint[2]{\ensuremath{ #1 \{ #2 \} }}
+\providecommand\econstraint[2]{\ensuremath{\Lambda \{#1 \} . #2  }}
+\providecommand\etabs[2]{\ensuremath{\Lambda #1 . #2}}
+\providecommand\epabs[3]{\ensuremath{\Lambda {#1:#2} . #3}}
+
+\providecommand\tbind[2]{{#1\!:\!#2}}
+\providecommand\efunt[3]{\ensuremath{\lambda \tbind{#1}{#2}. #3}}
+\providecommand\efunbar[2]{\ensuremath{\lambda \overline{#1} . #2}}
+%\providecommand\efun[2]{\ensuremath{\lambda #1 . #2}}
+\providecommand\eapp[2]{\ensuremath{{#1} \ {#2}}}
+\providecommand\etapp[2]{\ensuremath{{#1} \left[ {#2}\right]}}
+\providecommand\epapp[2]{\ensuremath{{#1} \left[ #2\right]}}
+
+\providecommand{\hasty}{::}
+\providecommand{\tyvar}{\alpha\xspace}
+\providecommand{\tyvarb}{\beta}
+\renewcommand{\rvar}{\pi}
+\renewcommand{\tvar}{\alpha}
+
+
+\providecommand{\goesto}[1]{\ensuremath{\stepcore {#1}}}
+\providecommand{\boundedgoesto}[1]{\ensuremath{\stepboundedcore {#1}}}
+\providecommand{\goestostar}[1]{\ensuremath{\tclos{\stepcore} {#1}}}
+\providecommand{\boundedgoestostar}[1]{\ensuremath{\tclos{\stepboundedcore} {#1} }}
+
+
+\providecommand{\cstr}[6]{{{#1} \deriv \reftyp{#3}{#2}{#4} \subt \reftyp{#5}{#2}{#6}}}
+
+%\providecommand{\transrel}{\hookrightarrow}
+%\providecommand{\trans}{{\delta}}
+
+\providecommand\tclos[1]{\ensuremath{#1^{\star}}}
+\providecommand\stepcore{\ensuremath{\hookrightarrow_P}}
+\providecommand\stepboundedcore{\ensuremath{\hookrightarrow_B}}
+\providecommand{\rtobound}{\rulename{O-Bnd}}

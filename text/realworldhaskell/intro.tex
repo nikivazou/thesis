@@ -53,11 +53,13 @@ properties of over 10,000 lines of Haskell code from various popular
 libraries, including @containers@, \hbox{@hscolor@,} @bytestring@, @text@, 
 @vector-algorithms@ and @xmonad@. 
 %
-First (\S~\ref{sec:liquidhaskell}), 
+\begin{itemize}
+\item First (\S~\ref{sec:liquidhaskell}), 
 we present a high-level overview of \toolname, through a tour 
 of its features.
 %
-Second, we present a qualitative discussion of the kinds of properties
+
+\item Second, we present a qualitative discussion of the kinds of properties
 that can be checked -- ranging from generic application independent 
 criteria like totality (\S~\ref{sec:totality}), 
 \ie that a function is defined for all inputs (of a given type),  
@@ -67,8 +69,9 @@ and termination,
 to application specific concerns like memory safety (\S~\ref{sec:memory-safety}) 
 and functional correctness properties (\S~\ref{sec:structures}).
 %
-Finally (\S~\ref{sec:realworld:evaluation}), we present a quantitative evaluation of the approach, with a view
+\item Finally (\S~\ref{sec:realworld:evaluation}), we present a quantitative evaluation of the approach, with a view
 towards measuring the efficiency and programmer's effort required for
 verification, 
 and we discuss various limitations of the approach which could
 provide avenues for further work.
+\end{itemize}

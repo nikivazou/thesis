@@ -1,16 +1,4 @@
-\begin{figure}[t]
-\begin{mcode}
-pread, pwrite, plookup, pcontents,
-pcreateD, pcreateF, pcreateFP :: Priv -> Bool
 
-active   :: World -> Set FH 
-caps     :: World -> Map FH Priv
-
-pset p h = \w -> p (select (caps w) h) && 
-                 h $\in$ active w
-\end{mcode}
-\caption{\label{fig:fstypes} Privilege Specification}
-\end{figure}
 
 %%% 
 %%% Local Variables: 
