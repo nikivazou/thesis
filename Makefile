@@ -10,4 +10,4 @@ all:
 
 .PHONY: clean
 clean:
-	$(RM) *.log *.aux *.ps *.dvi *.bbl *.blg *.bak *.fdb_latexmk *~
+	$(RM)  *.out *.log *.aux *.ps *.dvi *.bbl *.blg *.bak *.fdb_latexmk *~

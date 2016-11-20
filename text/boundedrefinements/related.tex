@@ -1,9 +1,5 @@
 \section{Related Work}\label{sec:related}
 
-%% Our work is related to the vast literature on program logics,
-%% dependent types and decision procedures. Next, we discuss the
-%% most closely related lines of work.
-
 \paragraph{Higher order Logics and Dependent Type Systems}
 %
 including
@@ -60,20 +56,6 @@ it severely limits the language of specifications, and makes it hard to
 fashion simple higher order abstractions like @filter@ (let alone the more
 complex ones like relational algebras and state transformers.)
 
-%%% All these systems start from an expressive higher order logic but
-%%% requires explicit, user provided proofs.
-%%% %
-%%% The burden of manually providing proofs is mitigated by providing
-%%% proof tactics that attempt to automatically discharge proof
-%%% obligations.
-%%%
-%%% We follow the opposite approach, instead pushing the expressiveness
-%%% limits of an automatic, decidable system.
-%%% %
-%%% We argue that our case studies demonstrate that bounded refinement
-%%% types achieve a high degree of expressiveness without sacrificing
-%%% automation or decidability.
-
 \paragraph{To Reconcile Expressiveness and Decidability}
 %
 \catalyst~\citep{catalyst} permits a form of
@@ -103,14 +85,6 @@ abstract refinements. The addition of bounds
 makes it possible to specify and verify the examples
 shown in this paper,
 while preserving decidability and inference.
-%%While this technique adds expressiveness, it prevents
-%%the ability to specify relationships between the abstract
-%%(or higher order) refinements, which precludes the
-%%verification of \emph{any} of our examples.
-%%%
-%%Our contribution is to show that by adding a form of
-%%bounded quantification for abstract refinements we
-%%can drastically expand expressiveness
 
 \paragraph{Our Relational Algebra Library} builds on a long
 line of work on type safe database access.
@@ -148,16 +122,6 @@ get a valid Haskell program operating over
 homogeneous lists.
 
 
-%%% Unlike all the above systems in which safety
-%%% of relational operations crucially depends on
-%%% heterogeneous collections, we prove database
-%%% operations safe using homogeneous collections,
-%%% \ie lists of dictionaries, but by indexing the
-%%% homogeneous types with Abstract Refinements, thus
-%%% composing heterogeneous \textit{refined} types.
-
-
-
 \paragraph{Our Approach for Verifying Stateful Computations} using monads
 indexed by pre- and post-conditions is inspired by the method of
 Filli\^atre~\citep{Filliatre98}, which was later enriched with
@@ -179,102 +143,4 @@ let us fashion the \RIO abstraction from scratch.
 %
 Consequently, second, we automate inference of pre- and
 post-conditions and loop invariants as refinement instantiation
-via Liquid Typing.
-%~\citep{LiquidPLDI08}.
-
-
-%% Later, Eisenberg and Weirich used Singleton Types~\citep{Weirich12}
-%% to translate Oury Swiersta's database example in Haskell,
-%% demonstrating the power of singleton types.
-%
-%
-% provides elegant
-% types for relational operators, while using implicit
-% parameter to lower the proof burden.
-
-
-% Oury and Swiersta, used The Power of Pi~\citep{thepipower} to
-% build a more comprehensible relational algebra in Agda.
-% %
-% Once again, they model database schemata as heterogeneous collections,
-% but this time they rely on Agda inference to provide elegant types for
-% relational operators and reduce the user's proof burden.
-% %
-
-
-
-%%%%% Adopting concepts from HaskellDB, Kiselyov \etal
-%%%%% used dependently typed programming in Haskell to
-%%%%% model databases as heterogeneous collections~\citep{heterogeneous},
-%%%%% achieving even stronger safety guarantees.
-%%%%% %
-%%%%% As an example a query that projects from a table a non existing field,
-%%%%% will be accepted as safe from haskellDB but easily marked as unsafe
-%%%%% by heterogeneous collections.
-%%%%% %
-%%%%% Even though being extensively expressive,
-%%%%% heterogeneous collections heavily rely on
-%%%%% Haskell's dependent type system -- \eg each
-%%%%% collection operations, like append, requires
-%%%%% the definition of a type class -- which renders
-%%%%% then incomprehensible.
-%
-
-
-%%% develop an \RIO monad using a mor
-%%% Our $\RIO$ monad has the same expressive power as the Dijkstra Monad,
-%%% but unlike them, our inference mechanism relies on the abstract
-%%% interpretation framework of liquid types, allowing \toolname to
-%%% compute loop invariants as well as function pre- and postconditions.
-%%%
-%%% for the first time combines verification of  higher order programs with inference.
-%%% %
-%%% The key idea is that instead using both a pre- and post-condition,
-%%% the Dijkstra Monad $\texttt{DST}\ \ta\ wp$
-%%% is indexed by the weakest precondition predicate transformer $wp$
-%%% and does type inference by composing weakest preconditions.
-
-
-
-%%%\paragraph{Verification of Stateful Programs} with type theory
-%%%was initiated by
-%%%when he verified imperative programs in Coq showing for first time
-%%%how proofs in Hoare logic can be interpreted in type theory.
-%%%%
-%%%Ynot~\citep{ynot} is a Coq extension that applies
-%%%Hoare Type Theory~\citep{nanevski06} to
-%%%higher order programs.
-%%%%
-%%%Much like our Refined Input/Output monad \ynot defines the Hoare Monad
-%%%$\HIO\ p\ \ta\ q$ that represents a computation
-%%%with precondition $p$ and postcondition $q$
-%%%that if terminates it will return a value of type $\ta$.
-%%%%
-%%%% However, being in the fully dependently typed language of Coq
-%%%% the $p$ and $q$ can be arbitrary predicates
-%%%% -- such as Separation Logic assertions --
-%%%% and thus no inference is performed.
-%%%% %
-%%%% Borgstr{\"o}m~\citep{Gordon09} \etal present an application on
-%%%% the Hoare Monad in F7~\citep{GordonRefinement09} but still without
-%%%% any inference available.
-
-%%% ZAP %%Our work on stateful verification is similar to the Dijkstra Monad in that
-%%% ZAP %%bounds on abstract refinements can be seen an predicate transformers
-%%% ZAP %%since the specify the post-condition given the precondition
-%%% ZAP %%RIO <p, q> a {q => p'}
-%%% ZAP %%%
-%%% ZAP   we have two states post-condition
-%%% ZAP   so no need for separation logic or precondition transformers,
-%%% ZAP   thought bounds clearly transforms pre to post.
-%%% ZAP
-%%% ZAP - Polymorphism and Seperation in Hoare Type Theory 06
-%%% ZAP Hoare’s original logic [12]
-%%% ZAP or the more recent forms of Separation Logic [30, 36, 31], which
-%%% ZAP - \citep{Borgstrom11} use substructural state on top of a Hoare-like monad to model local state
-
-%%%%%%%%%%%%%%% DUMP
-%%% Local Variables:
-%%% mode: latex
-%%% TeX-master: "main"
-%%% End:
+via Liquid Typing. % ~\citep{LiquidPLDI08}.
