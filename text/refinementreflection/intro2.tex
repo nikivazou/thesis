@@ -1,19 +1,13 @@
-\section{Introduction}\label{sec:intro}
+In this chapter we introduce \emph{Refinement Reflection}, a method
+to extend \emph{legacy} languages---with highly tuned
+libraries, compilers, and run-times---into theorem provers,
+by letting programmers specify and verify
+arbitrary properties of their code simply
+by writing programs in the legacy language.
 
-Wouldn't it be great to write proofs \emph{of}
-programs in your favorite language, \emph{by}
-writing programs in your favorite language,
-allowing you to avail of verification, while
-reusing the libraries, compilers and run-times
-\emph{for} your favorite language?
-
-Refinement types \citep{ConstableS87,Rushby98} offer a
+Refinement types, as presented so far, offer a
 form of programming with proofs that can be
-retrofitted into several languages like
-ML~\cite{pfenningxi98,GordonRefinement09,LiquidPLDI08},
-C~\cite{deputy,LiquidPOPL10},
-Haskell~\citep{Vazou14}, TypeScript~\cite{Vekris16}
-and Racket~\cite{RefinedRacket}.
+retrofitted into a programming language.
 %
 The retrofitting relies upon restricting refinements
 to so-called ``shallow'' specifications that
@@ -55,23 +49,14 @@ brittle heuristics for ``triggering'' axiom instantiation,
 it gives away decidable, and hence, predictable
 verification~\citep{Leino16}.
 %
-% In practice, the heuristics may fail to apply or may
-% go into infinite ``matching loops'' leaving programmers
-% with little clue of how to proceed~\citep{Leino16}.
-%
-% Indeed, according to the authors of Dafny, these heuristics
-% are unpredictable and suffer from a ``butterfly effect''
-% where modification in a part of the program changes the
-% outcome of verification in other part \cite{Leino16}.
 
-\mypara{Refinement Reflection}
-%
-In this paper, we present a new approach to retrofitting
+In this chapter, we present a new approach to retrofitting
 deep verification into existing languages. Our approach
 reconciles the automation of SMT-based refinement typing
 with decidable and predictable verification, and enables
 users to reify pencil-and-paper proofs simply
 as programs in the source language.
+
 %
 Our key insight is dead simple: the ​code
 implementing a​ user-defined function can

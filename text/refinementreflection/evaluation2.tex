@@ -39,7 +39,14 @@
 
   \midrule
 
-  \multicolumn{3}{l}{\textbf{TOTAL}}                 & 2264 \\
+  \textbf{V.} & \multicolumn{3}{l}{\textbf{Deterministic Parallelism}} \\[0.05in]
+  & Concurrent Sets     & \S~\ref{sec:set}           & 906 \\ % VerifiedEq/Ord + PureSet.hs + SLSet.hs
+  & $n$-body simulation & \S~\ref{sec:nbody}         & 930 \\ % VerifiedEq/Ord + Inj/Iso + allpairs.hs
+  & Parallel Reducers   & \S~\ref{sec:reducer}       &  55 \\ % VerifiedSemigroup + Iso + IntegerSumReduction2.hs
+
+  \midrule
+
+  \multicolumn{3}{l}{\textbf{TOTAL}}                 & 4155 \\
 \bottomrule
 \end{tabular}
 \end{center}

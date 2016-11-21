@@ -1,65 +1,52 @@
-In this chapter we introduce \emph{Refinement Reflection}, a method
+\section{Introduction}\label{sec:intro}
+
+We introduce \emph{refinement reflection}, a method
 to extend \emph{legacy} languages---with highly tuned
 libraries, compilers, and run-times---into theorem provers,
 by letting programmers specify and verify
 arbitrary properties of their code simply
 by writing programs in the legacy language.
 
-Refinement types, as presented so far, offer a
-form of programming with proofs that can be
-retrofitted into a programming language.
+Previously, SMT-based refinement types
+\citep{ConstableS87,Rushby98} have been
+used to retrofit so-called ``shallow''
+verification \eg array bounds checking into
 %
-The retrofitting relies upon restricting refinements
-to so-called ``shallow'' specifications that
-correspond to \emph{abstract} interpretations
-of the behavior of functions.
+ML~\cite{pfenningxi98,GordonRefinement09,LiquidPLDI08},
 %
-For example, refinements make it easy to specify
-that the list returned by the @append@ function
-has size equal to the sum of those of its inputs.
+C~\cite{deputy,LiquidPOPL10},
 %
-These shallow specifications fall within decidable
-logical fragments, and hence, can be automatically
-verified using SMT based refinement typing.
-
-Refinements are a pale shadow of what is possible
-with dependently typed languages like Coq, Agda
-and Idris which permit ``deep'' specification
-and verification.
+Haskell~\citep{Vazou14},
 %
-These languages come equipped with mechanisms
-that \emph{represent} and \emph{manipulate} the
+TypeScript~\cite{Vekris16}, and
+%
+Racket~\cite{RefinedRacket}.
+%
+% Scala~\cite{ScalaLiquidTyper}.
+%
+To keep checking decidable, the specifications
+are restricted to quantifier free formulas over
+decidable theories.
+%
+However, to verify ``deep'' specifications as
+in theorem proving languages like Agda, Coq, Dafny,
+\fstar and Idris we require mechanisms that
+\emph{represent} and \emph{manipulate} the
 exact descriptions of user-defined functions.
 %
-For example, we can represent the specification
-that the @append@ function is associative, and we
-can manipulate (unfold) its definition to write a
-small program that constructs a proof of the
-specification.
-%
-Dafny~\citep{dafny}, \fstar~\citep{fstar} and
-Halo~\citep{halo} take a step towards
-SMT-based deep verification, by encoding
-user-defined functions as universally
-quantified logical formulas or ``axioms''.
-%
-This axiomatic approach offers significant automation
-but relies heavily upon
-brittle heuristics for ``triggering'' axiom instantiation,
-giving away decidable, and hence, predictable
-verification~\citep{Leino16}.
-%
+So far, this has entailed either building new
+languages on specialized type theories or
+encoding functions with SMT axioms which makes
+verification undecidable and hence, unpredictable.
 
-In this chapter, we present a new approach to retrofitting
-deep verification into existing languages. Our approach
-reconciles the automation of SMT-based refinement typing
-with decidable and predictable verification, and enables
-users to reify pencil-and-paper proofs simply
-as programs in the source language.
-\begin{itemize}
-\item % {Refinement Reflection}
+% Refinement reflection lets us retrofit
+% theorem proving onto legacy languages,
+% while keeping verification decidable
+% and predictable.
 %
-We start this chapter by an overview of 
+\mypara{1. Refinement Reflection}
+%
+Our first contribution is the notion of
 refinement reflection: the code
 implementing a​ user-defined function can
 be \emph{reflected}​ into the function's
@@ -87,9 +74,9 @@ letting us use SMT-based congruence
 closure for decidable and predictable
 verification~(\S~\ref{sec:theory}).
 
-\item % {A Library of Proof Combinators}
+\mypara{2. A Library of Proof Combinators}
 %
-Next, we present a
+Our second contribution is a
 \emph{library of combinators}
 that lets programmers
 \emph{compose proofs}
@@ -116,9 +103,10 @@ to write proofs that look very much like
 transcriptions of their pencil-and-paper
 analogues~(\S~\ref{sec:overview}).
 
-\item % {Verified Typeclass Laws}
+\mypara{3. Verified Typeclass Laws}
 %
-We implemented refinement reflection in \toolname~\citep{Vazou14},
+Our third contribution is an implementation
+of refinement reflection in \toolname~\citep{Vazou14},
 thereby converting the legacy language
 Haskell into a theorem prover.
 %
@@ -134,7 +122,7 @@ that many widely used instances of the Monoid, Applicative,
 Functor, and Monad typeclasses actually satisfy the
 respective laws, making the use of these typeclasses safe~(\S~\ref{sec:evaluation}).
 
-\item % {Verified Deterministic Parallelism}
+\mypara{4. Verified Deterministic Parallelism}
 Finally, to showcase the benefits of retrofitting
 theorem proving onto legacy languages, we perform
 a case study in \emph{deterministic parallelism}.
@@ -165,4 +153,36 @@ We show how \toolname lets us verify the unchecked obligations
 from benchmarks taken from three existing parallel programming 
 systems, and thus, paves the way towards 
 high-performance with correctness guarantees~(\S~\ref{sec:eval-parallelism}).
-\end{itemize}
+
+
+% \new{We evaluate this possibility, taking small programs from three existing
+%   parallel programming systems and verifying their unchecked
+%   obligations~(\S~\ref{sec:eval-parallelism}).
+
+%% To summarize, this paper describes a means of
+%% retrofitting deep specification and verification
+%% into your favorite language, by making the
+%% following contributions:
+%% %
+%% \begin{itemize}
+%% \item We start with an informal description of
+      %% refinement reflection, and how it can
+      %% be used to prove theorems about functions,
+      %% by writing functions~(\S~\ref{sec:overview}).
+%%
+%% \item We formalize refinement reflection using
+      %% a core calculus and prove soundness with
+      %% respect to denotational
+      %% semantics~(\S~\ref{sec:formalism}).
+      %% Then, we show how to keep type checking
+      %% decidable~(\S~\ref{sec:algorithmic})
+      %% by using uninterpreted functions to
+      %% reason about higher-order specifications.
+%%
+%% \item Finally, we have implemented refinement reflection
+      %% in \toolname, a refinement type system for Haskell.
+      %% We develop a library of (refined) proof combinators
+      %% and evaluate our approach by proving various theorems
+      %% about recursive, higher-order functions operating over
+      %% integers and algebraic data types~(\S~\ref{sec:evaluation}).
+%% \end{itemize}

@@ -1,0 +1,654 @@
+\section{Refinement Reflection}
+\label{sec:formalism}
+\label{sec:types-reflection}
+\label{sec:refinementreflection"theory}
+Next, we formalize refinement reflection
+via a core calculus \corelan.
+%
+We define a decidable SMT language \smtlan to approximate the
+higher order, potentially diverging
+target language \corelan
+and present a decidable and sound type system
+for \corelan.
+
+\subsection{Syntax}
+\input{text/refinementreflection/syntax}
+%
+Figure~\ref{fig:syntax} summarizes the syntax of \corelan,
+which is essentially the calculus \undeclang~\cite{Vazou14}
+with explicit recursion and a special $\erefname$ binding
+to denote terms that are reflected into the refinement logic.
+%
+The elements of \corelan are layered into
+primitive constants, values, expressions, binders
+and programs.
+
+\mypara{Constants}
+The primitive constants of \corelan
+include all the primitive logical
+operators $\op$, here, the set $\{ =, <\}$.
+%
+Moreover, they include the
+primitive booleans $\etrue$, $\efalse$,
+integers $\mathtt{-1}, \mathtt{0}$, $\mathtt{1}$, \etc,
+and logical operators $\mathtt{\land}$, $\mathtt{\lor}$, $\mathtt{\lnot}$, \etc.
+
+\mypara{Data Constructors}
+%
+Data constructors are special constants.
+% Each data type has an equality predicate $\haseq{T}$
+% that is true only if values of type $T$ can be finitely compared.
+For example, the data type \tintlist, which represents
+finite lists of integers, has two data constructors: $\dnull$ (nil)
+and $\dcons$ (cons).
+
+\mypara{Values \& Expressions}
+%
+The values of \corelan include
+constants, $\lambda$-abstractions
+$\efun{x}{\typ}{e}$, and fully
+applied data constructors $D$
+that wrap values.
+%
+The expressions of \corelan
+include values, variables $x$,
+applications $\eapp{e}{e}$, and
+$\mathtt{case}$ expressions.
+
+\mypara{Binders \& Programs}
+%
+A \emph{binder} $\bd$ is a series of possibly recursive
+$\mathtt{let}$ definitions, followed by an expression.
+%
+A \emph{program} \prog is a series of $\erefname$
+definitions, each of which names a function
+that is reflected into the refinement
+logic, followed by a binder.
+%
+The stratification of programs via binders
+is required so that arbitrary recursive definitions
+are allowed in the program but cannot be inserted into the logic
+via refinements or reflection.
+%
+(We \emph{can} allow non-recursive $\mathtt{let}$
+binders in expressions $e$, but omit them for simplicity.)
+
+\subsection{Operational Semantics}
+We define $\hookrightarrow$ to be the small step, call-by-name
+$\beta$-reduction semantics for \corelan.
+%
+We evaluate reflected terms %$\erefb{x}{\gtyp}{e}{\prog}$
+as recursive $\mathtt{let}$ bindings, with extra termination-check
+constraints imposed by the type system:
+%
+$$
+\erefb{x}{\gtyp}{e}{\prog}
+\hookrightarrow
+\eletb{x}{\gtyp}{e}{\prog}
+$$
+%
+We define $\evalsto{}{}$ to be the reflexive,
+transitive closure of $\evals{}{}$.
+%
+Moreover, we define $\betaeq{}{}$ to be the reflexive,
+symmetric, and transitive closure of $\evals{}{}$.
+
+\mypara{Constants} Application of a constant requires the
+argument be reduced to a value; in a single step, the
+expression is reduced to the output of the primitive
+constant operation, \ie ${c\ v} \hookrightarrow \ceval{c}{v}$.
+%
+For example, consider $=$, the primitive equality
+operator on integers.
+%
+We have $\ceval{=}{n} \defeq =_n$
+where $\ceval{=_n}{m}$ equals \etrue
+iff $m$ is the same as $n$.
+%
+
+\mypara{Equality}
+We assume that the equality operator
+is defined \emph{for all} values,
+and, for functions, is defined as
+extensional equality.
+%
+That is, for all
+$f$ and
+$f'$,
+$\evals{(f = f')}{\etrue}$
+   $\mbox{iff}$
+  $\forall v.\ \betaeq{f\ v}{f'\ v}$.
+%
+We assume source \emph{terms} only contain implementable equalities
+over non-function types; while function extensional equality only appears
+in \emph{refinements} and is approximated by the underlying logic.
+
+
+\subsection{Types}
+
+\corelan types include basic types, which are \emph{refined} with predicates,
+and dependent function types.
+%
+\emph{Basic types} \btyp comprise integers, booleans, and a family of data-types
+$T$ (representing lists, trees \etc).
+%
+For example, the data type \tintlist represents lists of integers.
+%
+We refine basic types with predicates (boolean-valued expressions \refa) to obtain
+\emph{basic refinement types} $\tref{v}{\btyp}{\refa}$.
+%
+%
+We use \tlabel to mark provably terminating
+computations and use
+refinements to ensure that if
+${{e}\text{:}{\tref{v}{\btyp^\tlabel}{\refa'}}}$,
+then $e$ terminates~\citep{Vazou14}.
+%
+Finally, we have dependent \emph{function types} $\tfun{x}{\typ_x}{\typ}$
+where the input $x$ has the type $\typ_x$ and the output $\typ$ may
+refer to the input binder $x$.
+%
+We write $\btyp$ to abbreviate $\tref{v}{\btyp}{\etrue}$,
+and \tfunbasic{\typ_x}{\typ} to abbreviate \tfun{x}{\typ_x}{\typ} if
+$x$ does not appear in $\typ$.
+%
+%We use $r$ to refer to refinements.
+
+\mypara{Constants}
+For each constant $c$ we define its type \constty{c}, \eg%
+%
+$$
+\setlength\arraycolsep{2pt}
+\begin{array}{lcl}
+\constty{3} &\doteq& \tref{v}{\tint}{v = 3}\\
+\constty{+} &\doteq& \tfun{\ttx}{\tint}{\tfun{\tty}{\tint}{\tref{v}{\tint}{v = x + y}}}\\
+\constty{\leq} &\doteq& \tfun{\ttx}{\tint}{\tfun{\tty}{\tint}{\tref{v}{\tbool}{v \Leftrightarrow x \leq y}}}\\
+\end{array}
+$$
+%
+
+\subsection{Refinement Reflection}\label{subsec:logicalannotations}
+%
+The key idea in our work is to
+\emph{strengthen} the output type of functions
+with a refinement that \emph{reflects} the
+definition of the function in the logic.
+%
+We do this by treating each
+%
+$\erefname$-binder
+%
+(${\erefb{f}{\gtyp}{e}{\prog}}$)
+%
+as a $\eletname$-binder
+%
+(${\eletb{f}{\exacttype{\gtyp}{e}}{e}{\prog}}$)
+%
+during type checking (rule $\rtreflect$ in Figure~\ref{fig:typing}).
+
+\mypara{Reflection}
+%
+We write \exacttype{\typ}{e} for the \emph{reflection}
+of the term $e$ into the type $\typ$,  defined by strengthening
+\typ as:
+%
+$$
+\begin{array}{lcl}
+\exacttype{\tref{v}{\btyp}{r}}{e}
+  & \defeq
+  & \tref{v}{\btyp}{r \land v = e}\\
+\exacttype{\tfun{x}{\typ_x}{\typ}}{\efun{x}{}{e}}
+  & \defeq
+  & \tfun{x}{\typ_x}{\exacttype{\typ}{e}}
+\end{array}
+$$
+%
+As an example, recall from \S~\ref{sec:overview}
+that the @reflect fib@ strengthens the type of
+@fib@ with the refinement @fibP@.
+%% NV In Overview, we have fibP v n = v = fib n && fibR v n
+%% NV Here we get the reflection part (fibR v n)
+%% NV which we can verify
+%% NV at each fix invocation we also get the v = fib n portion
+%% NV via the exact rule
+%% NV We can not add the v = fib n as a port condition, because
+%% NV we cannot prove it.
+
+
+\mypara{Consequences for Verification}
+%
+Reflection has two consequences for verification.
+%
+First, the reflected refinement is \emph{not trusted};
+it is itself verified (as a valid output type)
+during type checking.
+%
+Second, instead of being tethered to quantifier
+instantiation heuristics or having to program
+``triggers'' as in Dafny~\citep{dafny} or
+\fstar~\citep{fstar},
+%
+the programmer can predictably ``unfold'' the
+definition of the function during a proof simply
+by ``calling'' the function, which, as discussed
+in~\S~\ref{sec:evaluation}, we have found to be
+a very natural way of structuring proofs.
+
+
+\subsection{The SMT logic \smtlan}
+\corelan is a higher order, potentially diverging language
+that cannot be used for decidable verification.
+%
+Next, we describe \smtlan, a conservative, first order
+approximation of \corelan where higher order features are
+approximated with uninterpreted functions,
+yielding an SMT-based
+algorithmic logic that enjoys soundness and decidability.
+
+\input{text/refinementreflection/smtsyntax}
+
+\mypara{Syntax}
+%
+Figure~\ref{fig:smtsyntax} summarizes the syntax
+of \smtlan, the \emph{sorted} (SMT-)
+decidable logic of quantifier-free equality,
+uninterpreted functions and linear
+arithmetic (QF-EUFLIA) ~\citep{Nelson81,SMTLIB2}.
+%
+The \emph{terms} of \smtlan include
+integers $n$,
+booleans $b$,
+variables $x$,
+data constructors $\dc$ (encoded as constants),
+fully applied unary \unop and binary \binop operators,
+and application $x\ \overline{\pred}$ of an uninterpreted function $x$.
+%
+The \emph{sorts} of \smtlan include the built-in
+\tint and \tbool.
+%
+The interpreted functions of \smtlan, \eg
+the logical constants $=$ and $<$,
+%% NV and the uninterpreted functions app and lam
+%% NV but we have not introduced these yet
+have the function sort $\sort \rightarrow \sort$.
+%
+Other functional values in \corelan, \eg
+reflected \corelan functions and
+$\lambda$-expressions, have the first-order
+uninterpreted sort \tsmtfun{\sort}{\sort}.
+%
+The universal sort \tuniv represents all other values.
+
+\subsection{Transforming \corelan into \smtlan}
+%
+\label{subsec:embedding}
+
+%\input{defuncrules}
+%
+A \emph{type environment} $\env$ is a sequence of type bindings
+$\tbind{x_1}{\typ_1},$ $\ldots,\tbind{x_n}{\typ_n}$.
+We use the type environment to define the judgment
+\tologicshort{\env}{e}{\typ}{\pred}{\sort}{\smtenv}{\axioms}
+that transforms a $\corelan$ term $e$
+% under an environment $\env$,
+into a $\smtlan$ term $\pred$.
+%
+Most of the transformation rules are identity
+and can be found in~\cite{appendix}.
+Here we discuss the non-identity ones.
+
+\mypara{Embedding Types}
+%
+We embed \corelan types into \smtlan sorts as:
+%
+\[\arraycolsep=1.4pt
+\begin{array}{rclcrcl}
+\embed{\tint}                       & \defeq &  \tint & \quad &
+\embed{T}                           & \defeq &  \tuniv \\
+\embed{\tbool}                      & \defeq &  \tbool & \quad &
+\embed{\tfun{x}{\typ_x}{\typ}} & \defeq & \tsmtfun{\embed{\typ_x}}{\embed{\typ}}
+\end{array}
+\]
+
+
+\mypara{Embedding Constants}
+%
+Elements shared on both \corelan and \smtlan
+translate to themselves.
+%
+These elements include
+booleans,
+integers,
+variables,
+binary
+and unary
+operators.
+%
+SMT solvers do not support currying,
+and so in \smtlan, all function symbols
+must be fully applied.
+%
+Thus, we assume that all applications
+to primitive constants and data
+constructors are fully applied, \eg by converting
+source terms like @(+ 1)@ to
+@(\z -> z+1)@.
+%
+
+
+\mypara{Embedding Functions}
+%
+As \smtlan is a first-order logic, we
+embed $\lambda$-abstraction
+using the uninterpreted function
+\smtlamname{}{}.
+%
+$$
+\inference{
+    \tologicshort{\env, \tbind{x}{\typ_x}}{e}{}{\pred}{}{}{} &
+        \hastype{\env}{(\efun{x}{}{e})}{(\tfun{x}{\typ_x}{\typ})}\\
+}{
+	\tologicshort{\env}{\efun{x}{}{e}}{(\tfun{x}{\typ_x}{\typ})}
+	        {\smtlamname{\embed{\typ_x}}{\embed{\typ}}\ {x}\ {\pred}}
+	        {\sort'}{\smtenv, \tbind{f}{\sort'}}{\andaxioms{\{\axioms_{f_1}, \axioms_{f_2}\}}{\axioms}}
+}[\lgfun]
+$$
+%
+The term $\efun{x}{}{e}$ of type
+${\typ_x \rightarrow \typ}$ is transformed
+to
+${\smtlamname{\sort_x}{\sort}\ x\ \pred}$
+of sort
+${\tsmtfun{\sort_x}{\sort}}$, where
+%
+$\sort_x$ and $\sort$ are respectively
+$\embed{\typ_x}$ and $\embed{\typ}$,
+%
+${\smtlamname{\sort_x}{\sort}}$
+is a special uninterpreted function
+of sort
+${\sort_x \rightarrow \sort\rightarrow\tsmtfun{\sort_x}{\sort}}$,
+and
+$x$ of sort $\sort_x$ and $r$ of sort $\sort$ are
+the embedding of the binder and body, respectively.
+%
+As $\smtlamname{}{}$ is an SMT-function,
+it \emph{does not} create a binding for $x$.
+%
+Instead, $x$ is renamed to
+a \emph{fresh} name pre-declared in
+the SMT logic.
+
+
+\mypara{Embedding Applications}
+%
+Dually, we embed applications via
+defunctionalization~\citep{Reynolds72}
+with the uninterpreted $\smtappname{}{}$ function.
+%
+$$
+\inference{
+	\tologicshort{\env}{e'}{\typ_x}{\pred'}{\embed{\typ_x}}{\smtenv}{\axioms'}
+	&
+	\tologicshort{\env}{e}{\tfun{x}{\typ_x}{\typ}}{\pred}{\tsmtfun{\embed{\typ_x}}{\embed{\typ}}}{\smtenv}{\axioms}
+	&
+	\hastype{\env}{e}{{\typ_x}\rightarrow{\typ}}
+}{
+	\tologicshort{\env}{e\ e'}{\typ}{\smtappname{\embed{\typ_x}}{\embed{\typ}}\ {\pred}\ {\pred'}}{\embed{\typ}}{\smtenv}{\andaxioms{\axioms}{\axioms'}}
+}[\lgapp]
+$$
+%
+The term ${e\ e'}$, where $e$ and $e'$ have
+types ${\typ_x \rightarrow \typ}$ and $\typ_x$,
+is transformed to
+${\tbind{\smtappname{\sort_x}{\sort}\ \pred\ \pred'}{\sort}}$
+where
+%
+$\sort$ and $\sort_x$ are $\embed{\typ}$ and $\embed{\typ_x}$,
+the
+${\smtappname{\sort_x}{\sort}}$
+is a special uninterpreted function of sort
+${\tsmtfun{\sort_x}{\sort} \rightarrow \sort_x \rightarrow \sort}$,
+and
+$\pred$ and $\pred'$ are the respective translations of $e$ and $e'$.
+
+
+\mypara{Embedding Data Types}
+%
+We translate each data constructor to a
+predefined \smtlan constant ${\smtvar{\dc}}$ of
+sort ${\embed{\constty{\dc}}}$.
+$$
+	\tologicshort{\env}{\dc}{\constty{\dc}}{\smtvar{\dc}}{\embed{\constty{\dc}}}{\emptyset}{\emptyaxioms}
+$$
+%
+For each datatype, we assume the existence of reflected functions that
+\emph{check} the top-level constructor
+and \emph{select} their individual fields.
+%
+For example, for lists, we assume the existence of measures:
+%
+\begin{mcode}
+  isNil []     = True     isCons (x:xs) = True
+  isNil (x:xs) = False    isCons []     = False
+
+  sel1 (x:xs)  = x        sel2 (x:xs)   = xs
+\end{mcode}
+%
+Due to the simplicity of their syntax the above checkers and selectors
+can be automatically instantiated in the logic
+(\ie without actual calls to the reflected functions at source level)
+using the measure mechanism~\cite{Vazou15}.
+
+To generalize, let $\dc_i$ be a data constructor such that
+$$
+\constty{\dc_i} \defeq \typ_{i,1} \rightarrow \dots \rightarrow \typ_{i,n} \rightarrow \typ
+$$
+Then the \emph{check function}
+${\checkdc{{\dc_i}}}$ has the sort
+$\tsmtfun{\embed{\typ}}{\tbool}$,
+and the \emph{select function}
+${\selector{\dc}{i,j}}$ has the sort
+$\tsmtfun{\embed{\typ}}{\embed{\typ_{i,j}}}$.
+%
+
+
+% \mypara{Checking and Projection}
+%
+We translate case-expressions
+of \corelan into nested $\mathtt{if}$
+terms in \smtlan, by using the check
+functions in the guards, and the
+select functions for the binders
+of each case.
+$$
+\inference{
+	\tologicshort{\env}{e}{\typ_e}{\pred}{\embed{\typ_e}}{\smtenv}{\axioms}\\
+	\tologicshort{\env}{e_i\subst{\overline{y_i}}{\overline{\selector{\dc_i}{}\ x}}\subst{x}{e}}{\typ}{\pred_i}{\embed{\typ}}{\smtenv}{\axioms_i}
+}{
+	\tologicshorttwolines{\env}{\ecase{x}{e}{\dc_i}{\overline{y_i}}{e_i}}{\typ}
+	 {\eif{\smtappname{}{}\ \checkdc{\dc_1}\ \pred}{\pred_1}{\ldots} \ \mathtt{else}\ \pred_n}{\embed{\typ}}{\smtenv}
+	 {\andaxioms{\axioms}{\axioms_i}}
+}%[\lgcase]
+$$
+%
+For example, the body of the list append function
+%
+\begin{code}
+  []     ++ ys = ys
+  (x:xs) ++ ys = x : (xs ++ ys)
+\end{code}
+%
+is reflected into the \smtlan refinement:
+%
+$$
+\ite{\mathtt{isNil}\ \mathit{xs}}
+    {\mathit{ys}}
+    {\mathtt{sel1}\ \mathit{xs}\
+       \dcons\
+       (\mathtt{sel2}\ \mathit{xs} \ \mathtt{++}\  \mathit{ys})}
+$$
+%
+We favor selectors to the axiomatic translation of
+HALO~\citep{HALO} to avoid
+universally quantified formulas and the resulting
+instantiation unpredictability.
+
+
+\subsection{Typing Rules}
+\input{text/refinementreflection/typing}
+%
+Next, we present the
+typing, well-formedness, and subtyping~\citep{Knowles10,Vazou14}
+rules of \corelan.
+
+\mypara{Typing}
+A judgment \hastype{\env}{\prog}{\typ} states that
+the program $\prog$ has the type $\typ$ in
+the environment $\env$.
+That is, when the free variables in $\prog$ are
+bound to expressions described by $\env$, the
+program $\prog$ will evaluate to a value
+described by $\typ$.
+
+\mypara{Rules}
+%
+All but two of the rules are standard~\cite{Knowles10,Vazou14}.
+%
+First, rule \rtreflect is used to strengthen the type of each
+reflected binder with its definition, as described previously
+in \S~\ref{subsec:logicalannotations}.
+%
+Second, rule \rtexact strengthens the expression with
+a singleton type equating the value and the expression
+(\ie reflecting the expression in the type).
+%
+This is a generalization of the ``selfification'' rules
+from \cite{Ou2004,Knowles10}, and is required to
+equate the reflected functions with their definitions.
+%
+For example, the application $(\fib\ 1)$ is typed as
+${\tref{v}{\tint}{\fibdef\ v\ 1 \wedge v = \fib\ 1}}$ where
+the first conjunct comes from the (reflection-strengthened)
+output refinement of \fib~\S~\ref{sec:overview} and
+the second comes from rule~\rtexact.
+%
+%%Finally, rule \rtfix is used to type the intermediate
+%%$\texttt{fix}$ expressions that appear, not in the
+%%surface language but as intermediate terms in the
+%%operational semantics.
+
+
+\mypara{Well-formedness}
+A judgment \iswellformed{\env}{\typ} states that
+the refinement type $\typ$ is well-formed in
+the environment $\env$.
+%
+Following~\citep{Vazou14}, the type $\typ$ is well-formed if all
+the refinements in $\typ$ are $\tbool$-typed,
+provably terminating expressions in $\env$.
+%
+%%\mypara{Termination}
+%%%
+%%Under arbitrary beta-reduction semantics
+%%(which includes lazy evaluation), soundness
+%%of refinement type checking requires checking
+%%termination, for two reasons:
+%%%
+%%(1)~to ensure that refinements cannot diverge, and
+%%(2)~to account for the environment during subtyping~\citep{Vazou14}.
+%%%
+%%We use \tlabel to mark provably terminating
+%%computations, and extend the rules to use
+%%refinements to ensure that if
+%%${\ahastype{\env}{e}{\tref{v}{\btyp^\tlabel}{r}}}$,
+%%then $e$ terminates~\citep{Vazou14}.
+%%%
+
+\mypara{Subtyping}
+A judgment \issubtype{\env}{\typ_1}{\typ_2} states
+that the type $\typ_1$ is a subtype of %the type
+$\typ_2$ in the environment $\env$.
+%
+Informally, $\typ_1$ is a subtype of $\typ_2$ if
+the refinement of $\typ_1$ \emph{implies}
+the refinement of $\typ_2$
+under the assumptions described by $\env$.
+%
+Subtyping of basic types reduces to implication checking.
+
+\mypara{Verification Conditions}
+The implication or \emph{verification condition} (VC)
+${\vcond{\env}{\pred}}$
+is \emph{valid} only if the set of values
+described by $\env$, is subsumed by
+the set of values described by $\pred$.
+%
+$\env$ is embedded into logic by conjoining
+(the embeddings of) the refinements of
+provably terminating binders~\cite{Vazou14}:
+%
+\begin{align*}
+\embed{\env} \defeq & \bigwedge_{x \in \env} \embed{\env, x} \\
+\intertext{where we embed each binder as}
+\embed{\env, x} \defeq & \begin{cases}
+                           \pred  & \text{if } \env(x)=\tref{x}{\btyp^{\tlabel}}{e},\
+                                    \tologicshort{\env}{e}{\btyp}{\pred}{\embed{\btyp}}{\smtenv}{\axioms} \\
+                           \etrue & \text{otherwise}.
+                         \end{cases}
+\end{align*}
+
+
+It is important to note that since \smtlan
+is carefully restricted to SMT-decidable theories,
+VC checking, and thus type checking of \corelan, is decidable.
+
+\subsection{Soundness}
+
+Following \undeclang~\citep{Vazou14}, in~\citep{appendix}, we show that
+if validity checking respects the axioms of $\beta$-equivalence,
+then \corelan is sound.
+
+%%We define the $\beta$-equivalence axioms on the uninterpreted function
+%%that represent $\lambda$-abstraction (\smtlamname{}{}) and
+%%and application (\smtappname{}{}).
+%%$$
+%%\begin{array}{rcl}
+%%\forall x\ y\ e. \smtlamname{}{}\ x\ e
+%%  & = & \smtlamname{}{}\ y\ (e\subst{x}{y}) \\
+%%\forall x\ e_x\ e. (\smtappname{}{}\ (\smtlamname{}{}\ x\ e)\ e_x)
+%%  & = &  e\subst{x}{e_x}
+%%\end{array}
+%%$$
+%%%
+% We prove that when validity checking assumes the $\beta$-equivalence
+% axioms, \corelan is sound.
+%
+\begin{theorem}{[Soundness of \corelan]}\label{thm:safety}
+Assuming the $\beta$-equivalence axioms,
+if \hastype{\emptyset}{\prog}{\typ}
+       and $\evalsto{\prog}{w}$ then $\hastype{\emptyset}{w}{\typ}$.
+\end{theorem}
+
+Theorem~\ref{thm:safety} lets us interpret well typed terminating programs as proofs of
+propositions.
+%
+For example, in \S~\ref{sec:overview} we verified that
+%
+$\fibincrname\text{ :: }{\tfun{n}{\tnat}{\ttref{\fib{n} \leq \fib{(n+1)}}}}$.
+%
+Via soundness of \corelan, we get runtime monotonicity of @fib@.
+$$
+\forall n. \evalsto{0 \leq n}{\etrue} \Rightarrow \evalsto{\fib{n} \leq \fib{(n+1)}}{\etrue}
+$$
+% \section{Algorithmic Verification}\label{sec:algorithmic}
+
+\mypara{Approximation of $\beta$-equivalence}
+%
+Though sound and precise, directly extending the logic with $\beta$-equivalence axioms
+would render SMT validity checking undecidable.
+%
+Instead, in ~\citep{appendix} we discuss an incomplete,
+yet decidable, technique that allows the
+user to manually instantiate the $\beta$-equivalence axioms
+when required for precise typing.

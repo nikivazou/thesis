@@ -2,7 +2,7 @@
 \label{sec:overview}
 \label{sec:examples}
 
-We begin with a fast overview of refinement reflection and
+We begin with an overview of refinement reflection and
 how it allows us to write proofs \emph{of} and \emph{by}
 Haskell functions.
 
@@ -15,16 +15,16 @@ and how they enable shallow specification and verification.
 Haskell's) types decorated with logical predicates drawn
 from a(n SMT decidable) logic~\citep{ConstableS87,Rushby98}.
 %
-For example, we can refine Haskell's @Int@ datatype with a
-predicate @0 <= v@, to get a @Nat@ type:
+For example, we can define the @Nat@ type by refining
+Haskell's @Int@ type with a predicate @0 <= v@:
 %
 \begin{code}
-  type Nat = {v:Int | 0 <= v}
+  type Nat = { v:Int | 0 <= v }
 \end{code}
 %
-The variable @v@ names the value described by the type,
-hence the above can be read as the
-``set of @Int@ values @v@ that are greater than 0".
+Here, @v@ names the value described by the type:
+the above can be read as the
+``set of @Int@ values @v@ that are not less than 0".
 The refinement is drawn from the logic of quantifier
 free linear arithmetic and uninterpreted functions
 (QF-UFLIA~\cite{SMTLIB2}).
@@ -35,7 +35,7 @@ We can use refinements to define and type the
 textbook Fibonacci function as:
 %
 \begin{code}
-  fib   :: Nat -> Nat
+  fib :: Nat -> Nat
   fib 0 = 0
   fib 1 = 1
   fib n = fib (n-1) + fib (n-2)
@@ -47,53 +47,53 @@ be @Nat@, which is needed to ensure termination,
 and the output types's refinement specifies a
 \emph{post-condition} that the result is also a @Nat@.
 %
-Thus refinement type checking, lets us specify
+Refinement type checking lets us specify
 and (automatically) verify the shallow property
-that if @fib@ is invoked with non-negative
-@Int@ values, then it (terminates) and yields
-a non-negative value.
+that if @fib@ is invoked with a non-negative
+@Int@, then it terminates and yields
+a non-negative @Int@.
 
 \mypara{Propositions}
 %
 We can use refinements to define a data type
 representing propositions simply as an alias
-for unit, a data type that carries no run-time
-information:
+for unit, a data type that carries no useful
+runtime information:
 %
 \begin{mcode}
   type $\typp$ = ()
 \end{mcode}
 %
-but which can be \emph{refined} with desired
+which can be \emph{refined} with
 propositions about the code.
 %
 For example, the following states the proposition
 $2 + 2$ equals $4$.
 %
 \begin{mcode}
-  type Plus_2_2_eq_4 = {v: $\typp$ | 2 + 2 = 4}
+  type Plus_2_2_eq_4 = { v: $\typp$ | 2 + 2 = 4 }
 \end{mcode}
 %
 For clarity, we abbreviate the above type by omitting
 the irrelevant basic type $\typp$ and variable @v@:
 %
 \begin{mcode}
-  type Plus_2_2_eq_4 = {2 + 2 = 4}
+  type Plus_2_2_eq_4 = { 2 + 2 = 4 }
 \end{mcode}
 %
-We represent universally quantified propositions as function types:
+Function types encode universally quantified propositions:
 %
 \begin{mcode}
-  type Plus_com = x:Int->y:Int->{x+y = y+x}
+  type Plus_com = x:Int -> y:Int -> { x + y = y + x }
 \end{mcode}
 %
-Here, the parameters @x@ and @y@ refer to input
-values; any inhabitant of the above type is a
+The parameters @x@ and @y@ refer to input
+values. Any inhabitant of the above type is a
 proof that @Int@ addition is commutative.
 
 \mypara{Proofs}
 %
-We can now \emph{prove} the above theorems simply by
+We \emph{prove} the above theorems by
 writing Haskell programs. To ease this task \toolname
 provides primitives to construct proof terms by
 ``casting'' expressions to \typp.
@@ -106,9 +106,9 @@ provides primitives to construct proof terms by
 \end{mcode}
 %
 To resemble mathematical proofs, we make this casting post-fix.
-Thus, we can write @e ** QED@ to cast @e@ to a value of \typp.
+Thus, we write @e ** QED@ to cast @e@ to a value of \typp.
 %
-For example, we can prove the above propositions simply by writing
+For example, we can prove the above propositions by writing
 %
 \begin{code}
   pf_plus_2_2 :: Plus_2_2_eq_4
@@ -124,15 +124,15 @@ Via standard refinement type checking, the above code yields
 the respective verification conditions (VCs),
 %
 \begin{align*}
-                   2 + 2 & = 4 \\
-\forall \ x\ y\ .\ x + y & = y + x
+                      2 + 2 & = 4 \\
+  \forall \ x,\ y\ .\ x + y & = y + x
 \end{align*}
 %
 which are easily proved valid by the SMT solver, allowing us
 to prove the respective propositions.
 
 \mypara{A Note on Bottom:} Readers familiar with Haskell's
-semantics may be feeling a bit anxious about whether the
+semantics may be feeling anxious about whether the
 dreaded ``bottom", which inhabits all types, makes our
 proofs suspect.
 %
@@ -143,7 +143,7 @@ our proofs sound.
 
 \subsection{Refinement Reflection}
 
-Suppose that we wish to prove properties about the @fib@
+Suppose we wish to prove properties about the @fib@
 function, \eg that @fib 2@ equals @1@.
 %
 \begin{code}
@@ -154,7 +154,7 @@ function, \eg that @fib 2@ equals @1@.
 Standard refinement type checking runs into two problems.
 %
 First, for decidability and soundness, arbitrary user-defined
-functions do not belong the refinement logic, \ie we cannot even
+functions do not belong the refinement logic, \ie we cannot
 \emph{refer} to @fib@ in a refinement.
 %
 Second, the only information that a refinement type checker
@@ -177,7 +177,7 @@ in the refinement logic.
 %
 By uninterpreted, we mean that the logical @fib@
 is \emph{not} connected to the program function
-@fib@; as far as the logic is concerned, @fib@
+@fib@; in the logic, @fib@
 only satisfies the \emph{congruence axiom}
 %
 $$\forall n, m.\ n = m\ \Rightarrow\ \fib{n} = \fib{m}$$
@@ -204,7 +204,7 @@ by automatically strengthening the user defined
 type for @fib@ to:
 %
 \begin{code}
-  fib :: n:Nat -> {v:Nat | fibP v n}
+  fib :: n:Nat -> { v:Nat | fibP v n }
 \end{code}
 %
 where @fibP@ is an alias for a refinement
@@ -212,10 +212,9 @@ where @fibP@ is an alias for a refinement
 function's definition:
 %
 \begin{mcode}
-  predicate fibP v n =
-    v = if n = 0 then 0 else
-        if n = 1 then 1 else
-        fib(n-1) + fib(n-2)
+  fibP v n = v = if n = 0 then 0 else
+                 if n = 1 then 1 else
+                 fib(n-1) + fib(n-2)
 \end{mcode}
 
 \mypara{Step 3: Application}
@@ -223,46 +222,40 @@ function's definition:
 With the reflected refinement type,
 each application of @fib@ in the code
 automatically unfolds the @fib@ definition
-\textit{once} during refinement type checking.
+\textit{once} in the logic.
 %
 We prove @fib2_eq_1@ by:
 %
 \begin{code}
   pf_fib2 :: { fib 2 = 1 }
-  pf_fib2 = #fib# 2 == #fib# 1 + #fib# 0 ** QED
+  pf_fib2 = let { t0 = #fib# 0; t1 = #fib# 1;
+                  t2 = #fib# 2 } in  ()
 \end{code}
 %
 We write @#f#@ to denote places where the
 unfolding of @f@'s definition is important.
 %
-The proof is verified as the above is A-normalized to
-%
-\begin{code}
-  let { t0 = fib 0; t1 = fib 1; t2 = fib 2 }
-  in  ( t2 == t1 + t0 ) ** QED
-\end{code}
-%
-Which via standard refinement typing, yields the
-following verification condition that is easily
+Via refinement typing, the above proof yields the
+following verification condition that is
 discharged by the SMT solver, even though @fib@
 is uninterpreted:
 %
 \begin{align*}
-   & (\fibdef\ (\fib\ 0)\ 0) \ \wedge\ (\fibdef\ (\fib\ 1)\ 1) \ \wedge\ (\fibdef\ (\fib\ 2)\ 2) \\
-   & \Rightarrow\ (\fib{2} = 1)
+   & (\fibdef\ (\fib\ 0)\ 0) \ \wedge\ (\fibdef\ (\fib\ 1)\ 1) \ \wedge\ \\
+   & (\fibdef\ (\fib\ 2)\ 2) \  \Rightarrow\ (\fib{2} = 1)
 \end{align*}
 %
 Note that the verification of @pf_fib2@ relies
 merely on the fact that @fib@ was applied
 to (\ie unfolded at) @0@, @1@ and @2@.
 %
-The SMT solver can automatically \emph{combine}
+The SMT solver automatically \emph{combines}
 the facts, once they are in the antecedent.
-Hence, the following would also be verified:
+The following is also verified:
 %
 \begin{code}
   pf_fib2' :: { fib 2 = 1 }
-  pf_fib2' = [#fib# 0, #fib# 1, #fib# 2] ** QED
+  pf_fib2' = [ #fib# 0, #fib# 1, #fib# 2 ] ** QED
 \end{code}
 %
 %
@@ -272,15 +265,17 @@ computation.
 
 \mypara{Reflection vs. Axiomatization}
 %
-An alternative \emph{axiomatic} approach, used by Dafny,
-\fstar and HALO, is to encode the definition of @fib@ as
-a universally quantified SMT formula (or axiom):
+An alternative \emph{axiomatic} approach,
+used by Dafny~\citep{dafny} and
+\fstar~\citep{fstar},
+is to encode @fib@ using a universally
+quantified SMT formula (or axiom):
 $$\forall n.\ \fibdef\ (\fib\ n)\ n$$
 %
 Axiomatization offers greater automation than
 reflection. Unlike \toolname, Dafny
 %and \fstar
-will verify the equivalent of the following by
+will verify the following by
 \emph{automatically instantiating} the above
 axiom at @2@, @1@ and @0@:
 %
@@ -289,9 +284,12 @@ axiom at @2@, @1@ and @0@:
   axPf_fib2 = trivial ** QED
 \end{code}
 
-However, the presence of such axioms renders checking
-the VCs undecidable. In practice, automatic axiom
-instantation can easily lead to infinite ``matching loops''.
+The automation offered by axioms is a bit of a
+devil's bargain, as axioms render checking of
+the VCs \emph{undecidable}.
+%
+In practice, automatic axiom instantation can
+easily lead to infinite ``matching loops''.
 %
 For example, the existence of a term \fib{n} in a VC
 can trigger the above axiom, which may then produce
@@ -306,8 +304,9 @@ used to restrict the numbers of the SMT unfoldings,
 which ensure termination, but can cause the axiom
 to not be instantiated at the right places.
 %
-In short, the undecidability of the VC checking
-and its attendant heuristics makes verification
+In short, per the authors of Dafny, the
+undecidability of the VC checking and its
+attendant heuristics makes verification
 unpredictable~\citep{Leino16}.
 
 \subsection{Structuring Proofs}
@@ -318,7 +317,7 @@ deliberately designed to always fall in
 an SMT-decidable logic, as function symbols
 are uninterpreted.
 %
-It is upto the programmer to unfold the
+It is up to the programmer to unfold the
 definitions at the appropriate places,
 which we have found, with careful design
 of proof combinators, to be quite
@@ -331,7 +330,7 @@ inspired by Agda~\citep{agdaequational}.
 
 \mypara{``Equation'' Combinators}
 %
-We equip \toolname with a a family of
+We equip \toolname with a family of
 equation combinators @op.@ for each
 logical operator @op@ in
 $\{=, \not =, \leq, <, \geq, > \}$,
@@ -360,7 +359,7 @@ and use it to write the following ``equational" proof:
 
 \mypara{``Because'' Combinators}
 %
-Often, we need to compose ``lemmas'' into larger
+Often, we need to compose ``lemmata'' into larger
 theorems. For example, to prove @fib 3 = 2@ we
 may wish to reuse @eqPf_fib2@ as a lemma.
 %
@@ -376,14 +375,13 @@ application that lets us write
 %
 @ x op. y $\because$ p@ (instead of @(op.) x y p@)
 where @(op.)@ is extended to accept an \textit{optional} third proof
-argument via Haskell's type class mechanisms.
+argument via Haskell's typeclass mechanisms.
 %
-We can use the because combinator to
-prove that @fib 3 = 2@ just by writing
-plain Haskell code:
+We use the because combinator to
+prove that @fib 3 = 2@ with a Haskell function:
 %
 \begin{mcode}
-  eqPf_fib3 :: {fib 3 = 2}
+  eqPf_fib3 :: { fib 3 = 2 }
   eqPf_fib3 =  #fib# 3
             =. fib 2 + #fib# 1
             =. 2              $\because$ eqPf_fib2
@@ -399,7 +397,7 @@ ordering to prove that @fib@ is (locally) increasing,
 \ie for all $n$, $\fib{n} \leq \fib{(n+1)}$
 %
 \begin{mcode}
-  fibUp :: n:Nat -> {fib n <= fib (n+1)}
+  fibUp :: n:Nat -> { fib n <= fib (n+1) }
   fibUp n
     | n == 0
     =  #fib# 0 <. #fib# 1
@@ -434,175 +432,501 @@ respectively.
 In the \emph{inductive} case, @fib n@ is unfolded
 to  @fib (n-1) + fib (n-2)@, which, because of the
 induction hypothesis (applied by invoking @fibUp@
-at @n-1@ and @n-2@), and the SMT solvers arithmetic
+at @n-1@ and @n-2@) and the SMT solver's arithmetic
 reasoning, completes the proof.
 
-\mypara{Higher Order Theorems}
-%
-Refinements smoothly accomodate higher-order reasoning.
-%
-For example, lets prove that every locally increasing
-function is monotonic, \ie
-if @f z <= f (z+1)@ for all @z@,
-then @f x <= f y@ for all @x < y@.
-%
-\begin{mcode}
-  fMono :: f:(Nat -> Int)
-        -> fUp:(z:Nat -> {f z <= f (z+1)})
-        -> x:Nat
-        -> y:{x < y}
-        -> {f x <= f y} / [y]
-  fMono f inc x y
-    | x + 1 == y
-    =  f x <=. f (x+1) $\because$ fUp x
-           <=. f y
-           ** QED
 
-    | x + 1 < y
-    =  f x <=. f (y-1) $\because$ fMono f fUp x (y-1)
-           <=. f y     $\because$ fUp (y-1)
-           ** QED
-\end{mcode}
+\subsection{Case Study: Deterministic Parallelism}
+\label{sec:detpar}
+
+%% The natural integration of deep verification with a language like Haskell makes
+%% it possible to engage in lightweight, incremental verification of program
+%% properties.
+
+One benefit of an in-language prover is that it lowers the barrier to {\em
+  small} verification efforts that touch only a fraction of the program, and yet
+ensure critical invariants that Haskell's type system cannot.  Here we consider
+parallel programming, which is commonly considered error prone and entails
+proof obligations on the user that typically go unchecked.
+
+The situation is especially precarious with parallel programming frameworks that
+claim to be {\em determinstic} and thus usable within purely functional
+programs.  These include Deterministic Parallel Java (DPJ \cite{DPJ}), Concurrent
+Revisions for .NET~\cite{concurrent-revisions-oopsla}, and Haskell's
+LVish~\cite{kuper2014freeze}, Accelerate~\cite{accelerate-icfp13}, and
+REPA~\cite{repa-icfp10}.
 %
-We prove the theorem by induction
-on @y@, which is specified by the
-annotation @/ [y]@ which states
-that @y@ is a well-founded
-termination metric that decreases
-at each recursive call~\citep{Vazou14}.
+Accelerate's parallel fold function, for instance, claims to be
+deterministic---and its purely functional type means the Haskell optimizer will
+{\em assume} its referential transparency---but its determinism depends on an
+associativity guarantee which must be assured {\em by the programmer} rather than the
+type system.
 %
-% All reflected functions are proved terminating.
-% When the annotation metric is not explicit Liquid Haskell
-% successfully uses heuristics to automatically prove termination. 
-%
-If @x+1 == y@, then we use @fUp x@.
-%
-Otherwise, @x+1 < y@, and we use
-the induction hypothesis \ie apply
-@fMono@ at @y-1@, after which
-transitivity of the less-than
-ordering finishes the proof.
-%
-We can use the general @fMono@
-theorem to prove that @fib@
-increases monotonically:
-%
+Thus simply folding the minus function, @fold (-) 0 arr@, is sufficient to
+violate determinism and Haskell's pure semantics.
+
+
+Likewise, DPJ goes to pains to develop a new type system for parallel
+programming, but then provides a ``commutes'' annotation for methods updating
+shared state, compromising the {\em guarantee} and going back to trusting the
+user. LVish has the same Achilles heel. Consider set insertion:
+
 \begin{code}
-  fibMono :: n:Nat -> m:{n<m} ->
-             {fib n <= fib m}
-  fibMono = fMono fib fibUp
+insert :: Ord a => a -> Set s a -> Par s ()
 \end{code}
 
-\subsection{Case Study: Peano Numerals}
+Here @insert@ returns an (effectful) @Par@ computation, which can be run within a
+pure function to produce a pure result.  At first glance it would seem that
+trusting the implementation of the concurrent set is sufficient to assure a
+deterministic outcome.  Yet the interface has an @Ord@ constraint. This
+ polymorphic function works with user-defined data types, and thus
+user-defined orderings.  What if the user fails to implement a total order?
+Then, even a correct implementation of, e.g. a concurrent
+skiplist~\cite{concurrent-skiplist}, can reveal
+different insertion orders due to concurrency.
 
-Refinement reflection is not limited to programs
-operating on integers. We conclude the overview
-with a small library for Peano numerals, defined
-via the following algebraic data type:
+%% verifiedInsert :: HasPut e => VerifiedOrd a
+%%                => a -> ISet s a -> Par e s ()
+
+% \mypara{LVish}
+%% We demonstrate the use of \toolname{} to ensure guarantees of
+%% deterministic parallel programming. We choose this case study, because, to the
+%% best of our knowledge, there exists no practical deterministic parallel
+%% programming system, including user-defined parallel folds, which does not have
+%% {\em soundness holes}---due to trusted assumptions of user code.
+
+%% {\em LVish}\cite{kuper2014freeze} is a programming library for Haskell, which
+%% exposes effectful parallel programming against lattice-variables (LVars) whose
+%% states change monotonically during parallel regions of program execution. LVish
+%% programs operate on Haskell data types, and LVish requires the operations on
+%% these datatypes to satisfy some first order laws, which cannot be expressed in
+%% Haskell. However, we can leverage \toolname to verify these properties for
+%% arbitrary user-defined datatypes.
+
+%% LVish provides two implementations of concurrent sets, @PureSet@ and @SLSet@,
+%% where the underlying data structure is a size-balanced binary tree and
+%% concurrent skiplist respectively. The @insert@ operation on a set requires a
+%% total ordering on the elements, we can express that in the type signature by
+%% \new{The implementation doesn't change, in fact, the}
+%% @VerifiedOrd@ \new{methods do not even need to exist at runtime. A sufficiently
+%%   smart compiler could optimize away these proof obligations during code
+%%   generation.}
+% \RN{Let's save the issue of runtime impact for the eval.}
+
+In summary, parallel programs naturally need to communicate, but the mechanisms
+of that communication---such as folds or inserts into a shared
+structure---typically carry additional proof obligations.  This in turn makes
+parallelism a liability.  But we can remove the risk with verification.
+
+% But what if we could use verification to remove the risk?
+
+% through contributions to shared structures (otherwise they are really separate
+% programs)
+
+
+\mypara{Verified typeclasses}
+%
+Our solution involves simply changing the @Ord@ constraint above to
+@VerifiedOrd@.
+\begin{mcode}
+ insert :: VerifiedOrd a => a -> Set s a -> Par s ()
+\end{mcode}
+%
+This constraint changes the interface but not the implementation of @insert@.
+%
+% \NV{Why does insert now requires Verified Ord? Is it using the extra methods
+% in the implementation?}
+%% \note{VerifiedSemigroup story + lifting + isomorphism ("bootstrapping
+%%   instances") + detpar propaganda}
+%
+%% It is an informal requirement when using
+%% typeclasses in GHC that some typeclass laws be satisfied. For example, the @Ord@
+%% typeclass in GHC requires that the $\leq$ operation be a total order. Using
+%% \toolname, we can extend it to include the required properties of a total order,
+%% which we call a @VerifiedOrd@.
+The additional methods of the verified type class don't add operational
+capabilities, but rather impose additional proof obligations:
+
+\begin{code}
+class Ord a => VerifiedOrd a where
+ antisym :: x:a -> y:a
+         -> { x <= y && y <= x => x = y }
+ trans   :: x:a -> y:a -> z:a
+         -> { x <= y && y <= z => x <= z }
+ total   :: x:a -> y:a -> { x <= y || y <= x }
+\end{code}
+
+% ---------------------------------------------------------------
+% \mypara{Verified Monoids}
+
+Similarly, we can extend
+the @Monoid@ typeclass to a @VerifiedMonoid@, with refinements
+expressing @Monoid@ laws.
+%
+\begin{code}
+class Monoid a => VerifiedMonoid a where
+ lident :: x:a -> { mempty <> x = x }
+ rident :: x:a -> { x <> mempty = x }
+ assoc  :: x:a -> y:a -> z:a
+        -> { x <> (y <> z) = (x <> y) <> z }
+\end{code}
+The @VerifiedMonoid@ typeclass constraint requires the binary operation
+to be associative, thus can be safely used to fold on
+an unknown number of processors.
+%% A parallel fold requires the underlying binary operation to be associative and
+%% have a well-behaved identity element, or a @Monoid@.
+
+
+%% We can then extend the @ParFoldable@ typeclass to a @VerifiedParFoldable@ which
+%% enforces a @VerifiedMonoid@ constraint.
+
+%% \NV{Not sure if the below code adds any information: too difficult to follow,
+%%   especially for non Haskell people} \NV{I suggest to say similarly to Verified
+%%   Ord and add a link to appendix}
+%%\RN{I concur with Niki -- we often whitewash away details of the library for
+%%  presentation purposes.  E.g. we are not going to explain effect signatures in
+%%  this paper.}
+
+%% \begin{code}
+%% class ParFoldable c
+%%    => VerifiedParFoldable c where
+%%   verifiedPmapFold :: forall m e s a .
+%%   ( ParFuture m, HasGet e
+%%   , HasPut e, FutContents m a,
+%%   , VerifiedMonoid a )
+%%   => (ElemOf c -> m e s a) -- compute one
+%%                            -- result
+%%   -> c                     -- element generator
+%%                            -- to consume
+%%   -> m e s a
+%% \end{code}
+
+
+%%  -------------------------------------------------------------------------
+
+\mypara{Verified instances for primitive types}
+@VerifiedOrd@ instances for primitive types like @Int@, @Double@ are trivial to
+write; they just appeal to the SMT solver's built-in theories.
+%
+For example, the following is a valid totality proof on @Int@.
+\begin{code}
+totInt :: x:Int -> y:Int -> {x <= y || y <= x}
+totInt _ _ = trivial ** QED
+\end{code}
+
+\mypara{Verified instances for algebraic datatypes}
+%
+To prove the class laws for user defined algebraic datatypes,
+refinement reflection allows for structurally inductive proof terms.
+%
+For example, we can inductively define Peano numerals
 %
 \begin{code}
   data Peano = Z | S Peano
 \end{code}
 %
-We can @add@ two @Peano@ numbers via:
-%
+We can compare two @Peano@ numbers via
 \begin{code}
-  reflect add :: Peano -> Peano -> Peano
-  add Z     m = m
-  add (S n) m = S (add n m)
+  reflect leq :: Peano -> Peano -> Bool
+  leq Z _         = True
+  leq (S n) Z     = False
+  leq (S n) (S m) = leq n m
 \end{code}
 %
-In \S~\ref{subsec:measures} we will describe
+In \S~\ref{sec:theory} we will describe
 exactly how the reflection mechanism (illustrated
 via @fibP@) is extended to account for ADTs like @Peano@.
 %
-Note that \toolname automatically checks
-that @add@ is total~\citep{Vazou14}, which
-lets us safely @reflect@ it into the
-refinement logic.
+\toolname automatically checks
+that @leq@ is total~\citep{Vazou14}, which
+lets us safely @reflect@ it into the logic.
 
-\mypara{Add Zero to Left}
-%
-As an easy warm up, lets show that
-adding zero to the left leaves the
-number unchanged:
-%
-\begin{code}
-  zeroL :: n:Peano -> { add Z n == n }
-  zeroL n =  #add# Z n
-          =. n
-          ** QED
-\end{code}
-
-\mypara{Add Zero to Right}
-%
-It is slightly more work to prove
-that adding zero to the right also
-leaves the number unchanged.
+Next, we prove that @leq@ is total on @Peano@ numbers
 %
 \begin{mcode}
-  zeroR :: n:Peano -> { add n Z == n }
-  zeroR Z     =  #add# Z Z
-              =. Z
-              ** QED
-
-  zeroR (S n) =  #add# (S n) Z
-              =. S (add n Z)
-              =. S n         $\because$     zeroR n
-              ** QED
+  totalPeano
+   :: n:Peano -> m:Peano -> {leq n m || leq m n}
+   /  [toInt n + toInt m]
+  totalPeano Z m = leq Z m ** QED
+  totalPeano n Z = leq Z n ** QED
+  totalPeano (S n) (S m)
+   =  leq (S n) (S m) || leq (S m) (S n)
+   =. leq n m || leq m n
+   =. True $\because$ totalPeano m n
+   ** QED
 \end{mcode}
-%
 The proof goes by induction, splitting cases on
 whether the number is zero or non-zero. Consequently,
-we pattern match on the parameter @n@, and furnish
+we pattern match on the parameters @n@ and @m@, and furnish
 separate proofs for each case.
 %
-In the ``zero" case, we simply unfold the definition
-of @add@.
+In the ``zero" cases, we simply unfold the definition
+of @leq@.
 %
 In the ``successor" case, after unfolding we (literally)
 apply the induction hypothesis by using the because operator.
 %
+The termination hint @[toInt n + toInt m]@,
+where @toInt@ maps @Peano@ numbers to integers,
+is used to verify well-formedness of the @totalPeano@
+proof term.
+%
 \toolname's termination and totality checker
-verifies that we are in fact doing induction
-properly, \ie the recursion in @zeroR@ is
-well-founded~(\S~\ref{sec:types-reflection}).
+use the hint to
+verify that we are in fact doing induction
+properly~(\S~\ref{sec:types-reflection}).
 
-\mypara{Commutativity}
-%
-Lets conclude by proving that @add@ is commutative:
-%
-\begin{mcode}
-add_com :: a:_ -> b:_ -> {add a b = add b a}
-
-add_com    Z  b =  #add# Z b
-                =. b
-                =. add b Z     $\because$ zeroR b
-                ** QED
-
-add_com (S a) b =  #add# (S a) b
-                =. S (add a b)
-                =. S (add b a) $\because$ add_com a b
-                =. add b (S a) $\because$ sucR b a
-                ** QED
-\end{mcode}
-%
-using a lemma @sucR@
+Similarly to @totalPeano@, we can define the rest of the @VerifiedOrd@
+proof methods and use them to create the verified instance.
 %
 \begin{code}
-  sucR :: n:Peano -> m:Peano ->
-                {add n (S m) = S (add n m)}
-  sucR = exercise_for_reader
+  instance Ord Peano where
+    (<=) = leq
+
+  instance VerifiedOrd Peano where
+    total = totalPeano
+\end{code}
+%
+Proving all the four @VerifiedOrd@ laws
+is a burden on the programmer.
+%becomes a burden as the datatype grows more complicated.
+%
+Since @Peano@ is isomorphic to @Nat@s,
+next we present how
+to reduce the @Peano@ proofs into the
+SMT automated integer proofs.
+
+\mypara{Isomorphisms}
+%
+In order to reuse proofs for a custom datatype,
+we provide a way to translate verified instances between isomorphic types~\cite{barthe2001type}.
+%% If our datatype is isomorphic to a nesting of binary sums and products, we
+%% should be able to reusing existing proofs.
+%% To verify operations on custom data types efficiently, we
+%% need to be able lift verified instances on one type to another.
+%
+We design a typeclass @Iso@ which witnesses the fact that
+two types are isomorphic.
+%, with respect to the built-in equality in \toolname{}
+%which is a congruence.
+
+\begin{mcode}
+  class Iso a b where
+    to      :: a -> b
+    from    :: b -> a
+    to$\circ$from :: x:a -> {to (from x) = x}
+    from$\circ$to :: x:a -> {from (to x) = x}
+\end{mcode}
+%
+For two isomorphic types @a@ and @b@
+we compare instances of @b@ using @a@'s
+comparison method.
+%
+\begin{mcode}
+  instance (Ord a, Iso a b) => Ord b where
+    x <= y = from x <= from y
+\end{mcode}
+%
+Then, we prove that @VerifiedOrd@ laws are closed under isomorphisms.
+%
+For example, we prove totality of comparison on @b@s
+using the @VerifiedOrd@ totality on @a@s
+
+\begin{mcode}
+  isoTotal :: (VerifiedOrd a, Iso a b)
+             => x:b -> y:b -> {x <= y || y <= x}
+  isoTotal x y
+   =  x <= y || y <= x
+   =. (from x) <= (from y) || (from y) <= (from x)
+      $\because$ total (from x) (from y)
+   ** QED
+\end{mcode}
+%
+We use @isoTotal@ to create a verified instance on @b@s.
+\begin{mcode}
+  instance (VerifiedOrd a, Iso a b)
+        => VerifiedOrd b where
+    total   = isoTotal
+\end{mcode}
+%
+With the above technique,
+and using Haskell's instances,
+getting a @VerifiedOrd@ instance for @Peano@
+reduces to definition of an @Iso Nat Peano@.
+%\VC{Iso (Either () Peano) Peano}
+
+\mypara{Proof Composition via Products}
+Finally, we present a mechanism to automatically
+reduce proofs on product types to proofs of the product components.
+%
+For example, lexicographic ordering preserves the ordering laws.
+%
+First, we use class instances to define lexicographic ordering.
+%
+\begin{mcode}
+  instance (VerifiedOrd a, VerifiedOrd b)
+        => Ord (a, b) where
+    (x1, y1) <= (x2, y2) =
+      if x1 == x2 then y1 <= y2 else x1 <= x2
+\end{mcode}
+%
+Then, we prove that lexicographic ordering
+preserves the ordering laws.
+%
+For example, it preserves totality.
+%
+\begin{mcode}
+  prodTotal :: (VerifiedOrd a, VerifiedOrd b)
+    => p:(a, b) -> q:(a, b) -> {p <= q || q <= p}
+  prodTotal p@(x1, y1) q@(x2, y2)
+   =  p <= q || q <= p
+   =. if x1 == x2 then (y1 <= y2 || y2 <= y1)
+                  else True $\because$ total x1 x2
+   =. if x1 == x2 then True
+                  else True $\because$ total y1 y2
+   ** QED
+\end{mcode}
+%
+Finally, using the @prodTotal@ proof method,
+we conclude that each instance defined via the lexicographic
+ordering is indeed a verified instance.
+%
+\begin{mcode}
+instance (VerifiedOrd a, VerifiedOrd b)
+      => VerifiedOrd (a, b) where
+  total   = prodTotal
+\end{mcode}
+%
+For example the type @(Peano, Peano)@ is derived to be a @VerifiedOrd@ instance.
+
+In short, we can decompose an algebraic datatype into an isomorphic type using sums and
+products to generate verified instances for arbitrary Haskell
+datatypes. This could be combined with the Glasgow Haskell Compiler's (GHC) support
+for generics~\cite{ghc-generics} to automate the derivation of verified instances
+for user datatypes.
+In \S\ref{sec:eval-parallelism}, we use these ideas to develop fully safe
+interfaces to LVish modules, as well as verifying programming patterns from DPJ.
+
+
+
+
+
+
+
+
+
+\begin{comment}
+
+While we must support user-defined datatypes, it is typically only a small
+subset of an application---such as the key types for a concurrent collection
+that requires verification effort.
+
+
+%%@VerifiedOrd@ instances for primitive types like @Int@, @Double@ are trivial to
+%%write, they just appeal to the SMT solver's built-in theories. Using the
+%%isomorphism machinery discussed later in this section, we can scale up these
+%%instances to arbitrary Haskell data types.
+\VC{Too long, which parts to cut?}
+
+\begin{code}
+data List a = Nil | a : List a
+type ListRep a = Either () (a, List a)
+
+reflect toRep :: List a -> ListRep a
+toRep Nil = Left ()
+toRep (x : xs) = Right (x , xs)
+
+reflect fromRep :: ListRep a -> List a
+fromRep (Left ()) = Nil
+fromRep (Right (x, xs)) = x : xs
+
+toFrom :: xs:ListRep a
+       -> {toRep (fromRep xs) == xs}
+toFrom (Left ())
+  =  toRep (fromRep (Left ()))
+  =. toRep Nil
+  =. Left ()
+  ** QED
+toFrom (Right (x, xs))
+  =  toRep (fromRep (Right (x, xs)))
+  =. toRep (x : xs)
+  =. Right (x, xs)
+  ** QED
+
+fromTo :: xs:List a
+       -> {fromRep (toRep xs) == xs}
+fromTo Nil
+  =  fromRep (toRep Nil)
+  =. fromRep (Left ())
+  =. Nil
+  ** QED
+fromTo (x : xs)
+  =  fromRep (toRep (x : xs))
+  =. fromRep (Right (x, xs))
+  =. x : xs
+  ** QED
+
+instance Iso (ListRep a) (List a) where
+  to   = fromRep
+  from = toRep
+  tof  = fromTo
+  fot  = toFrom
 \end{code}
 
-%
-% Again, note how case-splitting, induction, and
-% lemma reuse are just pattern-matching, recursion and
-% function application, via the lemma @sucR@:
+\RN{I'm not making any cuts on these big code blocks yet, but clearly they do
+  need cutting.  TODO.}
 
-Thus, refinement reflection lets us prove properties of Haskell programs
-just by writing Haskell programs: lemmas are just functions, case-splitting
-is just branching and pattern matching, and induction is just recursion.
+
+%%  -------------------------------------------------------------------------
+\mypara{Isomorphisms}
 %
-Next, we formalize refinement reflection and describe
-how to keep type checking decidable and predictable.
+In order to reuse proofs for a custom datatype, by decomposing it into sums and
+products, we need a way to translate verified instances between isomorphic types.
+%% If our datatype is isomorphic to a nesting of binary sums and products, we
+%% should be able to reusing existing proofs.
+%% To verify operations on custom data types efficiently, we
+%% need to be able lift verified instances on one type to another.
+%
+We design a typeclass @Iso@ which witnesses the fact that
+two types are isomorphic, with respect to the built-in equality in \toolname{}
+which is a congruence.
+
+\begin{code}
+class Iso a b where
+  to   :: a -> b
+  from :: b -> a
+  tof  :: x:a -> {to (from x) = x}
+  fot  :: x:a -> {from (to x) = x}
+\end{code}
+
+We can provide @Iso@ instances for each verified typeclass, because
+first-order laws are closed under isomorphisms.
+\red{As an example, we show the proof of \il{antisym} for \il{VerifiedOrd}.}
+
+\begin{mcode}
+reflect iso<= :: (VerifiedOrd a, Iso a b)
+              => b -> b -> Bool
+iso<= x y = (from x) <= (from y)
+
+fromInjective :: Iso a b => x:b -> y:b
+              -> {from x = from y => x = y}
+fromInjective x y
+  =  from x == from y
+  =. to (from x) == to (from y)
+  =. x == to (from y) $\because$ tof x
+  =. x == y           $\because$ tof y
+  ** QED
+
+iso<=Antisym :: (VerifiedOrd a, Iso a b)
+             => x:b -> y:b
+             -> {iso<= x y && iso<= y x => x = y}
+iso<=Antisym x y
+  =  iso<= x y && iso<= y x
+  =. (from x) <= (from y) && (from y) <= (from x)
+  =. (from x) == (from y)
+    $\because$ antisym (from x) (from y)
+  =. x == y $\because$ fromInjective x y
+  ** QED
+\end{mcode}
+
+\end{comment}
