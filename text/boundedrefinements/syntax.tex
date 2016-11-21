@@ -2,25 +2,25 @@
 \ra{0.9}
 \begin{figure}[t!]
 \centering
+\captionsetup{justification=centering}
 $$
 \begin{array}{rrcl}
 \emphbf{Expressions} \quad 
   & e & ::=     & x 
                   \spmid c 
                   \spmid \efunt{x}{\rtyp}{e} 
-                  \spmid \eapp{e}{x}      \\
-  &   &  \spmid & \elet{x}{e}{e}{\rtyp}   \\
+                  \spmid \eapp{e}{x}      \spmid
+                  \elet{x}{e}{e}{\rtyp}   \\
   &   &  \spmid & \etabs{\tvar}{e}  
-                  \spmid \etapp{e}{\rtyp} \\ 
-  &   &  \spmid & \epabs{\rvar}{\rtyp}{e}
+                  \spmid \etapp{e}{\rtyp} 
+                  \epabs{\rvar}{\rtyp}{e}
                   \spmid \epapp{e}{\constraint}     \\[0.03in] 
   
 \emphbf{Constants} \quad
   & c 
   & ::= 
-  & \true \spmid \false \spmid \ecrash \\
- %  && \spmid & \eunit \spmid \ecrash \\
-  && \spmid &  0 \spmid 1 \spmid -1 \spmid \dots
+  & \etrue \spmid \efalse \spmid \ecrash \spmid
+   0 \spmid 1 \spmid -1 \spmid \dots
   \\[0.05in] 
   
 \emphbf{Parametric Refinements} \quad 
@@ -57,8 +57,8 @@ $$
 
 \emphbf{Types} \quad 
   & \rtyp
-  & ::=      & \tref{b}{\reft} \\
-  & & \spmid & \trfun{x}{\rtyp}{\rtyp}{\reft} \\[0.03in]
+  & ::=      & \tref{b}{\reft} \spmid
+  \trfun{x}{\rtyp}{\rtyp}{\reft} \\[0.03in]
 
 \emphbf{Bounded Types} \quad 
   & \bt
@@ -71,7 +71,7 @@ $$
           \spmid \tpabs{\rvar}{\rtyp}{\sigma} \\[0.03in]
 \end{array}
 $$
-\caption{Syntax of \corelan.}
+\caption{Stratified Syntax of \corelan.}
 \label{fig:syntax}
 \end{figure}
 
@@ -91,38 +91,4 @@ $$
 %%%% \label{fig:letsyntax}
 %%%% \end{figure}
 
-\begin{figure}[t!]
-$$
-\begin{array}{rrcl}
-\centering
-%%% \emphbf{Environment} \quad 
-%%%   & \Gamma & ::=
-%%%   & \emptyset \spmid  x \colon r, \Gamma
-%%%   \\[0.05in]
-%%% 
-%%% \emphbf{Environment} \quad 
-%%%   & \Phi & ::=
-%%%   & \emptyset \spmid x\colon t, \Phi
-%%%    \\[0.05in]
-%%%
-%%% \emphbf{Function Type} \quad 
-%%%   & t & ::=
-%%%   &    x_1\colon b_1 \rightarrow \dots \rightarrow 
-%%%         x_n\colon b_n \rightarrow\tbunit
-%%%   \\[0.05in]
-
-\emphbf{Bounded Types} \quad 
-  & \bt         & ::= & \rtyp 
-                        \spmid \tconstraint{\constraint}{\bt} \\[0.03in]
-
-\emphbf{Expressions} \quad 
-  & e           & ::= & \dots 
-                        \spmid \econstraint{\constraint}{e} 
-                        \spmid \econstantconstraint{e}{\constraint} \\
-\end{array}
-$$
-\caption{Extending Syntax of \corelan to \boundedcorelan.} 
-\label{fig:boundedsyntax}
-\end{figure}
-\ra{1.0}
 

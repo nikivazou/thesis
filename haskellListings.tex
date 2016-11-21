@@ -41,10 +41,11 @@
            % {QED}{{{\color{lcolor}QED}}}3
            % {***}{{{\color{lcolor}***}}}3
            {?}{{{$\therefore$}}}1
+           % {<}{{$<$}}1
+           % {>}{{$>$}}1
            {<=}{{$\leq$}}2
+           {>>=}{>>=}3
            {>=}{{$\geq$}}2
-           {<}{{$<$}}1
-           {>}{{$>$}}1
            {theta}{{$\theta$}}1
            {env}{{$\Gamma$}}1
            {|-}{{$\vdash$}}1
@@ -71,6 +72,11 @@
            {_m}{{${}_m$}}1
            {_n}{{${}_n$}}1
            {m^+}{{m${}^{+}$}}2
+           {SetMem}{{$\in$}}1
+           {Set_cup}{{$\cup$}}1
+           {Set_cap}{{$\cap$}}1
+           {Set_emp}{{$\emptyset$}}1
+           {Set_sub}{{$\subseteq$}}1
            },
 	emph=
 	{[1]
@@ -117,7 +123,7 @@
 	emph=
 	{[3]
 		case,class,data,deriving,do,else,if,return,def,import,in,infixl,infixr,instance,let,
-		module,measure,predicate,of,primitive,then,refinement,type,where,lazy
+		module,measure,predicate,of,primitive,then,refinement,type,where,lazy, type, bound
 	},
 	emphstyle={[3]\color{preto_ulisses}\textbf},
 	emph=

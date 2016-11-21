@@ -19,10 +19,12 @@
 \renewcommand\corelan{$\lambda_{P}$\xspace}
 
 
+\renewcommand\tbind[2]{{#1\!:\!#2}}
+
 
 \providecommand\eletn[4]{\ensuremath{\nhaskell{let} \ {#1_1 = #2_1, \ldots, #1_{#4} = #2_{#4}} \ \nhaskell{in} \ #3}}
 \providecommand\elett[3]{\ensuremath{\nhaskell{let} \ #1 = #2 \ \nhaskell{in} \ #3}}
-\providecommand\elet[4]{\ensuremath{\nhaskell{let} \ \tbind{#1}{#4} = #2 \ \nhaskell{in} \ #3}}
+\renewcommand\elet[4]{\ensuremath{\nhaskell{let} \ \tbind{#1}{#4} = #2 \ \nhaskell{in} \ #3}}
 \providecommand\eletrec[3]{\ensuremath{\nhaskell{let rec} \ #1 = #2 \ \nhaskell{in} \ #3}}
 \providecommand\ecase[4]{\ensuremath{\nhaskell{case} \ (#1 = #2) \ \nhaskell{of} \ \mid_i  #3 \ \rightarrow \ #4}}
 
@@ -39,7 +41,7 @@
 
 \providecommand\CONS[2]{#1 : #2}
 \providecommand\NIL{[]}
-\providecommand\EXT[3]{#1,\tbind{#2}{#3}}
+\renewcommand\EXT[3]{#1,\tbind{#2}{#3}}
 \providecommand\EXTT[3]{#1,{#3}}
 
 
@@ -52,7 +54,7 @@
 \providecommand{\tyvarb}{\beta}
 \providecommand{\rvar}{\pi}
 \providecommand{\tvar}{\alpha}
-\providecommand\rtyp{t}
+\renewcommand\rtyp{t}
 %% \providecommand\utyp{t}
 \providecommand\utyp{\tau}
 
@@ -71,7 +73,7 @@
 
 %% Bounded Types
 
-\providecommand\bt{\ensuremath{\rho}}
+\newcommand\bt{\ensuremath{\rho}}
 
 
 \providecommand\constraint{\ensuremath{\phi}}
@@ -199,9 +201,9 @@
 
 \providecommand\corelanm{$\lambda_{LP}$'\xspace}
 
-\providecommand{\creft}{\ensuremath{p}\xspace}
-\providecommand{\reft}{\ensuremath{r}\xspace}
-\providecommand{\areft}{\ensuremath{a}\xspace}
+\newcommand{\creft}{\ensuremath{p}\xspace}
+\renewcommand{\reft}{\ensuremath{r}\xspace}
+\renewcommand{\areft}{\ensuremath{a}\xspace}
 \providecommand\rvapp[2]{\ensuremath{{#1 \ \overline{#2}}}} 
 \providecommand\tref[2]{\ensuremath{\left\lbrace \vref : #1\mid #2\right\rbrace}}
 % sort trefs to fit in one line
@@ -287,7 +289,6 @@
 \providecommand\etabs[2]{\ensuremath{\Lambda #1 . #2}}
 \providecommand\epabs[3]{\ensuremath{\Lambda {#1:#2} . #3}}
 
-\providecommand\tbind[2]{{#1\!:\!#2}}
 \providecommand\efunt[3]{\ensuremath{\lambda \tbind{#1}{#2}. #3}}
 \providecommand\efunbar[2]{\ensuremath{\lambda \overline{#1} . #2}}
 %\providecommand\efun[2]{\ensuremath{\lambda #1 . #2}}

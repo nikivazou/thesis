@@ -1,4 +1,4 @@
-We present a notion of bounded quantification for refinement types
+We presented a notion of bounded quantification for refinement types
 and show how it expands the expressiveness of refinement typing
 by using it to develop typed combinators for:
 %
@@ -14,3 +14,14 @@ by using it to develop typed combinators for:
 This leap in expressiveness comes via a translation to ``ghost" functions,
 which lets us retain the automated and decidable SMT based checking and
 inference that makes refinement typing effective in practice.
+
+With Bounded Refinement Types we get \textit{relatively complete} 
+expressiveness of specification, that is we can use refinement types
+to express any property referring to the underlying (decidable) logic. 
+%
+Thus our expressiveness power is still limited, 
+we cannot use arbitrary Haskell functions is the specifications. 
+%
+Next we see how to overcome this expressiveness limitation 
+and thus allow arbitrary Haskell expressions into the specifications
+while still preserving decidable type checking. 

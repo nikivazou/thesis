@@ -42,7 +42,7 @@ are essential for \emph{modular} verification.
 In this chapter we introduce \emph{Bounded Refinement Types} which enable 
 \emph{bounded quantification} over refinements. 
 %
-Previously (Chapter~\ref{chapter:abstractrefinements}) 
+Previously (Chapter~\ref{chapter:abstractrefinements}),
 we developed Abstract Refinement Types, a mechanism
 for quantifying type signatures over abstract refinement parameters.
 %
@@ -63,7 +63,6 @@ setting, correspond to subtyping constraints that must be satisfied
 by the concrete refinements used at any call-site. This
 addition proves to be remarkably effective.
 
-\NV{HERE}
 \begin{itemize}
 \item
 First, we demonstrate via a series of short examples how bounded refinements
@@ -74,7 +73,8 @@ typing~(\S~\ref{sec:overview}).
 \item
 Second, we formalize bounded types and show how bounds are translated
 into ``ghost'' functions, reducing type checking and inference to the
-``unbounded'' setting of~\cite{vazou13}, thereby ensuring that checking
+``unbounded'' setting of chapter~\ref{chapter:abstractrefinements}, 
+thereby ensuring that checking
 remains decidable. Furthermore, as the bounds are Horn constraints, we
 can directly reuse the abstract interpretation of Liquid Typing~\citep{LiquidPLDI08}
 to automatically infer concrete refinements at instantiation

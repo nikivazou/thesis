@@ -17,7 +17,9 @@ information about movies, and has the schema:
  Title:String, Dir:String, Year:Int, Star:Double
 \end{code}
 
-\begin{table}[t]
+\begin{table}[h]
+\centering
+\captionsetup{justification=centering}
 $$
 \begin{tabular}{| l | l| r | r |}
   \hline
@@ -44,11 +46,11 @@ used to write safe database queries~(\S~\ref{subsec:relational}).
 
 We represent the rows of a database with dictionaries, 
 which are maps from a set of keys to values.
-In the sequel, each key corresponds to a column, and 
+In the sequel, each key corresponds to a column and 
 the mapped value corresponds to a valuation of the column 
 in a particular row.
 
-\paragraph{A dictionary} @Dict <r> k v@ maps a key @x@ of 
+\mypara{A dictionary} @Dict <r> k v@ maps a key @x@ of 
 type @k@ to a value of type @v@ that satisfies the property @r x@
 %
 % \NV CUT
@@ -57,7 +59,7 @@ type @k@ to a value of type @v@ that satisfies the property @r x@
    
   data Dict k v <r :: Range k v> = D {
       dkeys :: [k]
-    , dfun  :: x:{k | x Set_mem elts dkeys} -> v<r x>
+    , dfun  :: x:{k | x SetMem elts dkeys} -> v <r x>
     }
 \end{code}      
 %
@@ -69,9 +71,9 @@ elements @x@ of the domain @dkeys@.
 For each such element @x@, @dfun@ returns a value that satisfies the
 property @r x@.
 
-\paragraph{Propositions about the theory of sets} can be decided
+\mypara{Propositions about the theory of sets} can be decided
 efficiently by modern SMT solvers. Hence we use such 
-propositions within refinements~\citep{realworldliquid}.
+propositions within refinements as demonstrated in chapter~\ref{chapter:tool}.
 % 
 The measures (logical functions) @elts@ and @keys@ 
 specify the set of keys in a list and a dictionary 
@@ -86,7 +88,7 @@ respectively:
   keys d      = elts (dkeys d) 
 \end{code}
 
-\paragraph{Domain and Range of dictionaries.}
+\mypara{Domain and Range of dictionaries.}
 %
 In order to precisely define the domain (\eg columns) and range (\eg values)
 of a dictionary (\eg row), we define the following aliases:
@@ -105,8 +107,7 @@ the values contained with the dictionary.
 For example,
 %
 \begin{code}
-  RD < \d -> keys d == {"x"}
-     , \k v-> 0 < v         > String Int
+  RD < \d -> keys d = {"x"}, \k v-> 0 < v> String Int
 \end{code}
 %
 %% instantiating @dom@ with 
@@ -123,7 +124,7 @@ instantiating the abstract refinements
 @dom@ and @rng@.
 
 
-\paragraph{An empty dictionary} has an empty domain 
+\mypara{An empty dictionary} has an empty domain 
 and a function that will never be called:
 %
 \begin{code}
@@ -137,15 +138,15 @@ and a function that will never be called:
 %% Thus, @empty@'s range satisfies \textit{any} predicate -- that is,
 %% it satisfies @false@.
  
-\paragraph{We define singleton maps} as dependent pairs 
+\mypara{We define singleton maps} as dependent pairs 
 @x := y@ which denote the mapping from @x@ to @y@:
 %
 \begin{code}
   data P k v <r :: Range k v> 
-    = (:=) {pk :: k, pv :: v<r pk>}
+    = (:=) {pk :: k, pv :: v <r pk>}
 \end{code}
 %
-Thus, @key := val@ has type \hbox{@P<r> k v@} only if 
+Thus, @key := val@ has type \hbox{@P <r> k v@} only if 
 @r key val@.
 
 \paragraph{A dictionary may be extended} with a singleton
@@ -157,11 +158,10 @@ binding (which maps the new key to its new value).
          -> RD <addKey (pk bind) dict, r> k v
  
   (k := v) += (D ks f) 
-         = D (k:ks) 
-             (\i -> if i == k then v else f i)
+         = D (k:ks) (\i -> if i == k then v else f i)
   
   addKey = \k d d' -> keys d' == {k} Set_cup keys d
-  pTrue  = \_ -> true
+  pTrue  = \_ -> True
 \end{code}
 %
 Thus, @(k := v)  += d@ evaluates to 
@@ -176,7 +176,7 @@ The return type states that the output dictionary's
 domain is that of the domain of @dict@ extended by 
 the new key @(pk bind)@.
 
-\paragraph{To model a row in a table} \ie a schema, 
+\mypara{To model a row in a table} \ie a schema, 
 we define the unrefined (Haskell) type @Schema@, 
 which is a dictionary mapping @String@s, \ie the 
 names of the fields of the row, to elements of 
@@ -184,7 +184,7 @@ some universe @Univ@ containing @Int@, @String@
 and @Double@.
 %
 (A closed universe is not a practical restriction; 
-most databases support a fixed set of types.)
+most databases support a fixed set of types).
 % 
 \begin{code}
   data Univ   = I Int | S String | D Double
@@ -192,7 +192,7 @@ most databases support a fixed set of types.)
   type Schema = RD String Univ
 \end{code}
 
-\paragraph{We refine Schema} with concrete instantiations
+\mypara{We refine Schema} with concrete instantiations
 for @dom@ and @rng@, in order to recover precise 
 specifications for a particular database. For example, 
 @MovieSchema@ is a refined @Schema@ that describes the 
@@ -200,22 +200,20 @@ rows of the Movie table in Figure~\ref{fig:moviedb}:
 %
 %
 \begin{code}
-type MovieSchema = RD <md, mr> String Univ
+  type MovieSchema = RD <md, mr> String Univ
 
-  md = \d -> 
-      keys d={"year","star","dir","title"}
+  md = \d -> keys d={"year","star","dir","title"}
   mr = \k v -> 
-      (k = "year"  => isI v && 1888 < toI v)
-   && (k = "star"  => isD v && 0 <= toD v <= 10)
-   && (k = "dir"   => isS v)
-   && (k = "title" => isS v)
+       (k = "year"  => isI v && 1888 < toI v)
+     && (k = "star"  => isD v && 0 <= toD v <= 10)
+     && (k = "dir"   => isS v)
+     && (k = "title" => isS v)
 
   isI (I _)   = True 
   isI _       = False 
 
   toI       :: {v: Univ | isI v} -> Int
   toI (I n) = n
-...
 \end{code}
 %
 The predicate @md@ describes the \emph{domain} of the movie schema,
@@ -241,7 +239,7 @@ also greater than @1888@.
 %%%require the programmer to manually thread proofs of these range
 %%%predicates throughout the code.
 
-\paragraph{We populate the Movie Schema} by extending the
+\mypara{We populate the Movie Schema} by extending the
 empty dictionary with the appropriate pairs of fields and 
 values. For example, here are the rows from the table
 in Figure~\ref{fig:moviedb}
@@ -262,9 +260,9 @@ in Figure~\ref{fig:moviedb}
 \end{code}
 %
 Typing @movie1@ (and @movie2@) as @MovieSchema@
-boils down to proving:
+boils down to proving
 %
-That @keys movie1 = {"year", "star", "dir", "title"}@;
+that @keys movie1 = {"year", "star", "dir", "title"}@
 and that each key is mapped to an appropriate value 
 as determined by @mr@.
 %
@@ -283,7 +281,7 @@ director, while @movie2@ follows the opposite order.
 %%%collections constructed with different ordering have the same type
 %%%would require an additional (manually-supplied) equality proof.
 
-\paragraph{Database Tables} are collections of rows, 
+\mypara{Database Tables} are collections of rows, 
 \ie collections of refined dictionaries.
 %
 We define a type alias @RT s@ (Refined Table) for 
@@ -334,14 +332,14 @@ can be found online~\cite{liquidhaskellgithub}.
           => RT s1 -> RT s2 -> RT s
 \end{code}
 
-\paragraph{\texttt{union} and \texttt{diff}} compute the union 
+\mypara{{Union} and {diff}} compute the union 
 and difference, respectively of the (rows of) two tables.
 %
 The types of @union@ and @diff@ state that the 
 operators work on tables with the same schema 
 @s@ and return a table with the same schema.
 
-\paragraph{\texttt{select}} takes a predicate @p@
+\mypara{{select}} takes a predicate @p@
 and a table @t@ and filters the rows of @t@ 
 to those which that satisfy @p@.
 %
@@ -351,7 +349,7 @@ not mapped in @t@, as the predicate @p@
 is constrained to require a dictionary 
 with schema @s@.
 
-\paragraph{\texttt{project}} takes
+\mypara{{project}} takes
 a list of @String@ fields @ks@ 
 and a table @t@ and projects 
 exactly the fields @ks@ at 
@@ -366,17 +364,15 @@ result table has type @RTEqFlds ks s@,
 \ie its domain has exactly the elements @ks@. 
 %
 \begin{code}
-  type RTSubEqFlds ks s
-    = RT s{dom = \z -> elts ks Set_sub  keys z}
+  type RTSubEqFlds ks s = RT s{dom = \z -> elts ks Set_sub  keys z}
 
-  type RTEqFlds ks s
-    = RT s{dom = \z -> elts ks == keys z}
+  type RTEqFlds ks s    = RT s{dom = \z -> elts ks = keys z}
 \end{code}
 % 
 The range of the argument and the result tables 
 is the same and equal to @s.rng@.
 
-\paragraph{\texttt{product}} takes two tables 
+\mypara{{product}} takes two tables 
 as input and returns their (Cartesian) 
 product.
 %
@@ -408,8 +404,7 @@ schema; we formalize this notion using bounds:
              => s.dom v
 
   bound Range si s = \x k v -> 
-    si.dom x => k Set_mem keys x => si.rng k v 
-             => s.rng k v 
+    si.dom x => k SetMem keys x => si.rng k v => s.rng k v 
 \end{code}
 
 %% We note that none of these restrictions can be 
@@ -424,7 +419,7 @@ time the exact ``shape'' of the resulting tables.
 
 % \subsection{Data Base Queries}\label{subsec:dbclient}
 
-\paragraph{We can query Databases} by writing functions 
+\mypara{We can query Databases} by writing functions 
 that use the relational algebra combinators. 
 %
 For example, here is a query that returns the 

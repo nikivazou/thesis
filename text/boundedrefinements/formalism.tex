@@ -3,7 +3,7 @@
 Next we formalize Bounded Refinement Types by defining
 a core calculus \boundedcorelan and showing how it can
 be reduced to \corelan, the core language of Abstract
-Refinement Types~\citep{vazou13}.
+Refinement Types~\ref{chapter:abstractrefinements}.
 %
 We start by defining the syntax~(\S~\ref{sec:syntax-corelan})
 and semantics~(\S~\ref{sec:semantics-corelan}) of \corelan
@@ -24,21 +24,27 @@ decidable in the presence of bounded refinements~(\S~\ref{sec:infer}).
 \input{text/boundedrefinements/syntax}
 
 We build our core language on top of \corelan, the language
-of Abstract Refinement Types~\citep{vazou13}.
+of Abstract Refinement Types\ref{chapter:abstractrefinements}.
 %
 Figure~\ref{fig:syntax} summarizes the syntax of \corelan,
 a polymorphic $\lambda$-calculus extended with abstract
 refinements.
+%
+For an easier transition to the syntax of Bounded Refinement Types, 
+we rewrite the syntax of \corelan as initially presented in Figure~\ref{fig:abstractrefinements:syntax}
+by stratifying type schemata to include bounded types, that for now, 
+are plain types.
 
-\paragraph{The Expressions} of \corelan include the usual variables $x$,
+
+\mypara{The Expressions} of \corelan include the usual variables $x$,
 primitive constants $c$, $\lambda$-abstraction $\efunt{x}{\rtyp}{e}$,
 application $\eapp{e}{e}$,
 let bindings $\elet{x}{e}{e}{\rtyp}$,
 type abstraction $\etabs{\alpha}{e}$,
 and type application $\etapp{e}{\rtyp}$.
 (We add let-binders to \corelan
-from \cite{vazou13} as they can be reduced to $\lambda$-abstractions
-in the usual way.)
+from Figure~\ref{fig:abstractrefinements:syntax} as they can be reduced to $\lambda$-abstractions
+in the usual way).
 %
 The parameter $\rtyp$ in the type application is a \emph{refinement
 type}, as described shortly.  Finally, \corelan includes refinement
@@ -59,23 +65,23 @@ refinements $\reft$ closed under lambda abstractions.
 %%%\nv{with $\epapp{e}{\phi}$}
 %%%\nv{Question: is this a coincidence?}
 
-\paragraph{The Primitive Constants} of \corelan include
-\true, \false, @0@, @1@, @-1@, \etc. In addition, we include a
+\mypara{The Primitive Constants} of \corelan include
+\etrue, \efalse, @0@, @1@, @-1@, \etc. In addition, we include a
 special untypable constant \ecrash that models ``going wrong''.
 Primitive operations return a crash when invoked with inputs
 outside their domain, \eg when @/@ is invoked with @0@ as the
-divisor, or when an @assert@ is applied to \false.
+divisor or when an @assert@ is applied to \efalse.
 
-\paragraph{Atomic Refinements} $\areft$ are either concrete or abstract refinements.
+\mypara{Atomic Refinements} $\areft$ are either concrete or abstract refinements.
 %
 A \emph{concrete refinement} \creft is a boolean valued expression
 (such as a constant, negation, equality, \etc)
 drawn from a \emph{strict subset} of the language of expressions
 which includes only terms that
 %
-(a)~neither diverge nor crash, and
+(a)~neither diverge nor crash and
 %
-(b)~can be embedded into an SMT decidable refinement logic including
+(b)~can be embedded into an SMT decidable logic including
 %
 the quantifier free theory of linear arithmetic and uninterpreted
 functions~\cite{LiquidICFP14}.
@@ -90,7 +96,7 @@ To enable inference, we only allow implications to appear within
 bounds $\constraint$ (\S~\ref{sec:infer}).
 
 
-\paragraph{The Types of} \corelan written $\rtyp$ include basic types,
+\mypara{The Types of} \corelan, written $\rtyp$, include basic types,
 dependent functions and schemata quantified over type and refinement
 variables $\tvar$ and $\rvar$ respectively.
 %
@@ -103,104 +109,47 @@ the parameter $x$ can appear in the refinements of the output type.
 %
 (We include refinements for functions, as refined type variables can be
 replaced by function types. However, typechecking ensures these refinements
-are trivially true.)
+are trivially true).
 %
 In \corelan bounded types $\bt$ are just a synonym for types $\rtyp$.
 %
-Finally, schemata are obtained by quantifying bounded types over type
+Finally, schemata quantify bounded types over type
 and refinement variables.
 
-\subsection{Semantics of \corelan}\label{sec:semantics-corelan}
-
-\input{text/boundedrefinements/corerules}
-
-Figure \ref{fig:rules} summarizes the static semantics of \corelan
-as described in ~\citep{vazou13}.
-Unlike~\citep{vazou13} that syntactically separates concrete ($p$)
-from abstract ($\rvapp{\rvar}{x}$) refinements,
-here, for simplicity, we merge both concrete and abstract refinements to
-atomic refinements $\areft$.
-
-\paragraph{A type environment} $\Gamma$ is a sequence of type bindings $x:\sigma$.
-We use environments to define three kinds of judgments:
-
-\begin{itemize}
-\item{\emphbf{Well-formedness judgments} (\isWellFormed{\Gamma}{\sigma})}
-state that a type schema $\sigma$ is well-formed under environment
-$\Gamma$. That is, the judgment states that the refinements in $\sigma$
-are boolean expressions in the environment $\Gamma$.
-
-\item{\emphbf{Subtyping judgments} (\isSubType{\Gamma}{\sigma_1}{\sigma_2})}
-state that the type schema $\sigma_1$ is a subtype of the type schema
-$\sigma_2$ under environment $\Gamma$. That is, the judgment states that
-when the free variables of $\sigma_1$ and $\sigma_2$ are bound to values
-described by $\Gamma$, the values described by $\sigma_1$ are a subset
-of those described by $\sigma_2$.
-
-\item{\emphbf{Typing judgments} (\hastype{\Gamma}{e}{\sigma})} state that
-the expression $e$ has the type schema $\sigma$ under environment $\Gamma$.
-That is, the judgment states that when the free variables in $e$ are bound
-to values described by $\Gamma$, the expression $e$ will evaluate to a value
-described by $\sigma$.
-\end{itemize}
-
-\paragraph{The Well-formedness rules}
-check that the concrete and abstract refinements are indeed $\tbbool$-valued
-expressions in the appropriate environment. The key rule is \wtBase, which
-checks that the refinement $\reft$ is boolean.
-
-\paragraph{The Subtyping rules}
-stipulate when the set of values described by schema $\sigma_1$ is subsumed
-by (\ie contained within) the values described by $\sigma_2$.
-The rules are standard except for \tsubBase, which reduces subtyping of
-basic types to validity of logical implications, by translating the
-refinements $r$ and the environment $\Gamma$ into logical formulas:
-%
-\begin{align*}
-\inter{r}      & \defeq r &
-\inter{\Gamma} & \defeq \bigwedge \{ \SUBST{r}{\vref}{x}\ |\ (x, \tref{b}{r}) \in \Gamma \}
-\end{align*}
-%
-Recall that we ensure that the refinements $r$
-belong to a decidable logic so that validity
-checking can be performed by an off-the-self
-SMT solver.
-
-\paragraph{Type Checking Rules}
-are standard except for \tpgen and \tpinst, which
-pertain to abstraction and instantiation of abstract refinements.
-%
-The rule \tpgen is the same as \tfunction: we simply check the body
-$e$ in the environment extended with a binding for the refinement
-variable $\rvar$.
-%
-The rule \tpinst checks that the concrete refinement is of the appropriate
-(unrefined) type $\tau$, and then replaces all (abstract) applications of
-$\rvar$ inside $\sigma$ with the appropriate (concrete) refinement $\reft'$
-with the parameters $\overline{x}$ replaced with arguments at that application.
-%
-In~\cite{vazou13} we prove the following soundness result for \corelan
-which states that well-typed programs cannot crash:
-
-\begin{lemma*}[Soundness of \corelan~\cite{vazou13}]
-\label{theorem:core}
-If   $\hastype{\emptyset}{e}{\sigma}$
-then $e \not \goestostar{\ecrash}$.
-\end{lemma*}
-
-
 \subsection{Syntax of \boundedcorelan}\label{sec:syntax-boundedcorelan}
+
+\begin{figure}[t!]
+\centering
+\captionsetup{justification=centering}
+$$
+\begin{array}{rrcl}
+\centering
+
+\emphbf{Bounded Types} \quad 
+  & \bt         & ::= & \rtyp 
+                        \spmid \tconstraint{\constraint}{\bt} \\[0.03in]
+
+\emphbf{Expressions} \quad 
+  & e           & ::= & \dots 
+                        \spmid \econstraint{\constraint}{e} 
+                        \spmid \econstantconstraint{e}{\constraint} \\
+\end{array}
+$$
+\caption{Extending Syntax of \corelan to \boundedcorelan.} 
+\label{fig:boundedsyntax}
+\end{figure}
+\ra{1.0}
 
 Figure~\ref{fig:boundedsyntax} shows how we obtain the syntax for
 \boundedcorelan by extending the syntax of \corelan with
 \emph{bounded} types.
 
-\paragraph{The Types} of \boundedcorelan extend those of \corelan with
+\mypara{The Types} of \boundedcorelan extend those of \corelan with
 bounded types $\bt$, which are the types $\rtyp$ guarded by bounds
 $\constraint$.
 
 %% {HERE: Colin:How does $\phi$ influence or  interact with $\rho$?  It’s not clear here.}
-\paragraph{The Expressions} of \boundedcorelan extend those of \corelan
+\mypara{The Expressions} of \boundedcorelan extend those of \corelan
 with \emph{abstraction} over bounds $\econstraint{\constraint}{e}$ and
 \emph{application} of bounds $\econstantconstraint{e}{\constraint}$.
 %
@@ -212,16 +161,16 @@ We include an explicit bound application form
 $\econstantconstraint{e}{\constraint}$ to simplify
 the formalization; these applied bounds are automatically
 synthesized from the type of $e$, and are of the form
-$\overline{\efunt{x}{\bt}{}}{\true}$.
+$\overline{\efunt{x}{\bt}{}}{\etrue}$.
 
-\paragraph{Notation.}
+\mypara{Notation.}
 We write
 $b$,
 %$\tref{b}{\reft}$ and
 $\tpp{b}{\rvapp{\pi}{x}}$,
 $\tpref{b}{\rvapp{\pi}{x}}{\reft}$
 to abbreviate
-$\tref{b}{\true}$,
+$\tref{b}{\etrue}$,
 $\tref{b}{\rvapp{\pi}{x}\ \vref}$,
 $\tref{b}{\reft \wedge \rvapp{\pi}{x}\ \vref}$
 %% $\tpref{b}{\true}{\true}$,
@@ -231,14 +180,6 @@ respectively.
 We say a type or schema is \emph{non-refined} if all the
 refinements in it are $\true$.
 %
-%%% We get the non-refined variant of a type $\rtyp$ by the
-%%% function $\totrue{\rtyp}$, defined:
-%%% %
-%%% \begin{align*}
-%%% \totrue{\tref{b}{\reft}} \defeq & \tref{b}{\true} \\
-%%% \totrue{\trfun{x}{\rtyp_1}{\rtyp_2}{\reft}} \defeq & \trfun{x}{\totrue{\rtyp_1}}{\totrue{\rtyp_2}}{\true}
-%%% \end{align*}
-%%% %
 We get the \textit{shape} of a type $\rtyp$ (\ie the System-F type)
 by the function $\toshape{\rtyp}$ defined:
 %
@@ -253,9 +194,9 @@ by the function $\toshape{\rtyp}$ defined:
 Next, we show how to translate a term from \boundedcorelan to
 one in \corelan. We assume, without loss of generality that the
 terms in \boundedcorelan are in Administrative Normal Form
-(\ie all applications are to variables.)
+(\ie all applications are to variables).
 
-\paragraph{Bounds Correspond To Functions} that explicitly
+\mypara{Bounds Correspond To Functions} that explicitly
 ``witness'' the fact that the bound constraint holds at a
 given set of ``input'' values.
 %
@@ -266,7 +207,7 @@ to \emph{instantiate} the constraint for that particular set
 of values.
 
 
-\paragraph{Bound Environments} \benv are used by our translation
+\mypara{Bound Environments} \benv are used by our translation
 to track the set of
 bound-functions (names) that are in scope at each program point.
 %
@@ -280,9 +221,9 @@ by our translation.
 The translation ignores refinements entirely; both environments
 map their names to their non-refined types.
 
-\paragraph{The Translation is formalized} in
+\mypara{The Translation is formalized} in
 Figure~\ref{fig:translation} via a
-relation $\txexpr{\cenv}{\benv}{e}{e'}$,
+relation $\txexpr{\cenv}{\benv}{e}{e'}$
 that translates the expression
 $e$ in $\boundedcorelan$ into
 $e'$ in $\corelan$.
@@ -311,18 +252,9 @@ Here we focus on the three interesting rules:
 %
 \end{enumerate}
 
-%%Axiomatic functions are function that are used to represent local axioms,
-%%or constraints of functions. Calling these functions is equivalent to instantiating
-%%the axiom; while the definition of these axioms is equivalent to proving the axiom.
-
-%% With that we define the translation of expressions as
-%% \begin{definition}
-%% $ \tx{e} = e' \Leftrightarrow \txexpr{\emptyset}{\emptyset}{e}{e'}$.
-%% \end{definition}
-
 \input{text/boundedrefinements/translation}
 
-\paragraph{1.  Rule~\txCAbs} translates bound abstractions
+\mypara{1.  Rule~\txCAbs} translates bound abstractions
 $\econstraint{\phi}{e}$ into a plain $\lambda$-abstraction.
 %
 In the translated expression $\efunt{f}{\txbound{\constraint}}{e'}$
@@ -344,38 +276,9 @@ the regular code) and saves it in the bound environment
 $\benv$ to let us materialize the bound constraint when
 translating the body $e$ of the abstraction.
 
-%%% which is a function type that
-%%% The type $\txbound{\constraint}$ is a function type that
-%%% has arguments the elements of the environment and
-%%% the type over which the constraint applies
-%%% and has result a $\tbunit$ type whose refinement
-%%% 1)~ depends only on the inputs and 2)~ guarantees the constraint $\phi$.
-%%% The translation of a constraint to a function type in formally defined as follows
-%%% %%% \txbound{\isSubType{x_1\colon r_1, \dots, x_n\colon r_n}
-%%% 	{\tpref{b}{p_1}{\reft_1}}
-%%% 	{\tpref{b}{p_2}{\reft_2}}} \defeq \\
-%%% {x_1}\colon{\toshape{r_1}} \rightarrow \dots \rightarrow
-%%% {x_n}\colon{\toshape{r_n}} \rightarrow
-%%% x\colon b \rightarrow
-%%% \tref{\tbunit}{  q \Rightarrow q_1 \Rightarrow q_2}
-%%% \end{align*}
-%%% with
-%%% $ q = \bigwedge_{i = 1 \dots n} \tologic{x_i}{r_i}$,
-%%% $ q_i = \tologic{x}{\tpref{b}{p_i}{\reft_i}}$
-%%%
-%%% and
-%%% $\tologic{x}{\tpref{b}{\areft}{\reft}} = \reft\sub{\vref}{x} \land \areft\ x$
-
-%%% Having the axiomatic function $f \colon \txbound{\phi}$
-%%% at scope is very powerful because application of that
-%%% function, \ie $f\ e_1 \dots e_n\ e$, strengthens the
-%%% type of the last argument $e$
-%%% from $e : \tpref{b}{p_1}{\reft_1}$ to $e : \tpref{b}{p_2}{\reft_2}\sub{x_i}{e_i}$.
-
-
-\paragraph{2. Rules~\txFun and~\txLet} materialize bound
+\mypara{2. Rules~\txFun and~\txLet} materialize bound
 constraints at variable binding sites ($\lambda$-abstractions
-and let-bindings respectively.)
+and let-bindings respectively).
 %
 %Even though application  of the axiomatic functions is required at specific places
 %
@@ -393,15 +296,11 @@ $$\begin{array}{rcl}
   & \defeq & {\wraplet{e}{\cands{\cenv}{\benv}}} \\[0.05in]
 \wraplet{e}{\set{e_1,\ldots,e_n}}
   & \defeq & {\elett{t_1}{e_1}{\ldots} \elett{t_n}{e_n}{e}} \\
-  &        & {\mbox{(where $t_i$ are fresh \tbbool binders)}} \\[0.05in]
+  &        & {\mbox{where $t_i$ are fresh \tbbool binders}} \\[0.05in]
 \cands{\cenv}{\benv}
   & \defeq & \{ \  f\ \overline{x}  \ | \ \tbind{f}{\utyp} \leftarrow \benv
-                  , \ \overline{\tbind{x}{\_}} \leftarrow \cenv \\
-  &        & \qquad \ \ , \ \EXT{\cenv}{f}{\utyp} \vdash_B \tbind{ f\ \overline{x}}{\tbbool} \} \
-%%%  & \defeq & \{ \ e  \ | \ \tbind{f}{\utyp} \leftarrow \benv \\
-%%%  &        & \quad \ \ , \ \overline{\tbind{x}{\_}} \leftarrow \cenv \\
-%%%  &        & \quad \ \ , \ e = f\ \overline{x}  \\
-%%%  &        & \quad \ \ , \ \EXT{\cenv}{f}{\utyp} \vdash_B \tbind{e}{\tbbool} \} \
+                  , \ \overline{\tbind{x}{\_}} \leftarrow \cenv,\
+    \EXT{\cenv}{f}{\utyp} \vdash_B \tbind{ f\ \overline{x}}{\tbbool}\ \} \
 \end{array}$$
 %% \caption{\textbf{Materializing Bound Functions}}
 %% \label{fig:closure}
@@ -422,7 +321,7 @@ we elide it for brevity.
 %%%\nv{so you get much much repetition of instantiations}
 %%%\nv{which is not unsound, but redundant}
 
-\paragraph{3. Rule~\txCApp} translates bound applications
+\mypara{3. Rule~\txCApp} translates bound applications
 $\econstantconstraint{e}{\constraint}$ into plain $\lambda$
 abstractions that witness that the bound constraints
 hold.
@@ -495,16 +394,16 @@ Counterexample e = \{φ} =>  0
 
 \end{comment}
 
-\paragraph{The Small-Step Operational Semantics} of \boundedcorelan
+\mypara{The Small-Step Operational Semantics} of \boundedcorelan
 are defined by extending a similar semantics for \corelan
 which is a standard call-by-value calculus where abstract
-refinements are boolean valued functions~\cite{vazou13}.
+refinements are boolean valued functions.
 %
 Let $\stepcore$ denote the transition relation defining
 the operational semantics of \corelan and \tclos{\stepcore}
 denote the reflexive transitive closure of $\stepcore$.
 %
-We thus obtain the transition relation $\stepboundedcore$:
+We obtain the transition relation $\stepboundedcore$:
 %
 \begin{align*}
 \econstantconstraint{(\econstraint{\constraint}{e})}{\constraint} &\boundedgoesto{e} &
@@ -523,12 +422,12 @@ e  & \stepboundedcore e', \text{if}\ {e \stepcore e'}
 Let $\boundedgoestostar{}$ denote the reflexive transitive
 closure of $\stepboundedcore$.
 
-\paragraph{The Translation is Semantics Preserving} in the sense that
+\mypara{The Translation is Semantics Preserving} in the sense that
 if a source term $e$ of $\boundedcorelan$ reduces to a constant
 then the translated variant of $e'$ also reduces to the same
-constant:% \ifextended{:}{(as show in~\citep{techrep}):}
+constant (as show in~\citep{vazou15techrep}):
 
-\begin{lemma*}\ifextended{[Semantics Preservation]}{}
+\begin{lemma*}[Semantics Preservation]\ifextended{[Semantics Preservation]}{}
 \label{theorem:operational}
 If $\txexpr{\emptyset}{\emptyset}{e}{e'}$ and
    $e \boundedgoestostar{c}$
@@ -587,14 +486,14 @@ $e \equiv e_1\boundedgoesto{} \dots \boundedgoesto{} \txex{e_i}\hookrightarrow \
 until we get the sequence $ {\txex{e}}\goestostar{c}$.
 \end{proof}}{}
 
-\paragraph{The Soundness of \boundedcorelan} follows by combining
+\mypara{The Soundness of \boundedcorelan} follows by combining
 the above Semantics Preservation
 Lemma % ~\ref{theorem:operational}
 with the soundness of \corelan.
 
-\paragraph{To Typecheck a \boundedcorelan program} $e$ we translate it
-into a \corelan program $e'$ and then type check $e'$; if the latter
-check is safe, then we are guaranteed that the source term $e$ will
+\mypara{To Typecheck a \boundedcorelan program} $e$ we translate it
+into a \corelan program $e'$ and then type check $e'$ using the rules of Figure~\ref{fig:rules}; 
+if the latter check is safe, then we are guaranteed that the source term $e$ will
 not crash:
 
 \begin{theorem*}[Soundness]
@@ -618,7 +517,7 @@ refinements by:
     and
 (3)~solving the constraints via abstract interpretation.
 
-\paragraph{Inference Requires Monotonic Constraints.}
+\mypara{Inference Requires Monotonic Constraints.}
 Abstract interpretation only works if the constraints
 are \emph{monotonic}~\citep{cousotcousot77}, which in this case
 means that the $\kvar$ variables, and correspondingly,
@@ -633,7 +532,7 @@ form $\rvapp{\rvar}{x} \Rightarrow \reft$.
 %% (Note that the syntax otherwise only allows for positive
 %% occurrences as $\neg (\rvapp{\rvar}{x})$ is disallowed.)
 
-\paragraph{We restrict implications to bounds} \ie prohibit
+\mypara{We restrict implications to bounds} \ie prohibit
 them from appearing elsewhere in type specifications.
 %
 Consequently, the implications only appear in the
@@ -663,84 +562,84 @@ where all the abstract refinements variables $\rvar$
 ensuring that the constraints are monotonic, hence permitting
 inference via Liquid Typing~\citep{LiquidPLDI08}.
 
-%%%%% Ultimately, this constraint means that abstract refinement variables
-%%%%% only appear in positive positions in the right hand side $\reft_2$
-%%%%% of sub-typing constraints
-%%%%% %
-%%%%% $
-%%%%% \isSubType{\Gamma}{\stref{b}{\reft_1}}{\stref{b}{\reft_2}}
-%%%%% $.
-%%%%% %
-%%%%% Our syntax does not, in general, enforce this restriction as it allows
-%%%%% atomic refinements, and thus $\rvar$ variables, to appear in
-%%%%% negative positions, which is crucial for expressiveness.
-%%%%% %
-%%%%% Thus, we can get sub-typing constraints of the form
+\begin{comment}
 
-%%%%\paragraph{Bound Constraints are Horn Clauses} over the refinements.
-%%%%That is, they correspond to a series of implications of the
-%%%%form: $$P_1 \Rightarrow \ldots \Rightarrow P_n$$ where each $P_i$
-%%%%is either
-%%%%%
-%%%%(1)~a \emph{concrete} formula from the refinement logic
-%%%%   (with arbitrary boolean connectives), or,
-%%%%%
-%%%%(2)~an application of an \emph{abstract} refinement
-%%%%   (with no boolean connectives).
-%%%%%
-%%%%This form of constraints is not arbitrary -- it corresponds
-%%%%directly to the subtyping constraints that arise in refinement
-%%%%type checking~\cite{HMC}, and hence, crucially keeps checking
-%%%%and inference decidable.
-%%%%
-%%%%
-%%%
-%%%\rj{TODO}
-%%%%%Colins notes on Inference:
-%%%%%It may be worth noting that these refinement bounds actually make type inference work *better* in some
-%%%%%instances.  I got to remove an ‘undefined’ witness term from my lock free data structures with their addition.
-%%%%%Not sure if/where this fits in the paper’s story though.
-%%%
-%%% OLD $$
-%%% OLD \closure{\cenv}{\benv}{e}{\tbind{x}{\utyp}} \defeq
-%%% OLD \left\{
-%%% OLD 	\begin{array}{ll}
-%%% OLD 	\elet{x_1}{e_1}{}{\tbbool}&\\
-%%% OLD 	 \dots &  \text{if} \ \tau = r\\
-%%% OLD 	 \elet{x_n}{e_n}{e}{\tbbool}&\\
-%%% OLD 		& \\
-%%% OLD 		e  & \mbox{otherwise}\\
-%%% OLD 	\end{array}
-%%% OLD \right.
-%%% OLD $$
-%%% OLD
-%%% OLD where  fresh $x_i$ and
-%%% OLD $$
-%%% OLD \begin{array}{rl}
-%%% OLD \{ e_1, \dots , e_n\} \defeq \{e \mid & f\colon t_f \in \Phi, e = f\ x_1 \dots x_n, \\
-%%% OLD & x_i \in \Gamma \lor x_i = x, \exists i. x_i = x  \\
-%%% OLD &\Delta, f\colon t_f, x\colon \toshape{\tau} \vdash_B e \colon \tbunit \}
-%%% OLD \end{array}
-%%% OLD $$
+\subsection{Semantics of \corelan}\label{sec:semantics-corelan}
 
-%%% $$
-%%% \inference{
-%%% 	\text{fresh}\ x &&
-%%% 	\txexpr{\cenv}{\Phi, x\colon\toshape{\tx{\phi}}}{e}{e'}
-%%% }{
-%%% 	\txexpr{\cenv}{\Phi}{}{\efunt{x}{\tx{\phi}}{e'}}
-%%% }[\txCAbs]
-%%% $$
-%%%
-%%% $$
-%%% \inference{
-%%% 	\txexpr{\cenv}{\Phi}{e}{e'}
-%%% }{
-%%% 	\txexpr{\cenv}{\Phi}{\econstantconstraint{e}{\phi}}{\eapp{e'}{\ctofun{\phi}}}
-%%% }[\txCApp]
-%%% $$
+\input{text/boundedrefinements/corerules}
 
-%%% Local Variables:
-%%% mode: latex
-%%% TeX-master: "main"
-%%% End:
+Figure \ref{fig:rules} summarizes the static semantics of \corelan
+as described in ~\citep{vazou13}.
+Unlike~\citep{vazou13} that syntactically separates concrete ($p$)
+from abstract ($\rvapp{\rvar}{x}$) refinements,
+here, for simplicity, we merge both concrete and abstract refinements to
+atomic refinements $\areft$.
+
+\mypara{A type environment} $\Gamma$ is a sequence of type bindings $x:\sigma$.
+We use environments to define three kinds of judgments:
+
+\begin{itemize}
+\item{\emphbf{Well-formedness judgments} (\isWellFormed{\Gamma}{\sigma})}
+state that a type schema $\sigma$ is well-formed under environment
+$\Gamma$. That is, the judgment states that the refinements in $\sigma$
+are boolean expressions in the environment $\Gamma$.
+
+\item{\emphbf{Subtyping judgments} (\isSubType{\Gamma}{\sigma_1}{\sigma_2})}
+state that the type schema $\sigma_1$ is a subtype of the type schema
+$\sigma_2$ under environment $\Gamma$. That is, the judgment states that
+when the free variables of $\sigma_1$ and $\sigma_2$ are bound to values
+described by $\Gamma$, the values described by $\sigma_1$ are a subset
+of those described by $\sigma_2$.
+
+\item{\emphbf{Typing judgments} (\hastype{\Gamma}{e}{\sigma})} state that
+the expression $e$ has the type schema $\sigma$ under environment $\Gamma$.
+That is, the judgment states that when the free variables in $e$ are bound
+to values described by $\Gamma$, the expression $e$ will evaluate to a value
+described by $\sigma$.
+\end{itemize}
+
+\mypara{The Well-formedness rules}
+check that the concrete and abstract refinements are indeed $\tbbool$-valued
+expressions in the appropriate environment. The key rule is \wtBase, which
+checks that the refinement $\reft$ is boolean.
+
+\mypara{The Subtyping rules}
+stipulate when the set of values described by schema $\sigma_1$ is subsumed
+by (\ie contained within) the values described by $\sigma_2$.
+The rules are standard except for \tsubBase, which reduces subtyping of
+basic types to validity of logical implications, by translating the
+refinements $r$ and the environment $\Gamma$ into logical formulas:
+%
+\begin{align*}
+\inter{r}      & \defeq r &
+\inter{\Gamma} & \defeq \bigwedge \{ \SUBST{r}{\vref}{x}\ |\ (x, \tref{b}{r}) \in \Gamma \}
+\end{align*}
+%
+Recall that we ensure that the refinements $r$
+belong to a decidable logic so that validity
+checking can be performed by an off-the-self
+SMT solver.
+
+\mypara{Type Checking Rules}
+are standard except for \tpgen and \tpinst, which
+pertain to abstraction and instantiation of abstract refinements.
+%
+The rule \tpgen is the same as \tfunction: we simply check the body
+$e$ in the environment extended with a binding for the refinement
+variable $\rvar$.
+%
+The rule \tpinst checks that the concrete refinement is of the appropriate
+(unrefined) type $\tau$, and then replaces all (abstract) applications of
+$\rvar$ inside $\sigma$ with the appropriate (concrete) refinement $\reft'$
+with the parameters $\overline{x}$ replaced with arguments at that application.
+%
+In~\cite{vazou13} we prove the following soundness result for \corelan
+which states that well-typed programs cannot crash:
+
+\begin{lemma*}[Soundness of \corelan~\cite{vazou13}]
+\label{theorem:core}
+If   $\hastype{\emptyset}{e}{\sigma}$
+then $e \not \goestostar{\ecrash}$.
+\end{lemma*}
+
+\end{comment}
