@@ -1,13 +1,13 @@
 \begin{figure}[t!]
-\vspace{-5mm}
+\captionsetup{justification=centering}
 \centering
 $$
 \begin{array}{rrcl}
 \emphbf{Predicates} 
   & \pred & ::= &
     \pred \binop \pred \spmid
-    \unop \pred \\
-  && \spmid & n \spmid b \spmid x \spmid \dc \spmid  x\ \overline{\pred}\\
+    \unop \pred
+  \spmid n \spmid b \spmid x \spmid \dc \spmid  x\ \overline{\pred}\\
 %%  && \spmid & \forall \overline{\tbind{x}{\sort}}. \pred
   && \spmid & \eif{\pred}{\pred}{\pred}
 \\[0.03in]
@@ -22,17 +22,17 @@ $$
   & ::= & \etrue \spmid \efalse
 \\[0.03in]
 
-\emphbf{Bin Operators} 
+\emphbf{Binary Operators} 
   & \binop
   & ::= & = \spmid < \spmid \land \spmid + \spmid - \spmid \dots
 \\[0.03in]
 
-\emphbf{Un Operators} 
+\emphbf{Unary Operators} 
   & \unop
   & ::= & \lnot \spmid \dots 
 \\[0.03in]
 
-\emphbf{Sort Args} 
+\emphbf{Sort Arguments} 
   & \sort_a
   & ::= & \tint \spmid \tbool \spmid \tuniv 
          \spmid \tsmtfun{\sort_a}{\sort_a}
@@ -42,7 +42,7 @@ $$
   & ::=  & \sort_a \rightarrow \sort
 \end{array}
 $$
-\caption{\textbf{Syntax of \smtlan}.}
+\caption{{Syntax of \smtlan}.}
 \label{fig:smtsyntax}
 \vspace{-2mm}
 \end{figure}

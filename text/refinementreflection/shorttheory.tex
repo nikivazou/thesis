@@ -1,7 +1,7 @@
 \section{Refinement Reflection}
 \label{sec:formalism}
 \label{sec:types-reflection}
-\label{sec:refinementreflection"theory}
+\label{sec:refinementreflection:theory}
 Next, we formalize refinement reflection
 via a core calculus \corelan.
 %
@@ -15,7 +15,7 @@ for \corelan.
 \input{text/refinementreflection/syntax}
 %
 Figure~\ref{fig:syntax} summarizes the syntax of \corelan,
-which is essentially the calculus \undeclang~\cite{Vazou14}
+which is essentially the calculus \undeclang (from~\S~\ref{sec:language})
 with explicit recursion and a special $\erefname$ binding
 to denote terms that are reflected into the refinement logic.
 %
@@ -71,7 +71,7 @@ are allowed in the program but cannot be inserted into the logic
 via refinements or reflection.
 %
 (We \emph{can} allow non-recursive $\mathtt{let}$
-binders in expressions $e$, but omit them for simplicity.)
+binders in expressions $e$, but omit them for simplicity).
 
 \subsection{Operational Semantics}
 We define $\hookrightarrow$ to be the small step, call-by-name
@@ -142,7 +142,7 @@ We use \tlabel to mark provably terminating
 computations and use
 refinements to ensure that if
 ${{e}\text{:}{\tref{v}{\btyp^\tlabel}{\refa'}}}$,
-then $e$ terminates~\citep{Vazou14}.
+then $e$ terminates (as in chapter~\ref{chapter:refinedhaskell}).
 %
 Finally, we have dependent \emph{function types} $\tfun{x}{\typ_x}{\typ}$
 where the input $x$ has the type $\typ_x$ and the output $\typ$ may
@@ -158,7 +158,6 @@ $x$ does not appear in $\typ$.
 For each constant $c$ we define its type \constty{c}, \eg%
 %
 $$
-\setlength\arraycolsep{2pt}
 \begin{array}{lcl}
 \constty{3} &\doteq& \tref{v}{\tint}{v = 3}\\
 \constty{+} &\doteq& \tfun{\ttx}{\tint}{\tfun{\tty}{\tint}{\tref{v}{\tint}{v = x + y}}}\\
@@ -180,7 +179,7 @@ $\erefname$-binder
 %
 (${\erefb{f}{\gtyp}{e}{\prog}}$)
 %
-as a $\eletname$-binder
+as a $\eletname$-binder with a reflected singleton type
 %
 (${\eletb{f}{\exacttype{\gtyp}{e}}{e}{\prog}}$)
 %
@@ -197,9 +196,9 @@ $$
 \exacttype{\tref{v}{\btyp}{r}}{e}
   & \defeq
   & \tref{v}{\btyp}{r \land v = e}\\
-\exacttype{\tfun{x}{\typ_x}{\typ}}{\efun{x}{}{e}}
+\exacttype{\tfun{x}{\typ_x}{\typ}}{\efun{y}{}{e}}
   & \defeq
-  & \tfun{x}{\typ_x}{\exacttype{\typ}{e}}
+  & \tfun{x}{\typ_x}{\exacttype{\typ}{e\subst{y}{x}}}
 \end{array}
 $$
 %
@@ -294,14 +293,14 @@ that transforms a $\corelan$ term $e$
 into a $\smtlan$ term $\pred$.
 %
 Most of the transformation rules are identity
-and can be found in~\cite{appendix}.
+and can be found in~\cite{vazou16techrep}.
 Here we discuss the non-identity ones.
 
 \mypara{Embedding Types}
 %
 We embed \corelan types into \smtlan sorts as:
 %
-\[\arraycolsep=1.4pt
+\[
 \begin{array}{rclcrcl}
 \embed{\tint}                       & \defeq &  \tint & \quad &
 \embed{T}                           & \defeq &  \tuniv \\
@@ -438,7 +437,7 @@ For example, for lists, we assume the existence of measures:
 Due to the simplicity of their syntax the above checkers and selectors
 can be automatically instantiated in the logic
 (\ie without actual calls to the reflected functions at source level)
-using the measure mechanism~\cite{Vazou15}.
+using the measure mechanism (\S~\ref{subsec:measures}).
 
 To generalize, let $\dc_i$ be a data constructor such that
 $$
@@ -463,13 +462,13 @@ select functions for the binders
 of each case.
 $$
 \inference{
-	\tologicshort{\env}{e}{\typ_e}{\pred}{\embed{\typ_e}}{\smtenv}{\axioms}\\
+	\tologicshort{\env}{e}{\typ_e}{\pred}{\embed{\typ_e}}{\smtenv}{\axioms} &&
 	\tologicshort{\env}{e_i\subst{\overline{y_i}}{\overline{\selector{\dc_i}{}\ x}}\subst{x}{e}}{\typ}{\pred_i}{\embed{\typ}}{\smtenv}{\axioms_i}
 }{
 	\tologicshorttwolines{\env}{\ecase{x}{e}{\dc_i}{\overline{y_i}}{e_i}}{\typ}
 	 {\eif{\smtappname{}{}\ \checkdc{\dc_1}\ \pred}{\pred_1}{\ldots} \ \mathtt{else}\ \pred_n}{\embed{\typ}}{\smtenv}
 	 {\andaxioms{\axioms}{\axioms_i}}
-}%[\lgcase]
+}[\lgcase]
 $$
 %
 For example, the body of the list append function
@@ -490,7 +489,7 @@ $$
 $$
 %
 We favor selectors to the axiomatic translation of
-HALO~\citep{HALO} to avoid
+HALO~\citep{halo} to avoid
 universally quantified formulas and the resulting
 instantiation unpredictability.
 
@@ -544,7 +543,7 @@ A judgment \iswellformed{\env}{\typ} states that
 the refinement type $\typ$ is well-formed in
 the environment $\env$.
 %
-Following~\citep{Vazou14}, the type $\typ$ is well-formed if all
+Following chapter~\ref{chapter:refinedhaskell}, the type $\typ$ is well-formed if all
 the refinements in $\typ$ are $\tbool$-typed,
 provably terminating expressions in $\env$.
 %
@@ -586,14 +585,14 @@ the set of values described by $\pred$.
 %
 $\env$ is embedded into logic by conjoining
 (the embeddings of) the refinements of
-provably terminating binders~\cite{Vazou14}:
+provably terminating binders (Chapter~\ref{chapter:refinedhaskell}):
 %
 \begin{align*}
 \embed{\env} \defeq & \bigwedge_{x \in \env} \embed{\env, x} \\
 \intertext{where we embed each binder as}
 \embed{\env, x} \defeq & \begin{cases}
-                           \pred  & \text{if } \env(x)=\tref{x}{\btyp^{\tlabel}}{e},\
-                                    \tologicshort{\env}{e}{\btyp}{\pred}{\embed{\btyp}}{\smtenv}{\axioms} \\
+                           \pred  & \text{if } \env(x)=\tref{v}{\btyp^{\tlabel}}{e},\
+                                    \tologicshort{\env}{e\subst{v}{x}}{\btyp}{\pred}{\embed{\btyp}}{\smtenv}{\axioms} \\
                            \etrue & \text{otherwise}.
                          \end{cases}
 \end{align*}
@@ -605,25 +604,25 @@ VC checking, and thus type checking of \corelan, is decidable.
 
 \subsection{Soundness}
 
-Following \undeclang~\citep{Vazou14}, in~\citep{appendix}, we show that
+Following \undeclang from chapter~\ref{chapter:refinedhaskell}, in~\citep{vazou16techrep}, we show that
 if validity checking respects the axioms of $\beta$-equivalence,
 then \corelan is sound.
 
-%%We define the $\beta$-equivalence axioms on the uninterpreted function
-%%that represent $\lambda$-abstraction (\smtlamname{}{}) and
-%%and application (\smtappname{}{}).
-%%$$
-%%\begin{array}{rcl}
-%%\forall x\ y\ e. \smtlamname{}{}\ x\ e
-%%  & = & \smtlamname{}{}\ y\ (e\subst{x}{y}) \\
-%%\forall x\ e_x\ e. (\smtappname{}{}\ (\smtlamname{}{}\ x\ e)\ e_x)
-%%  & = &  e\subst{x}{e_x}
-%%\end{array}
-%%$$
-%%%
-% We prove that when validity checking assumes the $\beta$-equivalence
-% axioms, \corelan is sound.
+We define the $\beta$-equivalence axioms on the uninterpreted function
+that represent $\lambda$-abstraction (\smtlamname{}{}) and
+and application (\smtappname{}{}).
+$$
+\begin{array}{rcl}
+\forall x\ y\ e. \smtlamname{}{}\ x\ e
+  & = & \smtlamname{}{}\ y\ (e\subst{x}{y}) \\
+\forall x\ e_x\ e. (\smtappname{}{}\ (\smtlamname{}{}\ x\ e)\ e_x)
+  & = &  e\subst{x}{e_x}
+\end{array}
+$$
 %
+ We prove that when validity checking assumes the $\beta$-equivalence
+ axioms, \corelan is sound.
+
 \begin{theorem}{[Soundness of \corelan]}\label{thm:safety}
 Assuming the $\beta$-equivalence axioms,
 if \hastype{\emptyset}{\prog}{\typ}
@@ -648,7 +647,7 @@ $$
 Though sound and precise, directly extending the logic with $\beta$-equivalence axioms
 would render SMT validity checking undecidable.
 %
-Instead, in ~\citep{appendix} we discuss an incomplete,
+Next, we discuss an incomplete,
 yet decidable, technique that allows the
 user to manually instantiate the $\beta$-equivalence axioms
 when required for precise typing.

@@ -1,14 +1,12 @@
-
 \section{Reasoning About Lambdas}\label{sec:lambdas}
 
-
-Though \smtlan, as presented so far, is sound and decidable,
-it is \emph{imprecise}: our encoding of $\lambda$-abstractions
-and applications via uninterpreted functions makes it impossible
-to prove theorems that require $\alpha$- and $\beta$-equivalence,
-or extensional equality. Next, we show how to address the former
+Soundness and precision of \corelan relies 
+on the $\beta$-equivalence and extensionality axioms that are undecidable. 
+%
+Next, we present a decidable but incomplete way 
+to approximate $\beta$-equivalence
 by strengthening the VCs with equalities~\S~\ref{subsec:equivalences},
-and the latter by introducing a combinator for safely asserting
+and extensionality by introducing a combinator for safely asserting
 extensional equality~\S~\ref{subsec:extensionality}.
 %
 In the rest of this section, 
@@ -16,12 +14,10 @@ for clarity we omit $\smtappname{}{}$ when it is clear from the context.
 
 \subsection{Equivalence}\label{subsec:equivalences}
 
-As soundness relies on satisfiability under a
-\bmodel  (see Definition~\ref{def:beta-model}),
+As soundness relies on axioms of $\beta$-equivalence
 we can safely \emph{instantiate} the axioms of
 $\alpha$- and $\beta$-equivalence on any set of
-terms of our choosing and still preserve soundness
-(Theorem~\ref{thm:soundness-smt}).
+terms of our choosing and still preserve soundness.
 %
 That is, instead of checking the validity
 of a VC
@@ -90,8 +86,8 @@ For example, consider the VC needed
 to prove the applicative laws for @Reader@:
 %
 \begin{align*}
-d & = \slam{x_1}{(\sapp{x}{x_1})} \\
-  & \Rightarrow \slam{x_2}{(\sapp{(\slam{x_1}{(\sapp{x}{x_1})})}{x_2})}
+d  = \slam{x_1}{(\sapp{x}{x_1})} 
+   \Rightarrow \slam{x_2}{(\sapp{(\slam{x_1}{(\sapp{x}{x_1})})}{x_2})}
               = \slam{x_1}{(\sapp{d}{x_1})}
 \end{align*}
 %
@@ -210,16 +206,16 @@ definitions of reflected binders.
 For example, consider
 %
 \begin{code}
- reflect id
- id x = x
+  reflect id
+  id x = x
 \end{code}
 %
 \toolname accepts the proof that
 @id x = x@ for all @x@:
 %
 \begin{code}
- id_x_eq_x :: x:a -> {id x = x}
- id_x_eq_x = \x -> #id# x =. x ** QED
+  id_x_eq_x :: x:a -> {id x = x}
+  id_x_eq_x = \x -> #id# x =. x ** QED
 \end{code}
 %
 as ``calling'' @id@ unfolds its definition,
@@ -229,14 +225,14 @@ However, consider this $\eta$-expanded variant of
 the above proposition:
 %
 \begin{code}
- type Id_eq_id = {(\x -> id x) = (\y -> y)}
+  type Id_eq_id = {(\x -> id x) = (\y -> y)}
 \end{code}
 %
 \toolname \emph{rejects} the proof:
 %
 \begin{code}
- fails :: Id_eq_id
- fails =  (\x -> #id# x) =. (\y -> y) ** QED
+  fails :: Id_eq_id
+  fails =  (\x -> #id# x) =. (\y -> y) ** QED
 \end{code}
 %
 The invocation of @id@ unfolds the
@@ -279,10 +275,10 @@ its type is \emph{assumed}. We can use
 a suitable explanation:
 %
 \begin{mcode}
-pf_id_id :: Id_eq_id
-pf_id_id = (\y -> y) =* (\x -> id x) $\because$ expl ** QED
-  where
-    expl = (\x -> #id# x =. x ** QED)
+  pf_id_id :: Id_eq_id
+  pf_id_id = (\y -> y) =* (\x -> id x) $\because$ expl ** QED
+   where
+     expl  = (\x -> #id# x =. x ** QED)
 \end{mcode}
 %
 %   =* (\x -> id x) $\because$ exp
@@ -298,113 +294,3 @@ the following type that syntactically fires $\beta$-instances:
   x:a -> {(\x -> id x) x = ((\x -> x) x}
 \end{code}
 
-\begin{comment}
-While the above operator makes proving function
-equality via extensionality \emph{possible}
-it can be somewhat \emph{cumbersome}.
-%
-For example, in the proof of associativity of
-the monadic bind operator for the @Reader@
-monad three of eight equalities required
-such explanations, some of which were under
-nested $\lambda$-abstractions.
-
-In future work, it would be interesting to
-explore wheth
-
-This proof style made verification of monadic associativity
-in reader monad too big as out of the 8 equalities used in
-the proof three required extentional equality
-one of which was double wrapped in lambdas.
-
-is requires a cumbersome indirect proof.
-%
-%% Extentional function equality requires
-%% as argument an equality on such redexes.
-%% %
-%% Via $\beta$ equality instantiations,
-%% both such redexes will automatically reduce,
-%% requiring @exp@ to prove @id x = x@,
-%% with is direct.
-
-
-For each function equality in the main proof
-one needs to define an explanation function
-that proves the equality for every argument.
-%
-This proof style made verification of monadic associativity
-in reader monad too big as out of the 8 equalities used in
-the proof three required extentional equality
-one of which was double wrapped in lambdas.
-
-\mypara{Soundly Enforcing Function Equality}
-%
-The class constraint @Arg a@ is needed
-to address the following subtle issue
-that arises due to the interaction of
-parametric polymorphism and subtyping.
-%
-Notice that type parameter @a@
-appears only in \emph{negative}
-positions.
-%
-At any \emph{use} site, we instantiate
-the signature with \emph{fresh} ref
-%
-Thus \emph{without} the class constraint,
-the signature holds \emph{for all} @a@.
-At a usage site, as the @a@ appears only
-negatively it has no ``lower bound'' (\ie
-is not the \emph{supertype} of any type)
-and can be instantiated to @{v:a | false}@.
-%
-Consequently, via function subtyping,
-the crucial fact that @f x = g x@ is
-\emph{unsoundly} checked (to trivially hold)
-under the assumption that @x:{a | False}@
-which would let us unsoundly prove that
-\emph{any} two functions are equal!
-
-We solve the above problem via the class constraint
-@(Arg a)@ which.
-%
-The constraint forces @a@ to appear \emph{positively}
-in the signature, by stipulating that methods of the
-type class @Arg a@ can \emph{create}
-new values of type @a@.
-%
-This forces constrains @a@ to be instantiated as
-@{a | True}@~\citep{Vazou13}.
-\end{comment}
-
-%%% Liquid type inference is smart enough to infer that
-%%% since @a@ appears only negative @(=..)@ cannot use any @a@
-%%% and thus will not call any of its argument arguments @f@, @g@, nor the @p@.
-%%% %
-%%% Thus, at each call site of @(=..)@ the type variable `a`
-%%%
-%%% indicating dead-code (since `a`s will not be used by the callee.)
-%%% %
-%%% Refining the argument @x:a@ with false at each call-site though
-%%% leads to unsoundness, as each proof argument @p@ is a valid proof under
-%%% the false assumption.
-%%% %
-%%% What Liquid inference cannot predict is our intention to call
-%%% @f@, @g@ and @p@ at \textit{every possible argument}.
-
-%% But soundness of its usage requires
-%% the argument type variable @a@ to be
-%% constrained by a type class constraint
-%% @Arg a@. for both operational and type theoretic reasons.
-%%
-%% From \textit{operational} point of view,
-%% an implementation of @(=..)@ would require checking
-%% equality of @f x = g x@ \textit{forall} arguments @x@ of type @a@.
-%% %
-%% This equality would hold due to the proof argument @p@.
-%% %
-%% The only missing point is a way to enumerate all the argument @a@,
-%% but this could be provided by a method of the type clas @Arg a@.
-%% %
-%% Yet, we have not implement @(==.)@ because we do not know how to
-%% provide such an implementation that can provably satisfy @(=..)@'s type.

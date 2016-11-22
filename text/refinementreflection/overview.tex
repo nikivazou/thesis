@@ -93,8 +93,8 @@ proof that @Int@ addition is commutative.
 
 \mypara{Proofs}
 %
-We \emph{prove} the above theorems by
-writing Haskell programs. To ease this task \toolname
+We \emph{prove} the above theorems by providing inhabitants to type specifications
+in forms of Haskell programs. To ease this task \toolname
 provides primitives to construct proof terms by
 ``casting'' expressions to \typp.
 %
@@ -144,7 +144,7 @@ our proofs sound.
 \subsection{Refinement Reflection}
 
 Suppose we wish to prove properties about the @fib@
-function, \eg that @fib 2@ equals @1@.
+function, \eg @fib 2@ equals @1@.
 %
 \begin{code}
   type fib2_eq_1 = { fib 2 = 1 }
@@ -228,8 +228,10 @@ We prove @fib2_eq_1@ by:
 %
 \begin{code}
   pf_fib2 :: { fib 2 = 1 }
-  pf_fib2 = let { t0 = #fib# 0; t1 = #fib# 1;
-                  t2 = #fib# 2 } in  ()
+  pf_fib2 = let t0 = #fib# 0 
+                t1 = #fib# 1
+                t2 = #fib# 2 
+            in  ()
 \end{code}
 %
 We write @#f#@ to denote places where the
@@ -241,8 +243,8 @@ discharged by the SMT solver, even though @fib@
 is uninterpreted:
 %
 \begin{align*}
-   & (\fibdef\ (\fib\ 0)\ 0) \ \wedge\ (\fibdef\ (\fib\ 1)\ 1) \ \wedge\ \\
-   & (\fibdef\ (\fib\ 2)\ 2) \  \Rightarrow\ (\fib{2} = 1)
+   (\fibdef\ (\fib\ 0)\ 0) \ \wedge\ (\fibdef\ (\fib\ 1)\ 1) \ \wedge\ 
+   (\fibdef\ (\fib\ 2)\ 2) \  \Rightarrow\ (\fib{2} = 1)
 \end{align*}
 %
 Note that the verification of @pf_fib2@ relies
@@ -435,6 +437,62 @@ induction hypothesis (applied by invoking @fibUp@
 at @n-1@ and @n-2@) and the SMT solver's arithmetic
 reasoning, completes the proof.
 
+\mypara{Higher Order Theorems}
+%
+Refinements smoothly accomodate higher-order reasoning.
+%
+For example, lets prove that every locally increasing
+function is monotonic, \ie
+if @f z <= f (z+1)@ for all @z@,
+then @f x <= f y@ for all @x < y@.
+%
+\begin{mcode}
+  fMono :: f:(Nat -> Int)
+        -> fUp:(z:Nat -> {f z <= f (z+1)})
+        -> x:Nat
+        -> y:{x < y}
+        -> {f x <= f y} / [y]
+  fMono f inc x y
+    | x + 1 == y
+    =  f x <=. f (x+1) $\because$ fUp x
+           <=. f y
+           ** QED
+
+    | x + 1 < y
+    =  f x <=. f (y-1) $\because$ fMono f fUp x (y-1)
+           <=. f y     $\because$ fUp (y-1)
+           ** QED
+\end{mcode}
+%
+We prove the theorem by induction
+on @y@, which is specified by the
+annotation @/ [y]@ which states
+that @y@ is a well-founded
+termination metric that decreases
+at each recursive call~\citep{Vazou14}.
+%
+% All reflected functions are proved terminating.
+% When the annotation metric is not explicit Liquid Haskell
+% successfully uses heuristics to automatically prove termination. 
+%
+If @x+1 == y@, then we use @fUp x@.
+%
+Otherwise, @x+1 < y@, and we use
+the induction hypothesis \ie apply
+@fMono@ at @y-1@, after which
+transitivity of the less-than
+ordering finishes the proof.
+%
+We can use the general @fMono@
+theorem to prove that @fib@
+increases monotonically:
+%
+\begin{code}
+  fibMono :: n:Nat -> m:{n<m} ->
+             {fib n <= fib m}
+  fibMono = fMono fib fibUp
+\end{code}
+
 
 \subsection{Case Study: Deterministic Parallelism}
 \label{sec:detpar}
@@ -472,7 +530,7 @@ shared state, compromising the {\em guarantee} and going back to trusting the
 user. LVish has the same Achilles heel. Consider set insertion:
 
 \begin{code}
-insert :: Ord a => a -> Set s a -> Par s ()
+  insert :: Ord a => a -> Set s a -> Par s ()
 \end{code}
 
 Here @insert@ returns an (effectful) @Par@ computation, which can be run within a
@@ -529,7 +587,7 @@ parallelism a liability.  But we can remove the risk with verification.
 Our solution involves simply changing the @Ord@ constraint above to
 @VerifiedOrd@.
 \begin{mcode}
- insert :: VerifiedOrd a => a -> Set s a -> Par s ()
+  insert :: VerifiedOrd a => a -> Set s a -> Par s ()
 \end{mcode}
 %
 This constraint changes the interface but not the implementation of @insert@.
@@ -548,12 +606,10 @@ The additional methods of the verified type class don't add operational
 capabilities, but rather impose additional proof obligations:
 
 \begin{code}
-class Ord a => VerifiedOrd a where
- antisym :: x:a -> y:a
-         -> { x <= y && y <= x => x = y }
- trans   :: x:a -> y:a -> z:a
-         -> { x <= y && y <= z => x <= z }
- total   :: x:a -> y:a -> { x <= y || y <= x }
+  class Ord a => VerifiedOrd a where
+   antisym :: x:a -> y:a -> { x <= y && y <= x => x = y }
+   trans   :: x:a -> y:a -> z:a -> { x <= y && y <= z => x <= z }
+   total   :: x:a -> y:a -> { x <= y || y <= x }
 \end{code}
 
 % ---------------------------------------------------------------
@@ -564,11 +620,10 @@ the @Monoid@ typeclass to a @VerifiedMonoid@, with refinements
 expressing @Monoid@ laws.
 %
 \begin{code}
-class Monoid a => VerifiedMonoid a where
- lident :: x:a -> { mempty <> x = x }
- rident :: x:a -> { x <> mempty = x }
- assoc  :: x:a -> y:a -> z:a
-        -> { x <> (y <> z) = (x <> y) <> z }
+  class Monoid a => VerifiedMonoid a where
+   lident :: x:a -> { mempty <> x = x }
+   rident :: x:a -> { x <> mempty = x }
+   assoc  :: x:a -> y:a -> z:a -> { x <> (y <> z) = (x <> y) <> z }
 \end{code}
 The @VerifiedMonoid@ typeclass constraint requires the binary operation
 to be associative, thus can be safely used to fold on
@@ -610,8 +665,8 @@ write; they just appeal to the SMT solver's built-in theories.
 %
 For example, the following is a valid totality proof on @Int@.
 \begin{code}
-totInt :: x:Int -> y:Int -> {x <= y || y <= x}
-totInt _ _ = trivial ** QED
+  totInt :: x:Int -> y:Int -> {x <= y || y <= x}
+  totInt _ _ = trivial ** QED
 \end{code}
 
 \mypara{Verified instances for algebraic datatypes}
@@ -644,9 +699,8 @@ lets us safely @reflect@ it into the logic.
 Next, we prove that @leq@ is total on @Peano@ numbers
 %
 \begin{mcode}
-  totalPeano
-   :: n:Peano -> m:Peano -> {leq n m || leq m n}
-   /  [toInt n + toInt m]
+  totalPeano :: n:Peano -> m:Peano -> {leq n m || leq m n}
+             /  [toInt n + toInt m]
   totalPeano Z m = leq Z m ** QED
   totalPeano n Z = leq Z n ** QED
   totalPeano (S n) (S m)
@@ -734,7 +788,7 @@ using the @VerifiedOrd@ totality on @a@s
 
 \begin{mcode}
   isoTotal :: (VerifiedOrd a, Iso a b)
-             => x:b -> y:b -> {x <= y || y <= x}
+           => x:b -> y:b -> {x <= y || y <= x}
   isoTotal x y
    =  x <= y || y <= x
    =. (from x) <= (from y) || (from y) <= (from x)
@@ -744,8 +798,8 @@ using the @VerifiedOrd@ totality on @a@s
 %
 We use @isoTotal@ to create a verified instance on @b@s.
 \begin{mcode}
-  instance (VerifiedOrd a, Iso a b)
-        => VerifiedOrd b where
+  instance (VerifiedOrd a, Iso a b) 
+         => VerifiedOrd b where
     total   = isoTotal
 \end{mcode}
 %
@@ -764,10 +818,8 @@ For example, lexicographic ordering preserves the ordering laws.
 First, we use class instances to define lexicographic ordering.
 %
 \begin{mcode}
-  instance (VerifiedOrd a, VerifiedOrd b)
-        => Ord (a, b) where
-    (x1, y1) <= (x2, y2) =
-      if x1 == x2 then y1 <= y2 else x1 <= x2
+  instance (VerifiedOrd a, VerifiedOrd b) => Ord (a, b) where
+    (x1, y1) <= (x2, y2) = if x1 == x2 then y1 <= y2 else x1 <= x2
 \end{mcode}
 %
 Then, we prove that lexicographic ordering
@@ -777,13 +829,13 @@ For example, it preserves totality.
 %
 \begin{mcode}
   prodTotal :: (VerifiedOrd a, VerifiedOrd b)
-    => p:(a, b) -> q:(a, b) -> {p <= q || q <= p}
+            => p:(a, b) -> q:(a, b) -> {p <= q || q <= p}
   prodTotal p@(x1, y1) q@(x2, y2)
    =  p <= q || q <= p
-   =. if x1 == x2 then (y1 <= y2 || y2 <= y1)
-                  else True $\because$ total x1 x2
-   =. if x1 == x2 then True
-                  else True $\because$ total y1 y2
+   =. if x1 == x2 then (y1 <= y2 || y2 <= y1) else True 
+      $\because$ total x1 x2
+   =. if x1 == x2 then True                   else True 
+      $\because$ total y1 y2
    ** QED
 \end{mcode}
 %
@@ -792,9 +844,9 @@ we conclude that each instance defined via the lexicographic
 ordering is indeed a verified instance.
 %
 \begin{mcode}
-instance (VerifiedOrd a, VerifiedOrd b)
-      => VerifiedOrd (a, b) where
-  total   = prodTotal
+  instance (VerifiedOrd a, VerifiedOrd b) 
+         => VerifiedOrd (a, b) where
+    total   = prodTotal
 \end{mcode}
 %
 For example the type @(Peano, Peano)@ is derived to be a @VerifiedOrd@ instance.
@@ -806,127 +858,3 @@ for generics~\cite{ghc-generics} to automate the derivation of verified instance
 for user datatypes.
 In \S\ref{sec:eval-parallelism}, we use these ideas to develop fully safe
 interfaces to LVish modules, as well as verifying programming patterns from DPJ.
-
-
-
-
-
-
-
-
-
-\begin{comment}
-
-While we must support user-defined datatypes, it is typically only a small
-subset of an application---such as the key types for a concurrent collection
-that requires verification effort.
-
-
-%%@VerifiedOrd@ instances for primitive types like @Int@, @Double@ are trivial to
-%%write, they just appeal to the SMT solver's built-in theories. Using the
-%%isomorphism machinery discussed later in this section, we can scale up these
-%%instances to arbitrary Haskell data types.
-\VC{Too long, which parts to cut?}
-
-\begin{code}
-data List a = Nil | a : List a
-type ListRep a = Either () (a, List a)
-
-reflect toRep :: List a -> ListRep a
-toRep Nil = Left ()
-toRep (x : xs) = Right (x , xs)
-
-reflect fromRep :: ListRep a -> List a
-fromRep (Left ()) = Nil
-fromRep (Right (x, xs)) = x : xs
-
-toFrom :: xs:ListRep a
-       -> {toRep (fromRep xs) == xs}
-toFrom (Left ())
-  =  toRep (fromRep (Left ()))
-  =. toRep Nil
-  =. Left ()
-  ** QED
-toFrom (Right (x, xs))
-  =  toRep (fromRep (Right (x, xs)))
-  =. toRep (x : xs)
-  =. Right (x, xs)
-  ** QED
-
-fromTo :: xs:List a
-       -> {fromRep (toRep xs) == xs}
-fromTo Nil
-  =  fromRep (toRep Nil)
-  =. fromRep (Left ())
-  =. Nil
-  ** QED
-fromTo (x : xs)
-  =  fromRep (toRep (x : xs))
-  =. fromRep (Right (x, xs))
-  =. x : xs
-  ** QED
-
-instance Iso (ListRep a) (List a) where
-  to   = fromRep
-  from = toRep
-  tof  = fromTo
-  fot  = toFrom
-\end{code}
-
-\RN{I'm not making any cuts on these big code blocks yet, but clearly they do
-  need cutting.  TODO.}
-
-
-%%  -------------------------------------------------------------------------
-\mypara{Isomorphisms}
-%
-In order to reuse proofs for a custom datatype, by decomposing it into sums and
-products, we need a way to translate verified instances between isomorphic types.
-%% If our datatype is isomorphic to a nesting of binary sums and products, we
-%% should be able to reusing existing proofs.
-%% To verify operations on custom data types efficiently, we
-%% need to be able lift verified instances on one type to another.
-%
-We design a typeclass @Iso@ which witnesses the fact that
-two types are isomorphic, with respect to the built-in equality in \toolname{}
-which is a congruence.
-
-\begin{code}
-class Iso a b where
-  to   :: a -> b
-  from :: b -> a
-  tof  :: x:a -> {to (from x) = x}
-  fot  :: x:a -> {from (to x) = x}
-\end{code}
-
-We can provide @Iso@ instances for each verified typeclass, because
-first-order laws are closed under isomorphisms.
-\red{As an example, we show the proof of \il{antisym} for \il{VerifiedOrd}.}
-
-\begin{mcode}
-reflect iso<= :: (VerifiedOrd a, Iso a b)
-              => b -> b -> Bool
-iso<= x y = (from x) <= (from y)
-
-fromInjective :: Iso a b => x:b -> y:b
-              -> {from x = from y => x = y}
-fromInjective x y
-  =  from x == from y
-  =. to (from x) == to (from y)
-  =. x == to (from y) $\because$ tof x
-  =. x == y           $\because$ tof y
-  ** QED
-
-iso<=Antisym :: (VerifiedOrd a, Iso a b)
-             => x:b -> y:b
-             -> {iso<= x y && iso<= y x => x = y}
-iso<=Antisym x y
-  =  iso<= x y && iso<= y x
-  =. (from x) <= (from y) && (from y) <= (from x)
-  =. (from x) == (from y)
-    $\because$ antisym (from x) (from y)
-  =. x == y $\because$ fromInjective x y
-  ** QED
-\end{mcode}
-
-\end{comment}

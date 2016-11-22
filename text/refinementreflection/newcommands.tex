@@ -35,7 +35,7 @@
 
 \providecommand\trans{T}
 
-\providecommand\pred{\ensuremath{r}\xspace}
+\renewcommand\pred{\ensuremath{r}\xspace}
 \providecommand{\lgbool}{\rulename{\trans-Bool}}
 \providecommand{\lgtrue}{\rulename{\trans-True}}
 \providecommand{\lgfalse}{\rulename{\trans-False}}
@@ -66,9 +66,9 @@
 
 \providecommand\maxlamarg{\ensuremath{ {M_\lambda} }\xspace}
 \providecommand\maxlam[2]{\ensuremath{\texttt{MaxLam}({#1},{#2})}\xspace}
-\providecommand\slam[2]{\ensuremath{\smtlamname{}{}\ {#1}\ {#2}}\xspace}
-\providecommand\smlam[2]{\ensuremath{\smtlamname{}{}\ {#1}\ {#2}}\xspace}
-\providecommand\smapp[2]{\ensuremath{\smtappname{}{}\ {#1}\ {#2}}\xspace}
+\renewcommand\slam[2]{\ensuremath{\smtlamname{}{}\ {#1}\ {#2}}\xspace}
+\newcommand\smlam[2]{\ensuremath{\smtlamname{}{}\ {#1}\ {#2}}\xspace}
+\newcommand\smapp[2]{\ensuremath{\smtappname{}{}\ {#1}\ {#2}}\xspace}
 \providecommand\sapp[2]{\ensuremath{{#1}\ {#2}}\xspace}
 
 \providecommand\lamnormalize[1]{\ensuremath{\texttt{normalize}(#1)}\xspace}
@@ -112,7 +112,7 @@
 %% \providecommand{\embed}[1]{\ensuremath{(\!|#1|\!)}}
 \providecommand\isvalid[3]{\ensuremath{{#1 \vdash #2 \Rightarrow #3}}\xspace}
 
-\providecommand\corelan{\ensuremath{\lambda^{R}}\xspace}
+\renewcommand\corelan{\ensuremath{\lambda^{R}}\xspace}
 \providecommand\undeclang{\ensuremath{\lambda^{U}}\xspace}
 % \providecommand\smtlan{\ensuremath{\lambda^{\mathit{SMT}}}\xspace}
 \providecommand\smtlan{\ensuremath{\lambda^{\mathit{S}}}\xspace}
@@ -189,11 +189,11 @@
 
 \renewcommand\sub{\ensuremath{\theta}}
 \providecommand\applysub[2]{\ensuremath{{#1} \cdot {#2} }}
-% \providecommand\subst[2]{\ensuremath{[{#2}/{#1}]}}
 
 \providecommand\assignto[2]{\ensuremath{{{#1} \mapsto {#2}}}}
 \providecommand\subst[2]{\ensuremath{[\assignto{#1}{#2}]}}
-\providecommand{\SUBST}[3]{{#1}\subst{#2}{#3}}
+\renewcommand\subst[2]{\ensuremath{[{#2}/{#1}]}}
+\renewcommand{\SUBST}[3]{{#1}\subst{#2}{#3}}
 \providecommand\fibincrname{\ensuremath{\texttt{fibUp}}\xspace}
 
 %% \providecommand\fibincrtype{\ensuremath{\tfun{n}{\tnat}{\refa{v}{\tunit}{\fib{n} \leq \fib{n+1}}}}}
@@ -279,7 +279,7 @@
 \providecommand\econs{\ensuremath{\mathtt{C}}\xspace}
 \providecommand\eletsub[2]{\ensuremath{#1 #2}}
 
-\providecommand\ecase[5]{\ensuremath{
+\renewcommand\ecase[5]{\ensuremath{
 	\mathtt{case}\  #1=#2\ \mathtt{of}\ \{ #3\ #4 \rightarrow #5\}
 }}
 \providecommand\ecaseexp[3]{\ensuremath{
@@ -302,10 +302,10 @@
 \providecommand\tbool{\ensuremath{\mathtt{Bool}}\xspace}
 \providecommand\tint{\ensuremath{\mathtt{Int}}\xspace}
 \providecommand\tlist{\ensuremath{\mathtt{L}}\xspace}
-\providecommand\tref[3]{\ensuremath{\{ \tbind{#1}{#2} \mid #3 \}}}
+\renewcommand\tref[3]{\ensuremath{\{ \tbind{#1}{#2} \mid #3 \}}}
 \providecommand\ttreft[3]{\ensuremath{\{ \tbind{#1}{#2} \mid #3 \}}}
 \providecommand\tfunbasic[2]{\ensuremath{{#1} \rightarrow {#2}}}
-\providecommand\tfun[3]{\ensuremath{\tbind{#1}{#2} \rightarrow #3}}
+\renewcommand\tfun[3]{\ensuremath{\tbind{#1}{#2} \rightarrow #3}}
 \providecommand\tabs[2]{\ensuremath{\forall #1 . #2}}
 
 \renewcommand\refa{\ensuremath{e}\xspace}

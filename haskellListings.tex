@@ -21,6 +21,7 @@
 
 
 \def\codesize{\normalsize}
+\newcommand\showfocus[1]{\color{purple}{\textbf{#1}}}
 
 \lstdefinelanguage{HaskellUlisses} {
 	basicstyle=\ttfamily\footnotesize,
@@ -28,6 +29,7 @@
 	morecomment=[l][\color{gray_ulisses}\ttfamily\codesize]{--},
 	%% morecomment=[s][\color{gray_ulisses}\ttfamily\codesize]{\{-}{-\}},
 	morestring=[b]",
+	moredelim=[is][\showfocus]{\#}{\#},
 	stringstyle=\color{haskellred},
 	showstringspaces=false,
 	numberstyle=\codesize,

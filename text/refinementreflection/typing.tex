@@ -1,42 +1,6 @@
-\begin{figure}
-\emphbf{Well Formedness}\hfill{\fbox{\iswellformed{\env}{\typ}}}\\
-
-$$
-\inference{
-	\hastype{\env,\tbind{v}{\btyp}}{\refa}{\tbool}
-}{
-	\iswellformed{\env}{\tref{v}{\btyp}{\refa}}
-}[\rwbase]
-\inference{
-	\iswellformed{\env}{\typ_x} &
-	\iswellformed{\env,\tbind{x}{\typ_x}}{\typ}
-}{
-	\iswellformed{\env}{\tfun{x}{\typ_x}{\typ}}
-}[\rwfun]
-$$
-
-\emphbf{Subtyping}\hfill{\fbox{\issubtype{\env}{\typ_1}{\typ_2}}}\\
-
-$$
-\inference{
-	\forall \sub\in\interp{\env}.
-	\interp{\applysub{\sub}{\tref{v}{\btyp}{\refa_1}}}
-	\subseteq
-	\interp{\applysub{\sub}{\tref{v}{\btyp}{\refa_2}}}
-}{
-	\issubtype{\env}{\tref{v}{\btyp}{\refa_1}}{\tref{v}{\btyp}{\refa_2}}
-}[\rsubbase]
-$$
-
-$$
-\inference{
-	\issubtype{\env}{\typ_x'}{\typ_x} &
-	\issubtype{\env,\tbind{x}{\typ_x'}}{\typ}{\typ'}
-}{
-	\issubtype{\env}{\tfun{x}{\typ_x}{\typ}}{\tfun{x}{\typ_x'}{\typ'}}
-}[\rsubfun]
-$$
-
+\begin{figure}[!t]
+\centering
+\captionsetup{justification=centering}
 \emphbf{Typing}\hfill{\fbox{\hastype{\env}{\prog}{\typ}}}\\
 $$
 \inference{
@@ -50,7 +14,6 @@ $$
 	\hastype{\env}{c}{\constty{c}}
 }[\rtconst]
 $$
-
 $$
 \inference{
 	\hastype{\env}{\prog}{\typ'} &
@@ -58,8 +21,7 @@ $$
 }{
 	\hastype{\env}{\prog}{\typ}
 }[\rtsub]
-$$
-$$
+\qquad
 \inference{
     % \haseq{\btyp} &
 	\hastype{\env}{e}{\tref{v}{\btyp}{\reft_r}}
@@ -73,9 +35,7 @@ $$
 }{
 	\hastype{\env}{\efun{x}{\typ}{e}}{\tfun{x}{\typ_x}{\typ}}
 }[\rtfun]
-$$
-
-$$
+\qquad
 \inference{
 	\hastype{\env}{e_1}{(\tfun{x}{\typ_x}{\typ})} &&
 	\hastype{\env}{e_2}{\typ_x}
@@ -83,37 +43,15 @@ $$
 	\hastype{\env}{e_1\ e_2}{\typ}
 }[\rtapp]
 $$
-
-%%% $$
-%%% \inference{
-	%%% \hastype{\env}{e}{\gtyp_x} &
-	%%% \hastype{\env, \tbind{x}{\gtyp_x}}{\prog}{\typ} &
-	%%% \iswellformed{\env}{\typ}
-%%% }{
-	%%% \hastype{\env}{\elet{x}{e}{\gtyp_x}{}{\prog}}{\typ}
-%%% }[\rtlet]
-%%% $$
-%%%
-%%% $$
-%%% \inference{
-	%%% \hastype{\env, \tbind{x}{\gtyp_x}}{e}{\gtyp_x} &
-	%%% \hastype{\env, \tbind{x}{\gtyp_x}}{\prog}{\typ} &
-	%%% \iswellformed{\env}{\typ}
-%%% }{
-	%%% \hastype{\env}{\eletrec{x}{e}{\gtyp_x}{}{\prog}}{\typ}
-%%% }[\rtletrec]
-%%% $$
-%% \NV{For soundness, it is important that f cannot appear in $\gtyp_2$}
 $$
 \inference
 	{\hastype{\env, \tbind{x}{\gtyp_x}}{\bd_x}{\gtyp_x} &
-	 \iswellformed{\env, \tbind{x}{\gtyp_x}}{\typ_x} \\
+	 \iswellformed{\env, \tbind{x}{\gtyp_x}}{\typ_x} &
 	 \hastype{\env, \tbind{x}{\gtyp_x}}{\bd}{\gtyp} &
 	 \iswellformed{\env}{\typ}}
 	{\hastype{\env}{\eletb{x}{\gtyp_x}{\bd_x}{\bd}}{\typ}}
 	[\rtlet]
 $$
-
 $$
 \inference
 	{\hastype{\env}
@@ -125,25 +63,56 @@ $$
 					 {\typ}
 	}[\rtreflect]
 $$
-
 $$
 \inference{
 	\hastype{\env}{e}{\tref{v}{T}{e_r}} & \iswellformed{\env}{\typ} \\
-	& \forall i. \constty{\dc_i} = \tfunbasic{\overline{\tbind{y_j}{\typ_j}}}{\tref{v}{T}{e_{r_i}}} \\
-	& \hastype{\env, \overline{\tbind{y_j}{\typ_j}}, \tbind{x}{\tref{v}{T}{e_r \land e_{r_i}}} }{e_i}{\typ}
+	& \forall i. \constty{\dc_i} = \tfunbasic{\overline{\tbind{y_j}{\typ_j}}}{\tref{v}{T}{e_{r_i}}} &
+	 \hastype{\env, \overline{\tbind{y_j}{\typ_j}}, \tbind{x}{\tref{v}{T}{e_r \land e_{r_i}}} }{e_i}{\typ}
 }{
 	\hastype{\env}{\ecase{x}{e}{\dc_i}{\overline{y_i}}{e_i}}{\typ}
 }[\rtcase]
 $$
+\emphbf{Well Formedness}\hfill{\fbox{\iswellformed{\env}{\typ}}}\\
+
 $$
 \inference{
-	\iswellformed{\env}{\typ}
+  \hastype{\env,\tbind{v}{\btyp}}{\refa}{\tbool^{\tlabel}}
 }{
-	\hastype{\env}
-	        {\efix{}}
-	        {\tfun{x}{\typ}{\tfun{y}{\typ}{\typ}}}
-}[\rtfix]
+	\iswellformed{\env}{\tref{v}{\btyp}{\refa}}
+}[\rwbase]
+\qquad
+\inference{
+	\iswellformed{\env}{\typ_x} &
+	\iswellformed{\env,\tbind{x}{\typ_x}}{\typ}
+}{
+	\iswellformed{\env}{\tfun{x}{\typ_x}{\typ}}
+}[\rwfun]
 $$
-\caption{Typing of \corelan}
+
+\emphbf{Subtyping}\hfill{\fbox{\issubtype{\env}{\typ_1}{\typ_2}}}\\
+
+$$
+\inference{
+%\env' \defeq \env,\tbind{v}{\{\btyp^\tlabel | \refa\}} \\
+\env' \defeq \env,\tbind{v}{\tref{v}{\btyp^\tlabel}{\refa}} &
+\tologicshort{\env'}{\refa'}{\tbool}{\pred'}{}{}{} &
+\smtvalid{\vcond{\env'}{\pred'}}
+%%	\forall \sub\in\interp{\env}.
+%%	\interp{\applysub{\sub}{\tref{v}{\btyp}{\refa_1}}}
+%%	\subseteq
+%%	\interp{\applysub{\sub}{\tref{v}{\btyp}{\refa_2}}}
+}{
+	\issubtype{\env}{\tref{v}{\btyp}{\refa}}{\tref{v}{\btyp}{\refa'}}
+}[\rsubbase]
+$$
+$$
+\inference{
+	\issubtype{\env}{\typ_x'}{\typ_x} &
+	\issubtype{\env,\tbind{x}{\typ_x'}}{\typ}{\typ'}
+}{
+	\issubtype{\env}{\tfun{x}{\typ_x}{\typ}}{\tfun{x}{\typ_x'}{\typ'}}
+}[\rsubfun]
+$$
+\caption{Type checking of \corelan.}
 \label{fig:typing}
 \end{figure}
