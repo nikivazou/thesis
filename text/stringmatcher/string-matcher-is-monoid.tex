@@ -2,19 +2,6 @@ String matching is determining all the indices in a source string
 where a given target string begins; for example, for source string
 \texttt{ababab} and target \texttt{aba} the results of string
 matching would be \texttt{[0, 2]}. 
-\ignore{
-We will use the following code as a specification of string matching:
-\begin{code}
-stringMatcher inp trg = go 0 where
-  trgLen = length trg
-  go i | i >= length inp = []
-       | take trgLen (drop i inp) == trg = i : rest
-       | otherwise = rest
-  where rest = go (i + 1)
-\end{code}
-Though this implementation is not efficient, it is simple and provides
-a good starting point from which to develop the machinery in this section.
-}
 
 We now define a suitable monoid, @SM target@, for the codomain of
 a string matching function, where @target@ is the string being looked
@@ -24,14 +11,6 @@ Additionally, we will define a function @toSM :: RString -> SM target@
 which does the string matching and is indeed a monoid morphism from
 @RString@ to @SM target@ for a given @target@.
 
-\ignore{
-Next, we use @RString@ to define the string matching data type
-@SM target@ that stores an input refined string and all the
-indices where the string type literal @target@ appears in the input.
-%
-We defined the monoid methods @mempty@ and @mappend@ of the string matcher
-and prove that the structure (@SM target@, @mempty@, @mappend@) is a monoid.
-}
 \subsubsection{String Matching Monoid}
 
 We define the data type
@@ -40,10 +19,10 @@ a list of all the indices in @input@ where the
 @target@ appears.
 %
 \begin{code}
-data SM (target :: Symbol) where
-  SM :: input:RString
-     -> indices:[GoodIndex input target]
-     -> SM target
+  data SM (target :: Symbol) where
+    SM :: input:RString
+       -> indices:[GoodIndex input target]
+       -> SM target
 \end{code}
 %
 We use the string type literal~\footnote{\texttt{Symbol} is a kind and
@@ -61,16 +40,16 @@ an example, the good indices of @"abcab"@ on @"ababcabcab"@ are
 @[2,5]@.
 %
 \begin{code}
-type GoodIndex Input Target
-  = {i:Nat | isGoodIndex Input (fromString Target) i }
+  type GoodIndex Input Target
+    = {i:Nat | isGoodIndex Input (fromString Target) i }
 
-isGoodIndex :: RString -> RString -> Int -> Bool
-isGoodIndex input target i
-  = (subString i (lenStr target) input  == target)
-  && (i + lenStr target <= lenStr input)
+  isGoodIndex :: RString -> RString -> Int -> Bool
+  isGoodIndex input target i
+    = (subString i (lenStr target) input  == target)
+    && (i + lenStr target <= lenStr input)
 
-subString :: Int -> Int -> RString -> RString
-subString o l = takeStr l . dropStr o
+  subString :: Int -> Int -> RString -> RString
+  subString o l = takeStr l . dropStr o
 \end{code}
 %
 \ignore{
@@ -93,8 +72,8 @@ The \textit{identity element} @mempty@ of @SM t@, for each target @t@, is
 defined to contain the identity @RString@ (@stringMempty@) and the
 identity @List@ (@listMempty@).
 \begin{code}
-mempty:: forall (t :: Symbol). SM t
-mempty = SM stringMempty listMempty
+  mempty:: forall (t :: Symbol). SM t
+  mempty = SM stringMempty listMempty
 \end{code}
 %
 
@@ -110,22 +89,25 @@ are the concatenations of three list indices:
 \end{enumerate}
 %
 }
+
 \begin{figure}[t]
+\centering
+\captionsetup{justification=centering}
 \includegraphics[scale=0.5]{text/stringmatcher/makeIndices}
-\caption{Mappend indices of String Matcher}
+\caption{Mappend indices of String Matcher.}
 \label{fig:mappend:indices}
 \end{figure}
 %
 The Haskell definition of @<>@, the monoid operation for @SM t@, is as follows.
 \begin{code}
-(mappend)::forall (t::Symbol). KnownSymbol t => SM t -> SM t -> SM t
-(SM x xis) mappend (SM y yis)
-  = SM (x stringMappend y) (xis' listMappend xyis listMappend yis')
-  where
-    tg   = fromString (symbolVal (Proxy :: Proxy t))
-    xis' = map (castGoodIndexLeft tg x y) xis
-    xyis = makeNewIndices x y tg
-    yis' = map (shiftStringRight tg x y) yis
+  (mappend)::forall (t::Symbol). KnownSymbol t => SM t -> SM t -> SM t
+  (SM x xis) mappend (SM y yis)
+    = SM (x stringMappend y) (xis' listMappend xyis listMappend yis')
+    where
+      tg   = fromString (symbolVal (Proxy :: Proxy t))
+      xis' = map (castGoodIndexLeft tg x y) xis
+      xyis = makeNewIndices x y tg
+      yis' = map (shiftStringRight tg x y) yis
 \end{code}
 Note again that capturing target as a type parameter is critical,
 otherwise there is no way for the Haskell's type system to specify
@@ -138,7 +120,7 @@ concatenation of the two @input@
 fields. Figure~\ref{fig:mappend:indices} illustrates the three pieces
 of the new @indices@ field which we now explain in more detail.
 
-\paragraph{1. Casting Good Indices}
+\mypara{1. Casting Good Indices}
 If @xis@ is a list of good indices for the string @x@ and the target
 @tg@, then @xis@ is also a list of good indices for the string
 @x stringMappend y@ and the target @tg@, for each @y@.
@@ -148,10 +130,10 @@ To prove this property we need to invoke the property
 substring preservation on string right appending.
 %
 \begin{code}
-assume subStrAppendRight
-    :: sl:RString -> sr:RString -> j:Int
-    ->  i:{Int | i + j <= lenStr sl }
-    ->  { subString sl i j = subString (sl stringMappend sr) i j }
+  assume subStrAppendRight
+      :: sl:RString -> sr:RString -> j:Int
+      -> i:{Int | i + j <= lenStr sl }
+      -> {subString sl i j = subString (sl stringMappend sr) i j}
 \end{code}
 %
 The specification of @subStrAppendRight@ ensures that for each
@@ -162,26 +144,26 @@ The function @castGoodIndexLeft@ applies the above property to an index @i@
 to cast it from a good index on @sl@ to a good index on @(sl stringMappend sr)@
 %
 \begin{code}
-castGoodIndexLeft
-  :: tg:RString -> sl:RString -> sr:RString
-  -> i:GoodIndex sl tg
-  -> {v:GoodIndex (sl stringMappend sr) target | v = i}
+  castGoodIndexLeft
+    :: tg:RString -> sl:RString -> sr:RString
+    -> i:GoodIndex sl tg
+    -> {v:GoodIndex (sl stringMappend sr) target | v = i}
 
-castGoodIndexLeft tg sl sr i
-  = cast (subStrAppendRight sl sr (lenStr tg) i) i
+  castGoodIndexLeft tg sl sr i
+    = cast (subStrAppendRight sl sr (lenStr tg) i) i
 \end{code}
 %
 Where @cast p x@ returns @x@, after enforcing the properties of @p@ in the logic
 \begin{code}
-cast :: b -> x:a -> {v:a | v = x }
-cast _ x = x
+  cast :: b -> x:a -> {v:a | v = x}
+  cast _ x = x
 \end{code}
 %
 Moreover, in the logic, each expression @cast p x@
 is reflected as @x@,
 thus allowing random (\ie non-reflected) Haskell expressions to appear in @p@.
 
-\paragraph{2. Creation of new indices}
+\mypara{2. Creation of new indices}
 The concatenation of two input strings @sl@ and @sr@
 may create new good indices.
 %
@@ -196,15 +178,16 @@ of the left input @sl@.
 @makeNewIndices sl sr tg@ detects all such good new indices.
 %
 \begin{code}
-makeNewIndices
-  :: sl:RString -> sr:RString -> tg:RString
-  -> [GoodIndex {sl stringMappend sr} tg]
-makeNewIndices sl sr tg
-  | lenStr tg < 2 = []
-  | otherwise     = makeIndices (sl stringMappend sr) tg lo hi
-  where
-    lo = maxInt (lenStr sl - (lenStr tg - 1)) 0
-    hi = lenStr sl - 1
+  makeNewIndices
+    :: sl:RString -> sr:RString -> tg:RString
+    -> [GoodIndex {sl stringMappend sr} tg]
+    
+  makeNewIndices sl sr tg
+    | lenStr tg < 2 = []
+    | otherwise     = makeIndices (sl stringMappend sr) tg lo hi
+    where
+      lo = maxInt (lenStr sl - (lenStr tg - 1)) 0
+      hi = lenStr sl - 1
 \end{code}
 If the length of the @tg@ is less than 2, then no new good indices are created.
 %
@@ -218,15 +201,15 @@ Generally, @makeIndices s tg lo hi@ returns the good indices
 of the input string @s@ for target @tg@ in the range from @lo@ to @hi@.
 %
 \begin{code}
-makeIndices
-  :: s:RString -> tg:RString -> lo:Nat
-  -> hi:Int -> [GoodIndex s tg]
-makeIndices s tg lo hi
-  | hi < lo             = []
-  | isGoodIndex s tg lo = lo:rest
-  | otherwise           = rest
-  where
-    rest = makeIndices s tg (lo + 1) hi
+  makeIndices :: s:RString -> tg:RString -> lo:Nat
+              -> hi:Int -> [GoodIndex s tg]
+    
+  makeIndices s tg lo hi  
+    | hi < lo             = []
+    | isGoodIndex s tg lo = lo:rest
+    | otherwise           = rest
+    where
+      rest = makeIndices s tg (lo + 1) hi
 \end{code}
 %Note the similarity to the functional specification of string matching
 %at the beginning of this section.
@@ -238,7 +221,7 @@ instead only searching at most @lenStr tg@ positions for new good indices.
 Thus, the time complexity to create the new indices is linear
 on the size of the target but independent of the size of the input.
 
-\paragraph{3. Shift Good Indices}
+\mypara{3. Shift Good Indices}
 If @yis@ is a list of good indices on the string @y@ with target @tg@,
 then we need to shift each element of @yis@ right @lenStr x@ units to
 get a list of good indices for the string @x stringMappend y@.
@@ -249,10 +232,10 @@ To prove this property we need to invoke the property
 substring shifting on string left appending.
 %
 \begin{code}
-assume subStrAppendLeft
-  :: sl:RString -> sr:RString
-  -> j:Int -> i:Int
-  -> {subStr sr i j = subStr (sl stringMappend sr) (lenStr sl+i) j}
+  assume subStrAppendLeft
+    :: sl:RString -> sr:RString
+    -> j:Int -> i:Int
+    -> {subStr sr i j = subStr (sl stringMappend sr) (lenStr sl+i) j}
 \end{code}
 %
 The specification of @subStrAppendLeft@ ensures that for each
@@ -268,13 +251,13 @@ casting @i@ from a good index on @sr@ to a good index on @(sl stringMappend sr)@
 Thus, @shiftStringRight@ both appropriately shifts the index
 and casts the shifted index using the above theorem:
 \begin{code}
-shiftStringRight
-  :: tg:RString -> sl:RString -> sr:RString
-  -> i:GoodIndex sr tg
-  -> {v:(GoodIndex (sl stringMappend sr) tg) | v = i + lenStr sl}
-shiftStringRight tg sl sr i
-  = subStrAppendLeft sl sr (lenStr tg) i
-    `cast` i + lenStr sl
+  shiftStringRight
+    :: tg:RString -> sl:RString -> sr:RString
+    -> i:GoodIndex sr tg
+    -> {v:(GoodIndex (sl stringMappend sr) tg) | v = i + lenStr sl}
+    
+  shiftStringRight tg sl sr i
+    = subStrAppendLeft sl sr (lenStr tg) i `cast` i + lenStr sl
 \end{code}
 
 \subsubsection{String Matching is a Monoid}
@@ -293,22 +276,23 @@ by providing safe implementations for the monoid law functions.
 %
 First, we prove \textit{left identity}.
 \begin{code}
-idLeft :: x:SM t -> {mempty mappend x = xs }
-idLeft (SM i is)
-  =   (mempty :: SM t) mappend (SM i is)
-  ==. (SM stringMempty listMempty) mappend (SM i is)
-  ==. SM (stringMempty <+> i) (is1 ++ isNew ++ is2)
+  idLeft :: x:SM t -> {mempty mappend x = xs}
+  
+  idLeft (SM i is)
+    =   (mempty :: SM t) mappend (SM i is)
+    =. (SM stringMempty listMempty) mappend (SM i is)
+    =. SM (stringMempty <+> i) (is1 ++ isNew ++ is2)
        ? idLeftStr i
-  ==. SM i ([] ++ [] ++ is)
+    =. SM i ([] ++ [] ++ is)
        ? (mapShiftZero tg i is && newIsNullRight i tg)
-  ==. SM i is
+    =. SM i is
        ? idLeftList is
-  *** QED
-  where
-    tg    = fromString (symbolVal (Proxy :: Proxy t))
-    is1   = map (castGoodIndexRight tg i stringMempty) []
-    isNew = makeNewIndices stringMempty i tg
-    is2   = (map (shiftStringRight tg stringMempty i) is)
+    ** QED
+    where
+      tg    = fromString (symbolVal (Proxy :: Proxy t))
+      is1   = map (castGoodIndexRight tg i stringMempty) []
+      isNew = makeNewIndices stringMempty i tg
+      is2   = map (shiftStringRight tg stringMempty i) is
 \end{code}
 
 The proof proceeds by rewriting, using left identity of the monoid strings and lists,
@@ -316,16 +300,16 @@ and two more lemmata.
 \begin{itemize}
 \item Identity of shifting by an empty string.
 \begin{code}
-mapShiftZero :: tg:RString -> i:RString
-  -> is:[GoodIndex i target]
-  -> {map (shiftStringRight tg stringMempty i) is = is }
+  mapShiftZero :: tg:RString -> i:RString
+    -> is:[GoodIndex i target]
+    -> {map (shiftStringRight tg stringMempty i) is = is}
 \end{code}
 The lemma is proven by induction on @is@ and
 the assumption that empty strings have length 0.
 \item No new indices are created.
 \begin{code}
-newIsNullLeft :: s:RString -> t:RString
-  -> {makeNewIndices stringMempty s t = [] }
+  newIsNullLeft :: s:RString -> t:RString 
+                -> {makeNewIndices stringMempty s t = []}
 \end{code}
 The proof relies on the fact that @makeIndices@
 is called on the empty range from @0@ to @-1@
@@ -334,38 +318,41 @@ and returns @[]@.
 
 Next, we prove \textit{right identity}.
 \begin{code}
-idRight :: x:SM t -> {x mappend mempty = x }
-idRight (SM i is)
-  =   (SM i is) mappend (mempty :: SM t)
-  ==. (SM i is) mappend (SM stringMempty listMempty)
-  ==. SM (i stringMappend stringMempty) (is1 listMappend isNew listMappend is2)
-      ? idRightStr i
-  ==. SM i (is listMappend N listMappend N)
-      ? (mapCastId tg i stringMempty is && newIsNullLeft i tg)
-  ==. SM i is
-      ? idRightList is
-  ***  QED
-  where
-    tg    = fromString (symbolVal (Proxy :: Proxy t))
-    is1   = map (castGoodIndexRight tg i stringMempty) is
-    isNew = makeNewIndices i stringEmp tg
-    is2   = map (shiftStringRight tg i stringMempty) []
+  idRight :: x:SM t -> {x mappend mempty = x}
+  
+  idRight (SM i is)
+    =  (SM i is) mappend (mempty :: SM t)
+    =. (SM i is) mappend (SM stringMempty listMempty)
+    =. SM (i stringMappend stringMempty) (is1 listMappend isNew listMappend is2)
+       ? idRightStr i
+    =. SM i (is listMappend N listMappend N)
+       ? (mapCastId tg i stringMempty is && newIsNullLeft i tg)
+    =. SM i is
+       ? idRightList is
+    **  QED
+    where
+      tg    = fromString (symbolVal (Proxy :: Proxy t))
+      is1   = map (castGoodIndexRight tg i stringMempty) is
+      isNew = makeNewIndices i stringEmp tg
+      is2   = map (shiftStringRight tg i stringMempty) []
 \end{code}
 The proof proceeds by rewriting,
 using right identity on strings and lists and two more lemmata.
 \begin{itemize}
 \item Identity of casting is proven
 \begin{code}
-mapCastId :: tg:RString -> x:RString -> y:RString
-  -> is:[GoodIndex x tg] ->
-  -> {map (castGoodIndexRight tg x y) is = is}
+  mapCastId 
+    :: tg:RString -> x:RString -> y:RString
+    -> is:[GoodIndex x tg] ->
+    -> {map (castGoodIndexRight tg x y) is = is}
 \end{code}
 We prove identity of casts by induction on @is@ and
 identity of casting on a single index.
 \item No new indices are created.
 \begin{code}
-newIsNullLeft :: s:RString -> t:RString
-  -> {makeNewIndices s stringMempty t = listMempty }
+  newIsNullLeft 
+    :: s:RString -> t:RString
+    -> {makeNewIndices s stringMempty t = listMempty}
 \end{code}
 The proof proceeds by case splitting
 on the relative length of @s@ and @t@.
@@ -381,8 +368,8 @@ The whole proof is available online~\cite{implementation}.
 Our goal is to show equality of the left and right associative string matchers.
 %
 \begin{code}
-assoc :: x:SM t -> y:SM t -> z:SM t
-       -> { x mappend (y mappend z) = (x mappend y) mappend z}
+  assoc :: x:SM t -> y:SM t -> z:SM t
+        -> {x mappend (y mappend z) = (x mappend y) mappend z}
 \end{code}
 To prove equality of the two string matchers we show
 that the input and indices fields are respectively equal.
@@ -402,10 +389,10 @@ new indices from mappending @x@ to @y@, and the indices of the input
 For example, if @zis1@ (resp. @zis2@) is the group @zis@ when
 right (resp. left) mappend happened first, then we have
 \begin{code}
-zis1 = map (shiftStringRight tg xi (yi stringMappend zi))
-           (map (shiftStringRight tg yi zi) zis)
+  zis1 = map (shiftStringRight tg xi (yi stringMappend zi))
+             (map (shiftStringRight tg yi zi) zis)
 
-zis2 = map (shiftStringRight tg (xi stringMappend yi) zi) zis
+  zis2 = map (shiftStringRight tg (xi stringMappend yi) zi) zis
 \end{code}
 That is, in right first, the indices of @z@ are first shifted
 by the length of @yi@ and then by the length of @xi@,
@@ -422,39 +409,41 @@ we again use list associativity and distribution of casts to wrap the
 index groups back in string matchers.
 \end{enumerate}
 \begin{figure}
+\centering
+\captionsetup{justification=centering}
 \includegraphics[scale=0.5]{text/stringmatcher/AssociativeIndices}
-\caption{Associativity of String Matching}
+\caption{Associativity of String Matching.}
 \label{fig:mappend:assoc}
 \end{figure}
 We now sketch the three proof steps, while the whole proof
 is available online~\cite{implementation}.
 \begin{code}
-assoc x@(SM xi xis) y@(SM yi yis) z@(SM zi zis)
-  -- Step 1: unwrapping the indices
-  =   x <> (y <> z)
-  ==. (SM xi xis) <> ((SM yi yis) <> (SM zi zis))
+  assoc x@(SM xi xis) y@(SM yi yis) z@(SM zi zis)
+    -- Step 1: unwrapping the indices
+    =   x <> (y <> z)
+    =. (SM xi xis) <> ((SM yi yis) <> (SM zi zis))
                          ...
-  -- via list associativity and distribution of shifts
-  ==. SM i (xis1 ++ ((xyis1 ++ yis1 ++ yzis1) ++ zis1))
-  -- Step 2: Equivalence of representations
-  ==. SM i (xis2 ++ ((xyis1 ++ yis1 ++ yzis1) ++ zis1))
-      ? castConcat tg xi yi zi xis
-  ==. SM i (xis2 ++ ((xyis1 ++ yis1 ++ yzis1) ++ zis2))
-      ? mapLenFusion tg xi yi zi zis
-  ==. SM i (xis2 ++ ((xyis2 ++ yis2 ++ yzis2) ++ zis2))
-      ? assocNewIndices y tg xi yi zi yis
-  -- Step 3: Wrapping the indices
+    -- via list associativity and distribution of shifts
+    =. SM i (xis1 ++ ((xyis1 ++ yis1 ++ yzis1) ++ zis1))
+    -- Step 2: Equivalence of representations
+    =. SM i (xis2 ++ ((xyis1 ++ yis1 ++ yzis1) ++ zis1))
+       ? castConcat tg xi yi zi xis
+    =. SM i (xis2 ++ ((xyis1 ++ yis1 ++ yzis1) ++ zis2))
+       ? mapLenFusion tg xi yi zi zis
+    =. SM i (xis2 ++ ((xyis2 ++ yis2 ++ yzis2) ++ zis2))
+       ? assocNewIndices y tg xi yi zi yis
+    -- Step 3: Wrapping the indices
                          ...
-  -- via list associativity and distribution of casts
-  ==. (SM xi xis <> SM yi yis) <> SM zi zis
-  =   (x <> y) <> z
-  *** QED
-  where
-    i     = xi stringMappend (yi stringMappend zi)
+    -- via list associativity and distribution of casts
+    =. (SM xi xis <> SM yi yis) <> SM zi zis
+    =. (x <> y) <> z
+    ** QED
+    where
+      i     = xi stringMappend (yi stringMappend zi)
 
-    yzis1 = map (shiftStringRight tg xi (yi <+> zi)) yzis
-    yzis2 = makeNewIndices (xi <+> yi) zi tg
-    yzis  = makeNewIndices yi zi tg
-    ...
+      yzis1 = map (shiftStringRight tg xi (yi <+> zi)) yzis
+      yzis2 = makeNewIndices (xi <+> yi) zi tg
+      yzis  = makeNewIndices yi zi tg
+      ...
 \end{code}
-\qed\end{proof}
+\cqed\end{proof}

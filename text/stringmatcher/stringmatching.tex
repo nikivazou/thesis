@@ -1,7 +1,7 @@
-\section{Case Study: Correctness of Parallel String Matching}\label{sec:stringmatching}
+\section{Correctness of Parallel String Matching}\label{sec:stringmatching}
 
-\S~\ref{sec:parallelization} showed that any monoid morphism
-whose domain is chunkable can be parallelized. We now make use of that
+In \S~\ref{sec:parallelization} we showed that any monoid morphism
+whose domain is chunkable can be parallelized. We now apply that
 result to parallelize string matching. We start by observing that
 strings are a chunkable monoid. %\NV add monoid methods
 We then turn string matching for a
@@ -41,6 +41,7 @@ correctness of parallel string matching.
 \subsection{String Matching Monoid}\label{subsec:stringmatcher}
 \input{text/stringmatcher/string-matcher-is-monoid}
 
+\NV{HERE}
 \subsection{String Matching Monoid Morphism}\label{subsec:smmorphism}
 \input{text/stringmatcher/string-matching-morphism}
 

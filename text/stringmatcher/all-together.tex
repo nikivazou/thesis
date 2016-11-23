@@ -40,11 +40,11 @@ correctness i j x
   =   toSMPar i j x
   ==. pmconcat i (pmap toSM (chunkStr j x))
   ==. toSM is
-    ? parallelismEquivalence toSM distributestoSM x i j
+    ? parallelismEq toSM distributestoSM x i j
   *** QED
 \end{code}
 %
-Note that application of the theorem @parallelismEquivalence@
+Note that application of the theorem @parallelismEq@
 requires a proof that its first argument @toSM@ is a morphism.
 %
 By Theorem~\ref{theorem:monoid:distribution},

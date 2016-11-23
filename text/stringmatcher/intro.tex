@@ -1,18 +1,19 @@
-\section{Introduction}\label{sec:intro}
-In this paper, we prove correctness of parallelization of a na\"ive string matcher
+In this chapter,
+we prove correctness of parallelization of a na\"ive string matcher
 using Haskell as a theorem prover.
 %
 We use refinement types to specify correctness properties,
-Haskell terms to express proofs and Liquid Haskell to
-check correctness of proofs.
+Haskell terms to express proofs 
+-- via Refinement Reflection from chapter~\ref{refinementrflection}--
+and \toolname to check correctness of proofs.
 
 Optimization of sequential functions via parallelization
 is a well studied technique~\cite{jaja,blelloch}.
 %
-Paper and pencil proofs of program have been developed to support the
+Paper and pencil proofs have been developed to support the
 correctness of the transformation~\cite{Cole93parallelprogramming}.
 %
-However, these paper and pencil proofs
+However, these paper written proofs
 show correctness of the parallelization algorithm
 and do not reason about the actual implementation
 that may end up being buggy.
@@ -31,48 +32,21 @@ the specific dependent type framework
 and thus cannot use features and libraries from one's favorite
 programming language.
 
-Refinement Types~\cite{ConstableS87,FreemanPfenningDONTCITE91,Rushby98}
-on the other hand, enable verification of existing general purpose languages
-(including
-ML~\cite{pfenningxi98,GordonRefinement09,LiquidPLDI08},
-C~\cite{deputy,LiquidPOPL10},
-Haskell~\cite{Vazou14},
-Racket~\cite{RefinedRacket}
-and Scala~\cite{refinedscala}).
-%
-Traditionally, refinement types are limited to
-``shallow'' specifications,
-that is, they are used to specify and verify properties
-that only talk about behaviors of program functions
-but not functions themselves.
-%
-This restriction critically limits the expressiveness
-of the specifications
-but allows for automatic SMT~\cite{SMTLIB2} based verification.
-%
-Yet, program equivalence proofs were out of the expressive
-power of refinement types.
-
-Recently, we extended refinement types
-with Refinement Reflection~\cite{reflection},
-a technique that reflects each function's implementation
-into the function's type
-and is implemented in Liquid Haskell~\cite{Vazou14}.
-%
-We claimed that Refinement Reflection can turn any programming
+In chapter~\ref{refinementrflection}
+we claimed that Refinement Reflection can turn any programming
 language into a proof assistant.
 %
-In this paper we check our claim and use Liquid Haskell
+In this chapter we check our claim and use \toolname
 to prove program equivalence.
 %
 Specifically,
 we \textit{define in Haskell}
 a sequential string matching function, @toSM@, and its parallelization, @toSMPar@,
 using existing Haskell libraries; then,
-we \textit{prove in Haskell} that these two functions are equivalent,
-and we check our proofs using Liquid Haskell.
+we \textit{prove in Haskell} that these two functions are equivalent;
+finally, we check our proofs using \toolname.
 
-\paragraph{Theorems as Refinement Types}
+\mypara{Theorems as Refinement Types}
 Refinement Types refine types with properties
 drawn from decidable logics.
 For example, the type @{v:Int | 0 < v}@
@@ -80,22 +54,22 @@ describes all integer values @v@ that are greater than @0@.
 %
 We refine the unit type to express theorems,
 define unit value terms to express proofs, and use
-Liquid Haskell to check that the proofs prove the theorems.
+\toolname to check that the proofs prove the theorems.
 %
-For example, Liquid Haskell accepts
+For example, \toolname accepts
 the type assignment @() :: {v:()| 1+1=2}@,
 as the underlying SMT can always prove the equality @1+1=2@.
 %
 We write @{1+1=2}@ to simplify the type @{v:()| 1+1=2}@
 from the irrelevant binder @v:()@.
 
-\paragraph{Program Properties as Types}
+\mypara{Program Properties as Types}
 The theorems we express can refer to program functions.
 As an example, the type of @assoc@ expresses that @mappend@
 is associative.
 %
 \begin{code}
-assoc :: x:m -> y:m -> z:m -> {x mappend (y mappend z) = (x mappend y) mappend z}
+  assoc :: x:m -> y:m -> z:m -> {x mappend (y mappend z) = (x mappend y) mappend z}
 \end{code}
 %
 In \S~\ref{sec:haskell-proofs} we explain
@@ -103,11 +77,11 @@ how to write Haskell proof terms to prove theorems like @assoc@
 by proving that list append @(++)@ is associative.
 %
 Moreover, we prove that the empty list @[]@ is the identity element of
-list append, and conclude that the list
+list append and conclude that the list
 (with @[]@ and @(++)@, \ie the triple (@[a]@, @[]@, @(++)@))
 is provably a monoid.
 
-\paragraph{Corectness of Parallelization}
+\mypara{Corectness of Parallelization}
 In \S~\ref{sec:parallelization}, we define the type @Morphism n m f@ that specifies
 that @f@ is a \textit{morphism} between two monoids
 (@n@, @$\eta$@, @<+>@) and (@m@, @$\epsilon$@, @<>@),
@@ -115,26 +89,27 @@ that @f@ is a \textit{morphism} between two monoids
 \ie @f :: n -> m@ where @f $\eta$ = $\epsilon$@ and @f (x <+> y) = f x <> f y@.
 
 A morphism @f@ on a ``chunkable'' input type can be parallelized by:
-\begin{enumerate}
+\begin{itemize}
   \item chunking up the input in @j@ chunks (@chunk j@),
   \item applying the morphism in parallel to all chunks (@pmap f@), and
   \item recombining the mapped chunks via @mappend@, also in parallel (@pmconcat i@).
-\end{enumerate}
+\end{itemize}
 %
 We specify correctness of the above transformation as a refinement type.
 %
 \begin{code}
-parallelismEquivalence
-  :: f:(n -> m) -> Morphism n m f -> x:n -> i:Pos -> j:Pos
-   -> {f x = pmconcat i (pmap f (chunk j x))}
+  parallelismEq
+    :: f:(n -> m) -> Morphism n m f -> x:n -> i:Pos -> j:Pos
+    -> {f x = pmconcat i (pmap f (chunk j x))}
 \end{code}
 %
-\S~\ref{sec:parallelization} describes the parallelization transformation in details,
-while Correctness of Parallelization Theorem~\ref{theorem:two-level} proves correctness
-by providing a
-term that satisfies the above type.
+\S~\ref{sec:parallelization} describes the parallelization transformation in details
+concluding with 
+Correctness of Parallelization Theorem~\ref{theorem:two-level} 
+that proves correctness by a Haskell definition of @parallelismEq@ 
+that satisfies the above type.
 
-\paragraph{Case Study: Parallelization of String Matching}
+\mypara{Case Study: Parallelization of String Matching}
 We use the above theorem to parallelize string matching.
 We define a string matching function @toSM :: RString -> toSM target@
 from a \textit{refined string} to a \textit{string matcher}.
@@ -153,15 +128,13 @@ thus by the aforementioned Correctness of Parallelization Theorem~\ref{theorem:t
 we can correctly parallelize string matching.
 
 
-
-
 To sum up, we present the first realistic proof that 
 uses Haskell as a theorem prover:
 correctness of parallelization on string matching.
 %
-Our contributions are summarized as follows
+This chapter is summarized as follows
 \begin{itemize}
-\item We explain how theorems and proofs are encoded and checked in Liquid Haskell
+\item We explain how theorems and proofs are encoded and checked in \toolname
 by formalizing monoids and proving that lists are monoids
 (\S~\ref{sec:haskell-proofs}).
 \item We formalize morphisms between monoids and
@@ -171,6 +144,6 @@ specify and prove correctness of parallelization of morphisms
 @ByteString@s as refined strings which satisfy the monoid laws (\S~\ref{subsec:refinedstrings}).
 \item As an application, we prove that a string matcher is a morphism between the monoids of refined strings
 and string matchers,  thus we get provably correct parallelization of string matching (\S~\ref{sec:stringmatching}).
-\item Based on our 1839LoC proof we evaluate the approach of using Haskell as a theorem prover
-(\S~\ref{sec:evaluation}).
+\item Based on our approximately 2K lines of code proof we evaluate the approach of using Haskell as a theorem prover
+(\S~\ref{sec:stringmatcher:evaluation}).
 \end{itemize}

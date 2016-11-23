@@ -9,11 +9,11 @@ this definition using a refinement type @Morphism@.
 A function @f :: n -> m@ is a morphism
 between the monoids
 (@m@, @$\epsilon$@, @<>@)
-and (@n@, @$\eta$@, @<+>@)
+and (@n@, @$\eta$@, @<+>@),
 if @Morphism n m f@ has an inhabitant.
 \begin{code}
-type Morphism n m F =
-  x:n -> y:n -> {F eta = epsilon && F (x <+> y) = F x <> F y}
+  type Morphism n m F 
+    = x:n -> y:n -> {F eta = epsilon && F (x <+> y) = F x <> F y}
 \end{code}
 \end{definition}
 
@@ -21,11 +21,11 @@ A monoid morphism can be parallelized when its domain can be cut into
 chunks and put back together again, a property we refer to as
 chunkable and expand upon in \S~\ref{subsec:chunkable}. A
 chunkable monoid morphism is then parallelized by:
-\begin{enumerate}
+\begin{itemize}
   \item chunking up the input,
   \item applying the morphism in parallel to all chunks, and
   \item recombining the chunks, also in parallel, back to a single value.
-\end{enumerate}
+\end{itemize}
 In the rest of this section we implement and verify to be correct the above
 transformation.
 
@@ -34,21 +34,20 @@ transformation.
 A monoid (@m@, @epsilon@, @<>@) is chunkable
 if the following four functions are defined on @m@.
 \begin{code}
-length_m :: m -> Nat
+  length_m :: m -> Nat
 
-drop_m :: i:Nat -> x:MGEq m i -> MEq m (length_m x-i)
-take_m :: i:Nat -> x:MGEq m i -> MEq m i
+  drop_m   :: i:Nat -> x:MGEq m i -> MEq m (length_m x - i)
+  take_m   :: i:Nat -> x:MGEq m i -> MEq m i
 
-takeDropProp_m :: i:Nat -> x:m ->
-                  {x = take_m i x <> drop_m i x}
+  takeDropProp_m :: i:Nat -> x:m -> {x = take_m i x <> drop_m i x}
 \end{code}
 
 Where the type aliases @MLeq m I@ (and @MEq m I@)
 constrain the monoid @m@ to have @length_m@
 greater than (resp. equal) to @I@.
 \begin{code}
-type MGEq m I = {x:m | I <= length_m x }
-type MEq  m I = {x:m | I = length_m x }
+  type MGEq m I = {x:m | I <= length_m x}
+  type MEq  m I = {x:m | I =  length_m x}
 \end{code}
 \end{definition}
 
@@ -64,15 +63,15 @@ Using @take_m@ and @drop_m@ we define for each chunkable monoid
 (@m@, @epsilon@, @<>@) a function @chunk_m i x@ that
 splits @x@ in chunks of size @i@.
 \begin{code}
-chunk_m :: i:Pos -> x:m -> {v:L m | chunkRes_m i x v }
-chunk_m i x
-  | length_m x <= i = C x N
-  | otherwise     = take_m i x `C` chunk_m i (drop_m i x)
+  chunk_m :: i:Pos -> x:m -> {v:L m | chunkRes_m i x v}
+  chunk_m i x
+    | length_m x <= i = C x N
+    | otherwise      = take_m i x `C` chunk_m i (drop_m i x)
 
-chunkRes_m i x v
-  | length_m x <= i = length_m v == 1
-  | i == 1        = length_m v == length_m xs
-  | otherwise     = length_m v < length_m xs
+  chunkRes_m i x v
+    | length_m x <= i = length_m v == 1
+    | i == 1         = length_m v == length_m xs
+    | otherwise      = length_m v <  length_m xs
 \end{code}
 
 %
@@ -90,13 +89,13 @@ As a concrete example, to define list chunking, we first define the @take@ and @
 methods on the list monoid of section~\ref{sec:haskell-proofs}.
 %
 \begin{code}
-take i N                    = N
-take i (C x xs) | i == 0    = N
-                | otherwise = C x (take (i-1) xs)
+  take i N                    = N
+  take i (C x xs) | i == 0    = N
+                  | otherwise = C x (take (i-1) xs)
 
-drop i N                    = N
-drop i (C x xs) | i == 0    = C x xs
-                | otherwise = drop (i-1) xs
+  drop i N                    = N
+  drop i (C x xs) | i == 0    = C x xs
+                  | otherwise = drop (i-1) xs
 \end{code}
 We can prove that the above definitions
 combined with the @length@ of section~\ref{sec:haskell-proofs}
@@ -116,26 +115,26 @@ Concretely, we use the function
 @Control.Parallel.Strategies.withStrategy@
 that computes its argument in parallel given a parallel strategy.
 \begin{code}
-pmap :: (a -> b) -> L a -> L b
-pmap f xs = withStrategy parStrategy (map f xs)
+  pmap :: (a -> b) -> L a -> L b
+  pmap f xs = withStrategy parStrategy (map f xs)
 \end{code}
 %
 The strategy @parStrategy@ does not affect verification.
 %
 In our codebase we choose the traversable strategy.
 \begin{code}
-parStrategy :: Strategy (L a)
-parStrategy = parTraversable rseq
+  parStrategy :: Strategy (L a)
+  parStrategy = parTraversable rseq
 \end{code}
 
-\paragraph{Parallelism in the Logic.}
+\mypara{Parallelism in the Logic}
 The function @withStrategy@ is an imported Haskell library function,
 whose implementation is not available during verification.
 %
 To use it in our verified code, we make the \textit{assumption}
 that it always returns its second argument.
 \begin{code}
-assume withStrategy :: Strategy a -> x:a -> {v:a | v = x}
+  assume withStrategy :: Strategy a -> x:a -> {v:a | v = x}
 \end{code}
 %
 Moreover, we need to reflect the function @pmap@ and represent its
@@ -150,9 +149,9 @@ and does not reason about parallelism.
 
 
 \subsection{Monoidal Concatenation}\label{subsec:mconcat}
-The function @chunk_m@ lets us turn a monoidal value into several
-pieces. In the other direction, for any monoid @m@, there is a
-standard way of turning @L m@ back into a single @m@~\footnote{\texttt{mconcat} is usually defined as \texttt{foldr mappend mempty}}
+The function @chunk_m@ allows chunking a monoidal value into several
+pieces. Dually, for any monoid @m@, there is a
+standard way of turning @L m@ back into a single @m@~\footnote{\texttt{mconcat} is usually defined as \texttt{foldr mappend mempty}}.
 \begin{code}
   mconcat :: L m -> m
   mconcat N        = mempty
@@ -180,44 +179,42 @@ every positive number @i@ and input @x@,
 @f x = mconcat (pmap f (chunk_n i x))@ holds.
 %
 \begin{code}
-morphismDistribution
-  :: f:(n -> m) -> Morphism n m f -> x:n -> i:Pos
-  -> {f x = mconcat (pmap f (chunk_n i x))}
+  morphismDistribution
+    :: f:(n -> m) -> Morphism n m f -> x:n -> i:Pos
+    -> {f x = mconcat (pmap f (chunk_n i x))}
 \end{code}
 \end{theorem}
 
 \begin{proof}
-We prove the theorem by providing an implementation of
-@morphismDistribution@ that satisfies its type.
+We prove the theorem by implementing
+@morphismDistribution@ in a way that satisfies its type.
 %
 The proof proceeds by induction on the length of the input.
 %
 \begin{code}
-morphismDistribution f thm x i
-  | length_n x <= i
-  =   mconcat (pmap f (chunk_n i x))
-  ==. mconcat (map f (chunk_n i x))
-  ==. mconcat (map f (C x N))
-  ==. mconcat (f x `C` map f N)
-  ==. f is <> mconcat N
-  ==. f is <> epsilon
-  ==. f is ? idRight_m (f is)
-  *** QED
-morphismDistribution f thm x i
-  =   mconcat (pmap f (chunk_n i x))
-  ==. mconcat (map f (chunk_n i x))
-  ==. mconcat (map f (C takeX) (chunk_n i dropX)))
-  ==. mconcat (f takeX `C` map f (chunk_n n dropX))
-  ==. f takeX <> f dropX
-      ? morphismDistribution f thm dropX i
-  ==. f (takeX <+> dropX)
-      ? thm takeX dropX
-  ==. f x
-      ? takeDropProp_n i x
-  *** QED
-  where
-    dropX = drop_n i x
-    takeX = take_n i x
+  morphismDistribution f thm x i
+    | length_n x <= i
+    =  mconcat (pmap f (chunk_n i x))
+    =. mconcat (map f (chunk_n i x))
+    =. mconcat (map f (C x N))
+    =. mconcat (f x `C` map f N)
+    =. f is <> mconcat N
+    =. f is <> epsilon
+    =. f is ? idRight_m (f is)
+    ** QED
+    
+  morphismDistribution f thm x i
+    =   mconcat (pmap f (chunk_n i x))
+    =. mconcat (map f (chunk_n i x))
+    =. mconcat (map f (C takeX) (chunk_n i dropX)))
+    =. mconcat (f takeX `C` map f (chunk_n n dropX))
+    =. f takeX <> f dropX   ? morphismDistribution f thm dropX i
+    =. f (takeX <+> dropX)   ? thm takeX dropX
+    =. f x                 ? takeDropProp_n i x
+    ** QED
+    where
+      dropX = drop_n i x
+      takeX = take_n i x
 \end{code}
 %
 In the base case we use rewriting and right identity on the monoid @f x@.
@@ -233,7 +230,7 @@ we get basic distribution of @f@, that is
 %
 Finally, we merge @takeX <+> dropX@ to @x@
 using the property @takeDropProp_n@ of the chunkable monoid @n@.
-\qed\end{proof}
+\cqed\end{proof}
 
 
 \subsection{Parallel Monoidal Concatenation}\label{subsec:pmconcat}
@@ -245,11 +242,11 @@ chunk in parallel.
 We use the @chunk@ function of \S~\ref{subsec:chunkable} instantiated to @L m@ to define a parallelized version of
 monoid concatenation @pmconcat@.
 \begin{code}
-pmconcat :: Int -> L m -> m
-pmconcat i x | i <= 1 || length x <= i
-  = mconcat x
-pmconcat i x
-  = pmconcat i (pmap mconcat (chunk i x))
+  pmconcat :: Int -> L m -> m
+  pmconcat i x | i <= 1 || length x <= i
+    = mconcat x
+  pmconcat i x
+    = pmconcat i (pmap mconcat (chunk i x))
 \end{code}
 The function @pmconcat i x@ calls @mconcat x@ in the base case,
 otherwise it
@@ -266,13 +263,12 @@ Next, we prove equivalence of parallelized monoid concatenation.
 Let (@m@, @$\epsilon$@, @<>@) be a monoid.
 Then, the parallel and sequential concatenations are equivalent.
 \begin{code}
-pmconcatEquivalence
-  :: i:Int -> x:L m -> { pmconcat i x = mconcat x }
+  pmconcatEq :: i:Int -> x:L m -> {pmconcat i x = mconcat x}
 \end{code}
 \end{theorem}
 
 \begin{proof}
-We prove the theorem by providing a Haskell implementation of @pmconcatEquivalence@
+We prove the theorem by providing a Haskell implementation of @pmconcatEq@
 that satisfies its type.
 %
 The details of the proof can be found in~\cite{implementation},
@@ -280,30 +276,29 @@ here we provide the sketch of the proof.
 
 First, we prove that @mconcat@ distributes over list splitting
 \begin{code}
-mconcatSplit
-  :: i:Nat -> xs:{L m | i <= length xs}
-  -> { mconcat xs = mconcat (take i xs)
-                 <> mconcat (drop i xs) }
+  mconcatSplit
+    :: i:Nat -> xs:{L m | i <= length xs}
+    -> {mconcat xs = mconcat (take i xs) <> mconcat (drop i xs)}
 \end{code}
 %
 The proofs proceeds by structural induction, using monoid left identity in the base case
 and monoid associativity associavity and unfolding of @take@ and @drop@
 methods in the inductive step.
 
-We generalize the above lemma
+We generalize the above
 to prove that @mconcat@ distributes over list chunking.
 \begin{code}
-mconcatChunk
-  :: i:Pos -> xs:L m
-  -> { mconcat xs = mconcat (map mconcat (chunk i xs)) }
+  mconcatChunk
+    :: i:Pos -> xs:L m
+    -> {mconcat xs = mconcat (map mconcat (chunk i xs))}
 \end{code}
 %
 The proofs proceeds by structural induction, using monoid left identity in the base case
 and lemma @mconcatSplit@ in the inductive step.
 
-Lemma @mconcatChunk@ is sufficient to prove @pmconcatEquivalence@ by structural induction,
+Lemma @mconcatChunk@ is sufficient to prove @pmconcatEq@ by structural induction,
 using monoid left identity in the base case.
-\qed\end{proof}
+\cqed\end{proof}
 
 \subsection{Parallel Monoid Morphism}\label{subsec:both-levels}
 We can now replace the @mconcat@ in our chunked monoid morphism in
@@ -323,32 +318,31 @@ every positive numbers @i@ and @j@, and input @x@,
 @f x = pmconcat i (pmap f (chunk_n j x))@ holds.
 %
 \begin{code}
-parallelismEquivalence
-  :: f:(n -> m) -> Morphism n m f -> x:n -> i:Pos -> j:Pos
-  -> {f x = pmconcat i (pmap f (chunk_n j x))}
+  parallelismEq
+    :: f:(n -> m) -> Morphism n m f -> x:n -> i:Pos -> j:Pos
+    -> {f x = pmconcat i (pmap f (chunk_n j x))}
 \end{code}
 \end{theorem}
 
 \begin{proof}
 We prove the theorem by providing an implementation of
-@parallelismEquivalence@ that satisfies its type.
+@parallelismEq@ that satisfies its type.
 %
 \begin{code}
-parallelismEquivalence f thm x i j
-  =   pmconcat i (pmap f (chunk_n j x))
-  ==. mconcat (pmap f (chunk_n j x))
-      ? pmconcatEquivalence i (pmap f (chunk_n j x))
-  ==. f x
-      ? morphismDistribution f thm x j
-  *** QED
+  parallelismEq f thm x i j
+    =   pmconcat i (pmap f (chunk_n j x))
+    =. mconcat (pmap f (chunk_n j x))
+       ? pmconcatEq i (pmap f (chunk_n j x))
+    =. f x
+       ? morphismDistribution f thm x j
+    ** QED
 \end{code}
 The proof follows merely by application of the 
 two previous Theorems~\ref{theorem:monoid:distribution} and~\ref{theorem:equivalence:concat}.
-\qed\end{proof}
+\cqed\end{proof}
 
 
-\ignore{
-\paragraph{A Basic Time Complexity} analysis of the algorithm
+\mypara{A Basic Time Complexity} analysis of the algorithm
 reveals that parallelization of morphism  leads to runtime speedups
 on monads with fast (constant time) appending operator.
 
@@ -388,4 +382,3 @@ Moreover, from the complexity analysis we observe that time grows on bigger @i@ 
 %
 Thus, chunking the input in small chunks while splitting the monoid list in half leads
 to more parallelism, and thus (assuming infinite processors and no caching) greatest speedup.
-}

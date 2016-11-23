@@ -108,13 +108,12 @@ and does not reason about parallelism.
 \begin{theorem}[Monoid Concatenation Equivalence]\label{theorem:equivalence:concat}
 If @m@ is monoid, then the parallel and sequential concatenations are equivalent:
 \begin{code}
-pmconcatEquivalence 
-  :: i:Int -> is:List m -> { pmconcat i is == mconcat is }
+  pmconcatEq :: i:Int -> is:List m -> {pmconcat i is == mconcat is }
 \end{code}
 \end{theorem}
 
 \begin{proof}
-We prove the theorem by providing a Haskell implementation of @pmconcatEquivalence@
+We prove the theorem by providing a Haskell implementation of @pmconcatEq@
 that is safe under LiquidHaskell. The details of the proof can be found in~\cite{implementation}, 
 here we provide the sketch of the proof. 
 
@@ -129,7 +128,7 @@ mconcatSplit
 The proofs proceeds by structural induction, using monoid left identity in the base case
 and associavity in the inductive step.
 
-We generalize the above lemma
+We generalize the above
 to prove that @mconcat@ distributes over list chunking
 \begin{code}
 mconcatChunk 
@@ -140,9 +139,9 @@ mconcatChunk
 The proofs proceeds by structural induction, using monoid left identity in the base case
 and lemma @mconcatSplit@ in the inductive step.
 
-Lemma @mconcatChunk@ is sufficient to prove @pmconcatEquivalence@ by structural induction, 
+Lemma @mconcatChunk@ is sufficient to prove @pmconcatEq@ by structural induction, 
 using monoid left identity in the base case. 
-\qed\end{proof}
+\cqed\end{proof}
 
 Note that the proof uses only the monoid laws and not the implementations of the monoid
 operators, thus the theorem holds \textit{for any} type that satisfies the monoid laws. 
