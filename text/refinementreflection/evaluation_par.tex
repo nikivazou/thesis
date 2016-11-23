@@ -1,8 +1,4 @@
 \section{Verified Deterministic Parallelism}\label{sec:eval-parallelism}
-%=============================================================================
-
-%% \RN{Remember: Figure % \ref{fig:eval-summary} and
-%%   \ref{fig:laws} needs to be updated.}
 
 Finally, we evaluate our deterministic
 parallelism prototypes.  Aside from the lines of proof code added,
@@ -53,16 +49,18 @@ as described in~\cite{kuper2014freeze}.
 % Maybe how many lines of code verified Insert and insert are?}
 
 \begin{figure}
+\captionsetup{justification=centering}
   \begin{center}
     \includegraphics[width=3.2in]{text/refinementreflection/set.eps}
   \end{center}
-  \caption{Parallel speedup for doing 1 million parallel inserts over 10
+  \caption[Parallel speedup for PureSet and SLSet.]
+    {Parallel speedup for doing 1 million parallel inserts over 10
     iterations, verified and unverified, relative to the unverified version,
     for PureSet and SLSet.}
   \label{fig:set}
 \end{figure}
 
-\subsection{\texttt{monad-par}: $n$-body simulation}
+\subsection{Monad-par: $n$-body simulation}
 \label{sec:nbody}
 Next, we verify deterministic behavior of an
 $n$-body simulation program that leverages @monad-par@, a Haskell library which
@@ -133,10 +131,12 @@ that is run in a tight loop (like @accel@), we can expect that our programs
 will not be slowed down by an unacceptable amount.
 
 \begin{figure}
+\captionsetup{justification=centering}
   \begin{center}
     \includegraphics[width=3.2in]{text/refinementreflection/nbody.eps}
   \end{center}
-  \caption{Parallel speedup for doing a parallel $n$-body simulation and
+  \caption[Parallel speedup for $n$-body simulation and array reduction.]
+      {Parallel speedup for doing a parallel $n$-body simulation and
       parallel array reduction. The speedup is relative to the
     unverified version of each respective class of program.}
   \label{fig:nbody}

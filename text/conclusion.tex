@@ -31,7 +31,7 @@ to eliminate ghost arguments (~\ref{sec:discussion})?
 \end{itemize}
 
 
-\section{Gradual Refinement Types}\label{future:gradua}
+\section{Gradual Refinement Types}\label{future:gradual}
 \begin{itemize}
 \item How should assumptions~\ref{sec:discussion} behave in the code? 
 \end{itemize}
@@ -44,3 +44,32 @@ to eliminate ghost arguments (~\ref{sec:discussion})?
 \end{itemize}
 
 \section{Inference of Abstract and Bounded Refinement Types}
+
+
+\section{Automation on Theorem Prover}\label{future:theoremproving}
+Our evaluation shows that refinement reflection
+lets us prove deep specifications of a variety
+of implementations, and identifies
+important avenues for research.
+%
+First, while proofs are \emph{possible}, they can
+sometimes be \emph{cumbersome}. For example, in
+the proof of associativity of the monadic bind
+operator for the @Reader@ monad three of eight
+(extensional) equalities required explanations,
+some nested under multiple $\lambda$-abstractions.
+%
+Thus, it would be valuable to use recent
+advances in refinement-based synthesis~\cite{polikarpova16}
+to automate proof construction.
+%
+Second, while our approach to $\alpha$- and
+$\beta$-equivalence is sound, we do not know
+if it is \emph{complete}. We conjecture it is,
+due to the fact that our refinement terms
+are from the simply typed lambda calculus (STLC).
+%
+Thus, it would be interesting to use the
+normalization of STLC to develop a sound
+and complete SMT axiomatization, thereby
+automating proofs predictably.

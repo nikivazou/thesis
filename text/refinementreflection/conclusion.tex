@@ -1,16 +1,38 @@
-\section{Conclusions \& Future Directions}
+\section{Conclusion}\label{sec:refinementreflection:conclusion}
 
-We have shown how refinement reflection -- namely
-reflecting the definitions of functions in their
-output refinements -- can be used to convert a
-language into a proof assistant, while ensuring
-(refinement) type checking stays decidable and
-predictable via careful design of the logic and
-proof combinators.
+We presented \emph{refinement reflection}, a method
+to extend \emph{legacy} languages---with highly tuned
+libraries, compilers, and run-times---into theorem provers.
+%
+The key idea is to reflect the ​code implementing a​
+user-defined function into the function's (output)
+refinement type.
+%
+As a consequence, at \emph{uses} of the function,
+the function definition is unfolded into the refinement logic
+in a precise and predictable manner.
+%
+We have implemented our approach in \toolname
+thereby retrofitting theorem proving into Haskell.
+%
+We showed how to use reflection to verify
+that many widely used instances of the Monoid,
+Applicative, Functor and Monad typeclasses
+actually satisfy key algebraic laws needed to
+making the code using the typeclasses safe.
+%
+Finally, transforming a mature language---with
+highly tuned parallel runtime---into a theorem
+prover  enables us to build the first
+\emph{deterministic parallelism library}
+that verifies assumptions about associativity
+and ordering---that are crucial for determinism
+but simply assumed by existing systems.
 
+\begin{comment}
 Our evaluation shows that refinement reflection
 lets us prove deep specifications of a variety
-of implementations, and identifies
+of implementations, but identifies
 important avenues for research.
 %
 First, while proofs are \emph{possible}, they can
@@ -34,18 +56,4 @@ Thus, it would be interesting to use the
 normalization of STLC to develop a sound
 and complete SMT axiomatization, thereby
 automating proofs predictably.
-
-%% We extended Liquid Types to allow reasoning about program functions.
-%% %
-%% We represent program functions into logic as uninterpreted functions
-%% and
-%% capture the behavior of functions in the result of the function's
-%% types.
-%% %
-%% We preserved decidable type checking by requiring the user,
-%% to explicitly invoke functions,
-%% instead of the solver to instantiate functional axioms.
-%%
-%% In the future we plan to embed existing heuristics and tactics
-%% from dependent type languages, like Coq and Adga,
-%% to automate common proof procedures.
+\end{comment}
