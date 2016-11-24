@@ -179,8 +179,8 @@ invoked with valid offsets @VO@ into the input buffer @p@.
 \end{code}
 
 The function @doDownLoop@ is an internal function.
-Via abstract interpretation~\cite{LiquidPLDI08}, 
-\toolname infers that
+\toolname, via abstract interpretation~\cite{LiquidPLDI08}, 
+infers that
 %
 (1)~@len@ is less than the sizes of @src@ and @dest@,
 (2)~@f@ (here, @mapAccumEFL@) always returns a @JustS@, so

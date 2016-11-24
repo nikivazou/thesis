@@ -150,7 +150,7 @@ After which, verification would proceed analagous to the above.
 
 \mypara{Total Totality Checking} 
 @patError@ is one of many possible errors thrown by non-total functions.  
-@Control.Exception.Base@ has several others (@recSelError@, @irrefutPatError@, \etc) which serve the purpose of making 
+@Control.Exception.Base@ has several others including @recSelError@, @irrefutPatError@, \etc which serve the purpose of making 
 core translations total.
 %
 Rather than hunt down and specify @False@ preconditions one
@@ -203,7 +203,7 @@ a specific @String@ (say @breakS@) appears then
 at least two @String@s (call them @mname@ and @annots@)
 follow it in the list.
 Thus, for a list @ls@ that starts with @breakS@ 
-the irrefutable pattern  @(_:mname:annots) = ls@
+the irrefutable pattern  @(_:mname:annots)@ @=@ @ls@
 should be total.
 %
 Though possible, it is currently it is somewhat cumbersome to specify such 
@@ -231,8 +231,7 @@ validates that the length of the input @ls@ exceeds @2@.
 %% reaches its limitations when reasoning about non-recursive
 %% properties.
 
-In other cases assertions were imposed via monadic checks, 
-for example @HsColour.hs@ reads the input arguments and 
+In other cases assertions were imposed via monadic checks, \eg @HsColour.hs@ reads the input arguments and 
 checks their well-formedness using 
 %
 \begin{code}

@@ -108,7 +108,7 @@ from \S~\ref{sec:detpar}.
 mapReduce :: VerifiedMonoid b 1=> (a1->b) 1-> Vec a 1-> b
 \end{mcode}
 %
-To enforce the determinism of an $n$-body simulation, we need to provide a
+To prove the determinism of an $n$-body simulation, we need to provide a
 @VerifiedMonoid@ instance for @Accel@.
 %
 We can easily prove that (@Real@, @+@, @0.0@)

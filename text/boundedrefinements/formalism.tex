@@ -26,7 +26,7 @@ decidable in the presence of bounded refinements~(\S~\ref{sec:infer}).
 We build our core language on top of \corelan, the language
 of Abstract Refinement Types\ref{chapter:abstractrefinements}.
 %
-Figure~\ref{fig:syntax} summarizes the syntax of \corelan,
+Figure~\ref{fig:boundedrefinements:syntax} summarizes the syntax of \corelan,
 a polymorphic $\lambda$-calculus extended with abstract
 refinements.
 %
@@ -525,7 +525,7 @@ the abstract refinements $\rvar$ must only appear in
 \emph{positive} positions within refinements (\ie not
 under logical negations).
 %
-The syntax of refinements shown in Figure~\ref{fig:syntax}
+The syntax of refinements shown in Figure~\ref{fig:boundedrefinements:syntax}
 violates this requirement via refinements of the
 form $\rvapp{\rvar}{x} \Rightarrow \reft$.
 %

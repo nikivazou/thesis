@@ -10,15 +10,15 @@ target~\footnote{\texttt{toSM} assumes the target is clear from the
   string value argument @input@.  }
 %
 \begin{code}
-toSM :: forall (target :: Symbol). (KnownSymbol target)
-     => RString -> SM target
-toSM input = SM input (makeSMIndices input tg) where
-  tg = fromString (symbolVal (Proxy :: Proxy target))
+  toSM :: forall (target :: Symbol). (KnownSymbol target)
+       => RString -> SM target
+  toSM input = SM input (makeSMIndices input tg) where
+    tg = fromString (symbolVal (Proxy :: Proxy target))
 
-makeSMIndices
-  :: x:RString -> tg:RString -> [GoodIndex x tg]
-makeSMIndices x tg
-  = makeIndices x tg 0 (lenStr tg - 1)
+  makeSMIndices
+    :: x:RString -> tg:RString -> [GoodIndex x tg]
+  makeSMIndices x tg
+    = makeIndices x tg 0 (lenStr tg - 1)
 \end{code}
 %
 The input field of the result is the input string;
@@ -26,8 +26,6 @@ the indices field is computed by calling @makeIndices@
 within the range of the @input@, that is from
 @0@ to @lenStr input - 1@.
 %
-\begin{code}
-\end{code}
 
 We now prove that @toSM@ is a monoid morphism.
 %
@@ -39,9 +37,9 @@ We now prove that @toSM@ is a monoid morphism.
 Based on definition~\ref{definition:morphism}, proving @toSM@
 is a morphism requires constructing a valid inhabitant of the type
 \begin{code}
-Morphism RString (SM t) toSM
-  = x:RString -> y:RString
-  -> {toSM stringMempty = mempty && toSM (x <+> y) = toSM x <> toSM y}
+  type Morphism RString (SM t) toSM
+    = x:RString -> y:RString
+    -> {toSM stringMempty = mempty && toSM (x <+> y) = toSM x <> toSM y}
 \end{code}
 %
 We define the function @distributestoSM :: Morphism RString (SM t) toSM@
@@ -62,31 +60,30 @@ value of the indices field in the result of
 %
 @toSM (x stringMappend y)@.
 \begin{code}
-distributestoSM x y
-  =   (toSM x :: SM target) <> (toSM y :: SM target)
-  ==. (SM x is1) <> (SM y is2)
-  ==. SM i (xis ++ xyis ++ yis)
-  ==. SM i (makeIndices i tg 0 hi1 ++ yis)
-      ? (mapCastId tg x y is1 && mergeNewIndices tg x y)
-  ==. SM i (makeIndices i tg 0       hi1
-         ++ makeIndices i tg (hi1+1) hi)
-      ? shiftIndicesRight 0 hi2 x y tg
-  ==. SM i is
-      ? mergeIndices i tg 0 hi1 hi
-  ==. toSM (x <+> y)
-  *** QED
-  where
-    xis  = map (castGoodIndexRight tg x y) is1
-    xyis = makeNewIndices x y tg
-    yis  = map (shiftStringRight   tg x y) is2
-    tg   = fromString (symbolVal (Proxy::Proxy target))
-    is1  = makeSMIndices x tg
-    is2  = makeSMIndices y tg
-    is   = makeSMIndices i tg
-    i    = x <+> y
-    hi1  = lenStr x - 1
-    hi2  = lenStr y - 1
-    hi   = lenStr i - 1
+  distributestoSM x y
+    =  (toSM x :: SM target) <> (toSM y :: SM target)
+    =. (SM x is1) <> (SM y is2)
+    =. SM i (xis ++ xyis ++ yis)
+    =. SM i (makeIndices i tg 0 hi1 ++ yis)
+       ? (mapCastId tg x y is1 && mergeNewIndices tg x y)
+    =. SM i (makeIndices i tg 0 hi1 ++ makeIndices i tg (hi1+1) hi)
+       ? shiftIndicesRight 0 hi2 x y tg
+    =. SM i is
+       ? mergeIndices i tg 0 hi1 hi
+    =. toSM (x <+> y)
+    ** QED
+    where
+      xis  = map (castGoodIndexRight tg x y) is1
+      xyis = makeNewIndices x y tg
+      yis  = map (shiftStringRight   tg x y) is2
+      tg   = fromString (symbolVal (Proxy::Proxy target))
+      is1  = makeSMIndices x tg
+      is2  = makeSMIndices y tg 
+      is   = makeSMIndices i tg
+      i    = x <+> y
+      hi1  = lenStr x - 1
+      hi2  = lenStr y - 1
+      hi   = lenStr i - 1
 \end{code}
 %
 The most interesting lemma we use is
@@ -98,12 +95,12 @@ we get exactly the indices in the range from @lo@ to @hi@.
 %
 This property is formalized in the type of the lemma.
 \begin{code}
-mergeIndices
- :: x:RString -> tg:RString
-  -> lo:Nat -> mid:{Int | lo <= mid} -> hi:{Int | mid <= hi}
-  -> {   makeIndices x tg lo hi
-     =  makeIndices x tg lo mid
-     ++ makeIndices x tg (mid+1) hi}
+  mergeIndices
+   :: x:RString -> tg:RString
+    -> lo:Nat -> mid:{Int | lo <= mid} -> hi:{Int | mid <= hi}
+    -> {   makeIndices x tg lo hi
+       =  makeIndices x tg lo mid
+       ++ makeIndices x tg (mid+1) hi}
 \end{code}
 %
 The proof proceeds by induction on @mid@ and using three more lemmata:
@@ -159,4 +156,4 @@ to @i + hi@ on the string @x stringMappend y@, with @lenStr x = i@.
 %%to @lenStr x + hi@ on @x stringMappend y@,
 %%and it is proved by induction on the difference @hi - lo@.
 %%\end{itemize}
-\qed\end{proof}
+\cqed\end{proof}

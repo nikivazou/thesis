@@ -582,14 +582,14 @@ is wrapped with a ``call'' to the ghost to materialize the constraint
 at values of interest. For example we elaborate @compose@ into:
 %
 \begin{code}
-  compose $chain f g x =
+  compose dollarchain f g x =
     let t1 = g x
         t2 = f t1
-        _  = $chain x t1 t2   -- materialize
+        _  = dollarchain x t1 t2   -- materialize
     in  t2
 \end{code}
 %
-In the elaborated version @$chain@ is the ghost parameter %$
+In the elaborated version @dollarchain@ is the ghost parameter %
 corresponding to the bound. As is standard \cite{LiquidPLDI08},
 we perform ANF-conversion to name intermediate values, and then
 wrap the function output with a call to the ghost to materialize
@@ -608,7 +608,7 @@ quantifier free VC:
 %
 whose first two antecedents are due to the types of @t1@ and @t2@
 (via the output types of @g@ and @f@ respectively) and the third
-comes from the call to @$chain@. %$
+comes from the call to @dollarchain@.
 %
 The output value @v@ has the singleton refinement that
 states it equals to @t2@ and finally the VC states that the

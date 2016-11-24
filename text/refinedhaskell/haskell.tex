@@ -16,7 +16,7 @@ as the checker derives as a the transition from \declang to \lhaskell.
 %Let ${\factyp \defeq \tfunbasic{\FinTy{\tnat}}{\FinTy{\tnat}}}$.
 Haskell's recursive functions of type ${\tfunbasic{\FinTy{\tnat}}{\typ}}$ 
 are represented, in GHC's Core \cite{SulzmannCJD07} as
-${\mathtt{let\ rec}\ f = \ \efun{n}{}{e}}$ which is operationally
+${\mathtt{let\ rec}\ f = \ \efun{n}{}{e}}$ that is operationally
 equivalent to ${\mathtt{let}\ f = \ \etfix{\typ}\ (\efun{n}{}{\efun{f}{}{e}})}$.
 Given the type of $\etfix{\typ}$, checking that $f$ has 
 type $\tfunbasic{\FinTy{\tnat}}{\typ}$ reduces to checking
