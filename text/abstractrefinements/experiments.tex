@@ -3,6 +3,17 @@
 \input{text/abstractrefinements/numbers}
 
 \begin{table}[t!]
+\caption[A quantitative evaluation of Abstract Refinements.]{ 
+\textbf{(LOC)} is the number of non-comment Haskell source code lines as reported by \textit{sloccount},
+%
+\textbf{(Specs)} is the number of lines of type specifications,
+%
+\textbf{(Annot)} is the number of lines of other annotations, including refined
+datatype definitions, type aliases and measures, required for verification,
+%
+\textbf{(Time)} is the time in seconds taken for verification.
+}
+\label{tab:eval}
 \centering
 % \captionsetup{justification=centering}
 \begin{tabular}{lrrrrr}
@@ -17,18 +28,8 @@
 \benchMap       & \locMap   & \specMap   & \annMap   &  \timeMap     \\
 \hline
 \textbf{Total}  & \locTot   & \specTot   & \annTot   &  \timeTot     \\
+\hline
 \end{tabular}
-\caption[A quantitative evaluation of Abstract Refinements.]{ 
-\textbf{(LOC)} is the number of non-comment Haskell source code lines as reported by \textit{sloccount},
-%
-\textbf{(Specs)} is the number of lines of type specifications,
-%
-\textbf{(Annot)} is the number of lines of other annotations, including refined
-datatype definitions, type aliases and measures, required for verification,
-%
-\textbf{(Time)} is the time in seconds taken for verification.
-}
-\label{tab:eval}
 \end{table}
 
 In this section, we empirically evaluate the expressiveness and

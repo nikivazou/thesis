@@ -1,11 +1,14 @@
 
 
 \newcommand\makequote[2]{
-\setsinglespacing
 {\flushright
+\begin{singlespace}
 {#1}
-\vskip\baselineskip
--- \textit{#2}\par}\hspace{30 mm}}
+\end{singlespace}
+-- \textit{#2}\par}\hspace{30 mm}
+}
+
+
 \usepackage{xcolor}
 \definecolor{green}{rgb}{0,1,0}
 \definecolor{red}{rgb}{1,0,0}

@@ -1,25 +1,285 @@
-% \todonum{intro}
-
-Refinement types offer an automatic means 
-of verifying semantic properties of programs, 
-by decorating types with predicates from logics 
-efficiently decidable by modern SMT solvers.
-For example, the refinement type 
-@{v: Int | v > 0}@
-denotes the basic type \ttcode{Int} refined with a logical
-predicate over the ``value variable" \ttcode{v}.
-This type corresponds to the set of \ttcode{Int} values 
-\ttcode{v} which additionally satisfy the logical predicate, 
-\ie the set of positive integers.  
-The (dependent) function type 
-@x:{v:Int| v > 0} -> {v:Int| v < x}@
-describes functions that take a positive argument 
-\ttcode{x} and return an integer less than \ttcode{x}.
+Code deficiencies and bugs constitute an unavoidable part of software systems.
 %
-Refinement type checking reduces to \emph{subtyping} queries 
-of the form ${\cstr{\Gamma}{\valu}{\tau}{p}{\tau}{q}}$,
-where $p$ and $q$ are refinement predicates. 
-These subtyping queries reduce to logical \emph{validity} 
-queries of the form
-${\dbrkts{\Gamma} \wedge p \Rightarrow q}$, which can be 
-automatically discharged using SMT solvers~\cite{z3}. 
+In safety-critical systems, like aircrafts or medical equipment, 
+even a single bug can lead to catastrophic impacts
+such as injuries or death.
+%
+Even in less critical code development, 
+programs use various runtime assertions to establish correctness properties. 
+%
+Formal verification can be used to statically 
+discharge assertions and 
+track code deficiencies by proving or disproving correctness properties 
+of a system. 
+%
+However, at its current state formal verification is a cumbersome process
+that is rarely used by mainstream developers. 
+
+We present \toolname, a \textit{usable} program verifier that aims to 
+establish formal verification as an 
+integral part of the development process.
+%
+A usable verifier \textit{naturally integrates}
+the specification of correctness properties
+in the development process. 
+%
+Moreover, verification should be \textit{automatic},
+%with minimal user effort,
+requiring no explicit proofs or complicated annotations. 
+%
+At the same time, the specification language should be \textit{expressive},
+allowing the user to write arbitrary correctness properties. 
+%
+Finally, a usable verifier should be tested in \textit{real-world programs}. 
+
+\href{http://goto.ucsd.edu/~rjhala/liquid/haskell/blog/about/}{\toolname} is a 
+ verifier for Haskell programs
+that takes as input Haskell source code, annotated with 
+correctness specifications in the form of refinement types and checks whether the code satisfies the specifications. 
+%
+We designed \toolname in such a way as to satisfy most of the 
+aforementioned criteria of a usable verifier.
+%%
+
+% integrated to the language (\cite{ICFP14})
+\mypara{Natural Integration} of correctness specifications 
+comes by our choice of the functional programming language Haskell as a target language.
+%
+% Functios are first class objects
+% No mutation or side effects
+% Rich type system natural to express specifications
+Haskell's first class functions lead to modular specifications. 
+The lack of mutations and side-effects allows a direct correspondence between 
+source code and logic. 
+%
+Correctness specifications are naturally added to Haskell's expressive type system
+as \textit{refinement types}, \ie types annotated with logical predicates.
+As an example, the type 
+\begin{code}
+  type NonZero = {v:Int | 0 != v}
+\end{code}
+describes a value @v@ which is an integer 
+and the refinement specifies that this value is not zero.
+%
+The specification language is simple
+as most programmers are familiar with both
+its ingredients, \ie Haskell types and logical formulas.
+
+\mypara{Real World applications} have been verified using 
+\toolname. 
+%
+We proved critical safety and functional correctness of 
+more that 10,000 lines of popular Haskell libraries (Chapter~\ref{chapter:tool})
+with minimal amount of annotations.
+%
+We verified correctness of \textit{array-based sorting algorithm} ($\texttt{Vector-Algorithms}$),
+preservation of \textit{binary search tree} properties ($\texttt{Data.Map}$, $\texttt{Data.Set}$),
+preservation of \textit{uniqueness invariants} ($\texttt{XMonad}$), 
+\textit{low-level memory safety} ($\texttt{Bytestring}$, $\texttt{Text}$), 
+and even found and fixed a subtle correctness bug related to unicode handling in $\texttt{Text}$.
+%
+In the above libraries we automatically 
+proved \textit{totality} and \textit{termination} of 
+all interface functions. 
+%
+Even though most of Haskell's features facilitate verification, 
+lazy semantics rendered standard refinement typing unsound. 
+
+% Laziness
+% The state: refinement types have been used for eager
+% Eager: binders to terminating values
+% Partial correctness: 
+\textbf{Soundness under Lazy Evaluation}~\ref{chapter:refinedhaskell} describes
+how we adjusted refinement typing to soundly 
+verify Haskell's lazy programs. 
+% 
+Refinement types were introduced in 1991 % ~\cite{freeman}
+and since then have been successfully applied to many eager languages.
+%
+When checking an expression, such type systems
+implicitly assume that all the free variables in the expression are
+bound to values. 
+%
+This property is trivially guaranteed by eager evaluation, but 
+not in a lazy setting.
+% 
+Thus, to be sound and precise,
+a refinement type system for Haskell 
+must take into account which subset of binders
+actually reduces to values. 
+%
+To track potentially diverging binders, 
+we used refinement types to build a termination checker 
+whose correctness is recursively checked by refinement types.
+%
+
+
+%% 
+\textbf{Automatic Verification} comes by constraining refinements in specifications 
+to decidable logics. 
+Program verification checks that the source code satisfies 
+a set of specifications. 
+%
+A trivial example is to \textit{specify} that the second argument of a division operator 
+is different than zero.
+%
+In \toolname terms one would write this specification as:
+@div :: Int -> NonZero -> Int@.
+To \textit{check} whether an expression with type 
+@{v:Int | 0 < v}@
+is a safe argument to the division operator, the system checks 
+whether $ 0 < v $ implies $0 \neq v$. 
+%
+By constraining all predicates to be drawn from decidable logics, 
+such implications can be \textit{automatically} checked via an SMT solver.
+%
+\textit{Liquid Types}~\cite{LiquidPLDI09} are a subset of refinement types 
+that achieve automation and type inference by 
+constraining the language of the logical predicates to quantifier-free \textit{decidable} logics, including 
+logical formulas, linear arithmetic and uninterpreted functions.
+%
+%% \NV maybe add how type inference is precious!
+
+
+%%
+%%%- use maximum example to show unmodular
+%%%     write Pos, NonNeg
+%%%- use an abstract refinement to solve the problem 
+%%%- use a bound like upclosed to show bounded qualification
+%% expressiveness: Set up the problem
+\textbf{Expressiveness} of the specifications is critically hindered 
+by our choice to constrain the language of predicates to decidable logics.
+%
+Liquid types specifications are naturally used to describe first order properties
+but prevent modular, higher order specifications. 
+%
+Consider a function that sorts lists of integers, with type 
+@sort :: [Int] -> [Int]@.
+%
+Using \toolname we can specify that 
+sorting positive numbers returns a list of positive numbers,
+but we cannot give a modular specification 
+accounting for \textit{all} different kinds of numbers
+@sort@ will be invoked. 
+%
+We developed ``Abstract'' and ``Bounded'' refinement types to allow for 
+modular specifications while preserving SMT decidability. 
+
+In \textbf{Abstract Refinement Types}~(Chapter~\ref{chapter:abstractrefinements})
+we parameterize a type over its refinements
+allowing modular specifications while preserving SMT-based decidable type checking. 
+%
+As an example, 
+since @sort@ preserves the elements of the input list,
+we can use abstract refinements to specify
+that \textit{for every} refinement $p$ on integers, 
+@sort@ takes a list of integers that satisfy $p$ and returns a list of integers that satisfy
+the same refinement $p$.
+\begin{code}
+  sort :: forall <p :: Int -> Bool>. [{v:Int | p v}] -> [{v:Int | p v}]
+\end{code}
+%
+With this modular specification, 
+we can prove that @sort@ preserves the property that all the input numbers satisfy, 
+for any property, ranging from being positive numbers to 
+being numbers that are safe keys for a security protocol.
+%
+We used abstract refinements to describe modular properties of recursive data structures. 
+With such abstractions we simultaneously 
+reasoned about challenging invariants such as 
+\textit{sortedness and uniqueness of lists} or 
+preservation of \textit{red-black invariants or heap properties} on trees. 
+%
+Without abstract refinements reasoning about each of these invariants would 
+require a special purpose analysis. 
+%
+Crucially, abstractions over refinements 
+preserve SMT-based decidability, simply by encoding 
+refinement parameters as uninterpreted propositions within the ground
+refinement logic.
+
+\textbf{Bounded Refinement Types}~(Chapter~\ref{boundedrefinements})
+constrain and relate abstract refinement and let us express even more interesting invariants
+while preserving SMT-decidability.
+%
+As an example, we used bounds on refinement types to 
+reason about \textit{stateful computations}.
+We expressed the pre- and post-conditions of the computations with 
+two abstract refinements, $p$ and $q$ respectively and used bounds to impose constraints upon them. 
+For instance, when sequencing two computation we bound the first post-condition $q_1$ to imply 
+the second pre-condition $p_2$.
+%
+%%As a trivial example, we can bound the abstract refinement $p$ of \maximum 
+%%to only refer to refinements satisfying \textit{some} constraint, 
+%%say that $p$ is \textit{upward closed} satisfying the property $\forall x.\ p\ x \Rightarrow p\ (x+1)$.
+%%%and use it to constraint the type of \maximum only to refinements that are upward closed, like positive %%%As an example, we can bound the abstract refinement $p$ of \maximum 
+%%%to only refer to refinements satisfying \textit{some} constraint, 
+%%%say that $p$ is \textit{upward closed}.
+%%%% 
+%%%We define a \textit{bound} \bupclosed 
+%%%$$ \texttt{bound}\ \bupclosed\ p = \forall x.\ p\ x \Rightarrow p\ (x+1)$$
+%%%and use it to constraint the type of \maximum only to refinements that are upward closed, like positive numbers
+%%%$$\maximum :: \forall p :: \tint \rightarrow \texttt{Bool}. \
+%%%              (\bupclosed\ p) \Rightarrow
+%%%              \texttt{List}\ \{ v:\tint\ |\ p\ v\} \rightarrow \{ v:\tint\ |\ p\ v\} $$
+%%%%
+%%%Bounded quantification expands the expressiveness
+%%%of refinement typing by allowing us to 
+%%%both constrain but also 
+%%%define relations or transformations over the abstracted refinements.
+%
+We implemented the above idea in a refined Haskell $\texttt{IO}$ state monad that 
+encodes \textit{Floyd-Hoare logic state transformations}
+and used this encoding to track capabilities and resource usage. 
+%%
+Moreover, we encoded \textit{safe database access} using 
+abstract refinements to encode key-value properties 
+and bounds to express the constraints imposed by 
+relational algebra operators, like disjointedness, union \etc. 
+%
+Bounds are internally translated to ``ghost'' functions, 
+thus the increased expressiveness comes while preserving the automated
+and decidable SMT-based type checking 
+that makes liquid typing effective in practice.
+%
+Abstract and Bounded refinement types 
+do allow modular higher order specifications, 
+but the expressiveness of the specifications is crucially 
+restricted by the fact that, 
+for automatic verification, arbitrary, Haskell functions are not allowed to 
+appear in the refinements.
+
+\textbf{Refinement Reflection}~(Chapter~\ref{refinementrflection})
+allows arbitrary terminating Haskell functions to 
+appear into the specifications 
+as uninterpreted functions thus preserving automatic and decidable 
+type checking. 
+%
+The key idea is to reflect the ​code implementing a​
+user-defined function into the function's (output)
+refinement type.
+%
+As a consequence, at \emph{uses} of the function,
+the function definition is unfolded into the refinement logic
+in a precise and predictable manner.
+%
+With Refinement Reflection, 
+the user can write arbitrarily expressive (fully dependent type)
+specifications expressing theorems about the code, 
+but to prove such theorems the user needs to appropriately 
+%
+We show how to use reflection to verify
+that many widely used instances of the Monoid,
+Applicative, Functor and Monad typeclasses
+actually satisfy key algebraic laws needed to
+making the code using the typeclasses safe.
+%
+Finally, transforming a mature language---with
+highly tuned parallel runtime---into a theorem
+prover  enables us to build the parallel applications, 
+like an efficient String Matcher~\ref{stringmatcher}, 
+and prove it equivalent with its na\"ive, sequential version.
+
+In short, \toolname is a usable verifier for real world Haskell applications 
+as it allows for natural integration of expressive, type based specifications 
+that can be automatically verified using SMT solvers. 

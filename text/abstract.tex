@@ -1,5 +1,3 @@
-%% 350 words max 
-% \todonum{abstract}
 Code deficiencies and bugs constitute an unavoidable part of software systems.
 %
 In safety-critical systems, like aircrafts or medical equipment, 
@@ -11,19 +9,35 @@ track code deficiencies by proving or disproving correctness properties
 of a system. 
 %
 However, at its current state formal verification is a cumbersome process
-that is rarely used by mainstream developers. 
+that is rarely used by mainstream developers, mostly because it targets non general purpose languages (e.g., Coq, Agda, Dafny).
 
-Theorem provers can be used for verification, 
-but they are limited to  verification specific non general purpose 
-languages (Coq, Adga, Dafny).
+We present \toolname, a \textit{usable} program verifier that aims to
+establish formal verification as an
+integral part of the development process.
 %
-Our goal is to allow verification in general purpose languages, like Haskell.
+\toolname \textit{naturally integrates}
+the specification of correctness properties
+as logical refinements of Haskell's types. 
+%
+Moreover, it uses the abstract interpretation framework of liquid types
+to \textit{automatically} check correctness of specifications via SMT solvers
+requiring no explicit proofs or complicated annotations.
+%
+Finally, the specification language is arbitrary \textit{expressive},
+allowing the user to write general correctness properties about their code, 
+thus turning Haskell into a theorem prover. 
 
-In this work we present how Haskell is turn into a theorem prover
-via the abstraction framework of Liquid Types
-that moreover use SMT-based automatic verification. 
+Transforming a mature language 
+--- with optimized libraries and highly tuned parallelism ---
+into a theorem prover enables us to verify a wide variety of properties 
+on real world applications.
 %
-We implemented out technique in Liquid Haskell 
-a refinement type verifier for Haskell code 
-and use both to verify shallow invariants of existing Haskell code 
-and to check deep properties of sophisticated program invariants.
+We used \toolname to verify shallow invariants of existing Haskell code, 
+\eg memory safety of the optimized string manipulation library @ByteString@.
+%
+Moreover, we checked deep, sophisticated properties of parallel Haskell code, 
+\eg program equivalence of a na\"ive string matcher and its parallelized version. 
+%
+Having verified about 20K of Haskell code, we present how \toolname 
+serves as a prototype verifier in a future where formal techniques will 
+be used to facilitate, instead of hinder, software development. 
