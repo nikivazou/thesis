@@ -202,7 +202,7 @@ $$
 \end{array}
 $$
 %
-As an example, recall from \S~\ref{sec:overview}
+As an example, recall from \S~\ref{sec:refinementreflection:overview}
 that the @reflect fib@ strengthens the type of
 @fib@ with the refinement @fibP@.
 %% NV In Overview, we have fibP v n = v = fib n && fibR v n
@@ -529,7 +529,7 @@ equate the reflected functions with their definitions.
 For example, the application $(\fib\ 1)$ is typed as
 ${\tref{v}{\tint}{\fibdef\ v\ 1 \wedge v = \fib\ 1}}$ where
 the first conjunct comes from the (reflection-strengthened)
-output refinement of \fib~\S~\ref{sec:overview} and
+output refinement of \fib~\S~\ref{sec:refinementreflection:overview} and
 the second comes from rule~\rtexact.
 %
 %%Finally, rule \rtfix is used to type the intermediate
@@ -632,7 +632,7 @@ if \hastype{\emptyset}{\prog}{\typ}
 Theorem~\ref{thm:safety} lets us interpret well typed terminating programs as proofs of
 propositions.
 %
-For example, in \S~\ref{sec:overview} we verified that
+For example, in \S~\ref{sec:refinementreflection:overview} we verified that
 %
 $\fibincrname\text{ :: }{\tfun{n}{\tnat}{\ttref{\fib{n} \leq \fib{(n+1)}}}}$.
 %

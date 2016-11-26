@@ -266,7 +266,7 @@ is not a value, then it can be further evaluated:
 We combine the above to prove that evaluation preserves 
 typing and that a well typed term will not \ecrash.
 %
-\begin{theorem}{[Soundness of \undeclang]}\label{thm:safety}
+\begin{theorem}{[Soundness of \undeclang]}\label{thm:refinedhaskell:safety}
 \begin{itemize}
 \item\textbf{Type-Preservation:} If \undechastype{\emptyset}{e}{\typ}, %NV with the v -> w edit this didn't fit in 1 line
        $\evals{e}{w}$ then $\undechastype{\emptyset}{w}{\typ}$.

@@ -1,11 +1,11 @@
-\section{Syntax and Semantics}\label{sec:check}
+\section{Syntax and Semantics}\label{sec:abstractrefinements:check}
 
 
 Next, we present a core calculus \corelan that formalizes the notion
 of abstract refinements. We start with the syntax (\S~\ref{sec:syntax}),
-present the typing rules (\S~\ref{sec:typing}), show soundness 
+present the typing rules (\S~\ref{sec:abstractrefinements:typing}), show soundness 
 via a reduction to contract calculi \cite{Knowles10,Greenberg11}
-(\S~\ref{sec:soundness}), and inference via Liquid types (\S~\ref{sec:infer}).
+(\S~\ref{sec:::soundness}), and inference via Liquid types (\S~\ref{sec:abstractrefinements:infer}).
 
 \subsection{Syntax}\label{sec:syntax}
 
@@ -127,7 +127,7 @@ $$
 \label{fig:abstractrefinements:syntax}
 \end{figure}
 
-\subsection{Static Semantics}\label{sec:typing}
+\subsection{Static Semantics}\label{sec:abstractrefinements:typing}
 
 \input{text/abstractrefinements/rules}
 
@@ -245,7 +245,7 @@ $$\rpinst{\tpref{\tbint}{\rvar\ y}{\vref > 10}}
 %%its abstract refinements with actual inferred refinements \listOf{e},
 %%and its binders with actual binders \listOf{x_i}.
 
-\subsection{Soundness}\label{sec:soundness}
+\subsection{Soundness}\label{sec:abstractrefinements:soundness}
 
 As hinted by the discussion about refinement variable instantiation,
 we can intuitively think of abstract refinement variables as 
@@ -364,7 +364,7 @@ then the upcast is equivalent to the identity function and can
 be eliminated. Hence, \conlan terms $\tx{e}$ translated from well-typed 
 \corelan terms $e$ have no casts.
 
-\subsection{Refinement Inference}\label{sec:infer}
+\subsection{Refinement Inference}\label{sec:abstractrefinements:infer}
 
 Our design of abstract refinements makes it particularly easy to 
 perform type inference via Liquid typing, which is crucial for

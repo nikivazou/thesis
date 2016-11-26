@@ -7,7 +7,7 @@
 
 While \undeclang is sound, it cannot be \emph{implemented} 
 thanks to the undecidable denotational containment rule \rsubbase
-(Figure~\ref{fig:typing}).
+(Figure~\ref{fig:refinedhaskell:typing}).
 %
 Next, we go from \undeclang to \declang, a core calculus 
 with sound, SMT-based algorithmic type-checking in four 
@@ -225,7 +225,7 @@ type-check each case in an environment where the scrutinee
 $x$ is assumed to have a \Wnf type. 
 %
 All the other rules, not mentioned in Figure~\ref{fig:declang:typing},
-remain the same as in Figure~\ref{fig:typing}.
+remain the same as in Figure~\ref{fig:refinedhaskell:typing}.
 %
 Second, we create stratified variants for the primitive constants 
 and \emph{separate} fixpoint combinator constants for 
@@ -428,7 +428,7 @@ we conclude \ref{col:ref}, \ie that refinements cannot diverge.
 \subsection{Verification With Stratified Types}\label{sec:typing:vc}
 
 We can put the pieces together to obtain an algorithmic implication 
-rule \rtdimp instead of the undecidable \rimpl (from Figure~\ref{fig:typing}).
+rule \rtdimp instead of the undecidable \rimpl (from Figure~\ref{fig:refinedhaskell:typing}).
 %
 Intuitively, each closing substitution $\sto$ will correspond to 
 a set of logical assignments $\embed{\sto}$. 
@@ -528,7 +528,7 @@ $\forall \sto\in \interp{\Env}.
   		$ $\subseteq$ $\interp{\thetasub{\sto}{\ttreft{\vv}{\miBase}{\p_2}}}$.
 %
 The soundness of algorithmic typing follows from
-Theorems~\ref{thm:approximation} and~\ref{thm:safety}:
+Theorems~\ref{thm:approximation} and~\ref{thm:refinedhaskell:safety}:
 
 \begin{theorem} {[Soundness of \declang]} 
 \begin{itemize}

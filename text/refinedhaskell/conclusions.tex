@@ -1,4 +1,4 @@
-\section{Conclusions \& Alternative Approaches}\label{sec:conclusion}
+\section{Conclusions \& Alternative Approaches}\label{sec:refinedhaskell:conclusion}
 
 Our goal is to use the recent advances in SMT solving to 
 build automated refinement type-based verifiers for 
@@ -177,14 +177,9 @@ Unfortunately, this $\isvalue{x}$ predicate takes the VCs
 outside the scope of the standard efficiently decidable logics 
 supported by SMT solvers.
 %
-%%To see why, 
-%%the subtyping query (\ref{sub:good}) 
-%%from @good@ in \S~\ref{sec:overview}
-%%will reduce to the below VC
-%%with explicit $\isvalue{x}$ predicates:
 To see why, recall 
 the subtyping query %(\ref{sub:good}) 
-from @good@. % in \Sref{sec:overview}. 
+from @good@. % in \Sref{sec:refinedhaskell:overview}. 
 With explicit value predicates, 
 this subtyping reduces to the VC:
 %

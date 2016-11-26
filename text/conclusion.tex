@@ -1,52 +1,241 @@
 \chapter{Conclusion \& Future Work}\label{chapter:conclusion}
-% \todonum{conclusion}
-This is a conclusion also containing future directions.
+\label{future:fp}
+\label{future:intersection}
+\label{future:proofautomation}
+\label{future:continuations}
+\label{future:gradual}
+\label{future:errorreporting}
+\label{future:ghost}
 
-\section{Proof Automation}\label{future:proofautomation}
-\begin{itemize}
-\item Fully verify XMonad~\ref{sec:structures}
-\end{itemize}
+We presented \toolname, an automatic, sound, and expressive verifier for Haskell code. 
+%
+We started (Chapter~\ref{chapter:tool}) by porting standard refinement types 
+to Haskell to verify more than 10K lines of popular Haskell libraries. 
+%
+Then~(Chapter~\ref{chapter:refinedhaskell}), we observed that Haskell's 
+lazy semantics render standard refinement type checking unsound
+and restored soundness via a refinement type based termination checker.
+%
+Next, we presented Abstract~(Chapter~\ref{chapter:abstractrefinements}) 
+and Bounded~(Chapter~\ref{boundedrefinements}) Refinement Types, 
+that use uninterpreted functions to 
+\textit{abstract} over refinements
+and type constrains to \textit{bound} over the abstracted refinements. 
+These techniques encode higher order, modular specifications
+while preserving SMT based decidable and predictable type checking. 
+%
+Finally, we presented Refinement Reflection (Chapter~\ref{refinementrflection})
+a technique that reflects terminating, user defined 
+Haskell functions into the logic, 
+turning (Liquid) Haskell into an arbitrarily expressive 
+theorem prover. 
+%
+We used \toolname to prove correctness of 
+of sophisticated properties ranging from 
+safe memory indexing to equivalence of code after parallelization~(Chapter~\ref{stringmatcher})
 
-\section{Intersection Types}\label{future:intersection}
-\begin{itemize}
-\item Various Versions of library functions (XMonad)~\ref{sec:structures}
-\item Various labels for primitive types~\ref{sec:typing}
-\end{itemize}
+In short, we described how to turn Haskell into a theorem prover
+that enjoys both 
+the SMT-based automatic and predictable type checking
+of refinement types
+and 
+the optimized libraries and parallel runtimes of 
+the mature, general purpose language Haskell.
 
-\section{Bound Inference}\label{future:ghost}
-\begin{itemize}
-\item How can we \textit{infer} bounded refinement types
-to eliminate ghost arguments (~\ref{sec:discussion})?
-\end{itemize}
+Though \toolname is already a usable prototype verifier, 
+as we saw, there are many directions for future work
+to further enhance its usability.
 
-\section{{Fixed-width integer and floating-point numbers}}\label{future:fp}
-\begin{itemize}
-\item Soundness of fixpoint operators (~\ref{sec:discussion})?
-\end{itemize}
+\mypara{Intersection Types}
+%\label{future:intersection}
+% Why we need it
+Currently, \toolname assigns each function to have exactly one refinement type. 
+Allowing a function to have many different types would allow us to specify 
+that under different preconditions, the function ensures different postconditions. 
+%
+As an example, 
+when verifying XMonad (\S~\ref{sec:structures})
+we would like to ensure that appending lists with unique and disjoint elements, 
+would give lists with disjoint elements
+while being able to reuse the same append list operator to append non unique lists. 
+%
+As a different example, we would like to provide types 
+with different labels 
+to primitive operators (\S~\ref{sec:typing})
+illustrating that addition preserves termination while 
+allowing the same addition operator to add potential diverging values. 
+%
+
+% The problem
+While highly usable, it is unclear how to allow intersection types 
+and preserve the one pass decidable type checking of \toolname.
+% 
+Concretely, the interesting question is how the type system will choose 
+at each function call the proper type of the function, that is the type 
+with weaker (pre-) conditions that the supplied arguments 
+and stronger (post-) conditions than the required result. 
+% The solution: https://www.cs.cmu.edu/~fp/talks/icfp07-abs.pdf
+In the future, we plan to adjust Pfenning's work 
+on subtyping and intersection typing~\citep{intersectiontypes,pfenning08,}
+into the liquid type framework.
 
 
-\section{How do we measure the size of a continuation}\label{future:continuations}
-\begin{itemize}
-\item For termination on text~\ref{sec:memory-safety} and awake (see github issue)
-\end{itemize}
+\mypara{Label Polymorphism for Strictness Analysis}
+Intersection types would allow us to describe that primitive operators
+preserve termination, for example addition of two terminating values cannot diverge. 
+%
+We can express this observation we can use label polymorphism
+to assign @(+)@ a type that describes that for any termination label @l@~(\S~\ref{sec:typing}), 
+if both arguments safisfy @l@, then so does the result.
+\begin{code}
+  (+) :: Int^label -> Int^label -> Int^label 
+\end{code}
+%
+We suspect that label polymorphism can be more generally used for 
+strictness and termination analysis of arbitrary functions.
 
 
-\section{Gradual Refinement Types}\label{future:gradual}
-\begin{itemize}
-\item How should assumptions~\ref{sec:discussion} behave in the code? 
-\end{itemize}
+\mypara{{Fixed-width integer and floating-point numbers}}
+%\label{future:fp}
+Currently, \toolname encodes 
+Haskell's fixed-width integers 
+and floating-point reals as SMT unbounded integers and reals respectively.
+This encoding is unsound, as we can easily prove that an increase 
+function will always increase its argument
+\begin{code}
+  incr :: n:Int -> {v:Int | n < v}
+\end{code}
+This specification is unsound, as increasing by one 
+the maximum bounded integer in Haskell
+@incr maxBound@
+overflows and returns a negative integer, 
+\ie an integer less than @maxBound@. 
+%
+To restore soundness we can strengthen @incr@ type to reason about overflows
+\begin{code}
+  incr :: n:Int -> {v:Int | n < maxBound => n < v}
+\end{code}
+We suspect that the above type will crucially restrict precision of abstractions. 
+To prove that @incr n < n@ we need to prove that @n < maxBound@ 
+an information not always available at the call context. 
+%
+In the future we would like to 
+use SMT bitvector and floating point theories to
+establish integer and floating-point 
+soundness in \toolname without loosing precision of type checking.  
+
+\mypara{Proving Termination under Continuations}
+% \label{future:continuations}
+For soundness under lazy evaluation, 
+\toolname uses a refinement type based termination checker 
+to prove that each logical function is terminating. 
+%
+Our termination checker uses a na\"ive heuristic 
+that the size of the first sized recursive function argument should be decreasing, 
+where the size is a user specified inductive function mapping a data type to natural numbers. 
+%
+The question that arises is how to specify termination of 
+continuation data types.
+%
+As an concrete example consider the @Cnt@ data type
+%
+\begin{code}
+  data Cnt = Emp | Cnt Int (Int -> Cnt)
+\end{code}
+How do we specify that the following function @go@ terminates?
+\begin{code}
+  go :: Cnt -> Int 
+  go Emp = 0 
+  go (Cnt i f) = go (f i)
+\end{code}
+Note, that @go@ can indeed diverge if for example it is called with 
+a diverging continuation @f = \i -> C i f@.
+% 
+Though in practice many terminating functions reduce to termination of @go@, 
+for example bytestring(\S~\ref{sec:memory-safety}) and parser's manipulation. 
+%
+Yet, currently, we do not know how @go@'s termination preconditions can be encoded. 
 
 
-\section{Error Reporting \& Diagnosis}\label{future:errorreporting}
-\begin{itemize}
-\item Counter example generation 
-\item Code and spec completion synthesis
-\end{itemize}
 
-\section{Inference of Abstract and Bounded Refinement Types}
+\mypara{Gradual Verification}
+% \label{future:gradual}
+During verification process, we unsoundly use assumed 
+proper types for unverified imported functions.
+For example, as discussed in~\S~\ref{sec:discussion}
+we assumed that the library multiplication is an associative operator. 
+In future, we plan to use techniques from gradual or hybrid typing 
+to \textit{automatically} convert such assumptions to ``hybrid" run-time checks
+so that run-time violations of these assertions will be transformed to 
+controlled failures.
 
 
-\section{Automation on Theorem Prover}\label{future:theoremproving}
+\section{Usability}
+
+\mypara{Program Synthesis}
+To begin with, since program specifications constitute an abstraction 
+of the program, 
+\textbf{program synthesis} techniques can be used to synthesize
+code from specifications and vice versa. 
+%
+An interactive interface can suggest, during development,  
+a safe and verification friendly specification for a given program, 
+or a valid implementation of a specification. 
+%
+
+\mypara{Error Reporting \& Diagnosis}
+%\label{future:errorreporting}
+When verification fails, 
+\textbf{error reporting and diagnosis} should guide the user 
+to edit either the code or the specification to repair the program. 
+%
+The challenge in error reporting is how to explain 
+the source of failure, 
+without exposing any technical details 
+of the underlying verification techniques. 
+%
+In LiquidHaskell, TARGET~\cite{TARGET} attempts to explain 
+type errors via counter examples. 
+%
+On top of counter examples, % I would like to explore whether
+Machine Learning techniques could 
+provide suggestions to new verification users
+based on the history of actions verification experts 
+took to repair their code.  
+% 
+
+\mypara{Runtime optimizations}
+Statically proven invariants can be used by compilers 
+to automatically remove various run time assertions, 
+leading to rumtime optimizations.
+For instance, if verification statically proved that indexing only occurs
+within safe bounds, then no runtime in bounds checks are necessary. 
+%
+Or, when verification has statically proven that a @Maybe Int@ value cannot be nothing, 
+then the compiler should only store the space requires for the @Int@ (and not the @Maybe Int@)
+value at runtime. 
+
+
+\mypara{Inference of Abstract and Bounded Refinement Types}
+\label{future:ghost}
+We saw how Abstract and Bounded Refinement Types can be used to express 
+modular higher order specification. 
+%
+Currently the user has to manually specify all such abstractions. 
+From our current examples we observe that these abstractions mostly encode 
+the weakest preconditions that should be satisfied and could be syntactically 
+inferred using ideas from the Dijkstra Monad~\ref{dijkstramonad}. 
+%
+Moreover, as discussed in \S~\ref{sec:discussion}
+bounded refinement types lead to a relatively complete 
+specification type system that require no need for ghost variables. 
+Thus, Bounded Refinement Type inference could be used to automatically eliminate 
+user specified ghost arguments. 
+
+\section{Automation on Theorem Prover}
+\label{future:theoremproving}
+
+% \label{future:proofautomation}
 Our evaluation shows that refinement reflection
 lets us prove deep specifications of a variety
 of implementations, and identifies
@@ -73,3 +262,10 @@ Thus, it would be interesting to use the
 normalization of STLC to develop a sound
 and complete SMT axiomatization, thereby
 automating proofs predictably.
+
+Automatic generation of proof terms via sophisticated 
+techniques for inductive proofs (like TiP)
+or Termplate Haskell generated proof scripts. 
+
+
+

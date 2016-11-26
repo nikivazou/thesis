@@ -87,29 +87,6 @@ implicitly assume that all free variables are bound to values,
 which is only guaranteed under CBV and, as we have seen, leads 
 to unsoundness under lazy evaluation.
 
-%% Refinement types offer a highly automated means of
-%% verification and have been applied to check
-%% a variety of program properties, including
-%% %
-%% functional correctness of data structures~\cite{Dunfield07,LiquidPLDI09}, 
-%% security protocols~\cite{GordonTOPLAS2011,Bhargavan13} 
-%% and compilers~\cite{SwamyPOPL13}.
-%
-%% The language of refinements is restricted to ensure consistency.
-%% however, program variables (binders), or their
-%% singleton representatives~\cite{pfenningxi98}, 
-%% \emph{are} crucially allowed in the refinements. 
-%% As discussed in \S~\ref{sec:overview} this 
-%% is sound under \emph{call-by-value} evaluation, 
-%% but under Haskell's semantics any innocent
-%% binder can be potentially diverging, causing 
-%% unsoundness.
-%
-%% Finally, our implementation is based on 
-%% \toolname~\cite{vazou13}, which was unsound 
-%% as it assumed CBV evaluation.
-
-%%%% HEREHEREHEREHEREHERE
 
 \spara{Tracking Divergent Computations}
 The notion of type stratification to track potentially 
