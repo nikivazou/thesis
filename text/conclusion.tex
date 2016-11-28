@@ -19,20 +19,19 @@ and restored soundness via a refinement type based termination checker.
 Next, we presented Abstract~(Chapter~\ref{chapter:abstractrefinements}) 
 and Bounded~(Chapter~\ref{boundedrefinements}) Refinement Types, 
 that use uninterpreted functions to 
-\textit{abstract} over refinements
-and type constrains to \textit{bound} over the abstracted refinements. 
-These techniques encode higher order, modular specifications
+\textit{abstract} and \textit{bound} over the refinements of the types. 
+We used both these techniques to encode higher order, modular specifications
 while preserving SMT based decidable and predictable type checking. 
 %
 Finally, we presented Refinement Reflection (Chapter~\ref{refinementrflection})
-a technique that reflects terminating, user defined 
+a technique that reflects terminating, user defined, 
 Haskell functions into the logic, 
 turning (Liquid) Haskell into an arbitrarily expressive 
 theorem prover. 
 %
 We used \toolname to prove correctness of 
 of sophisticated properties ranging from 
-safe memory indexing to equivalence of code after parallelization~(Chapter~\ref{stringmatcher})
+safe memory indexing to code equivalence over parallelization~(Chapter~\ref{stringmatcher})
 
 In short, we described how to turn Haskell into a theorem prover
 that enjoys both 
@@ -44,7 +43,12 @@ the mature, general purpose language Haskell.
 
 Though \toolname is already a usable prototype verifier, 
 as we saw, there are many directions for future work
-to further enhance its usability.
+to further enhance the verification process.
+
+\section{Additional Features}
+We start by enumerating a list of desirable features 
+that, would ease and extend the standard usage of \toolname
+as an shallow verified for Haskell code. 
 
 \mypara{Intersection Types}
 %\label{future:intersection}
@@ -156,6 +160,22 @@ for example bytestring(\S~\ref{sec:memory-safety}) and parser's manipulation.
 %
 Yet, currently, we do not know how @go@'s termination preconditions can be encoded. 
 
+\mypara{Inference of Abstract and Bounded Refinement Types}
+\label{future:ghost}
+We saw how Abstract and Bounded Refinement Types can be used to express 
+modular higher order specification. 
+%
+Currently the user has to manually specify all such abstractions. 
+From our current examples we observe that these abstractions mostly encode 
+the weakest preconditions that should be satisfied and could be syntactically 
+inferred using ideas from the Dijkstra Monad~\ref{dijkstramonad}. 
+%
+Moreover, as discussed in \S~\ref{sec:discussion}
+bounded refinement types lead to a relatively complete 
+specification type system that require no need for ghost variables. 
+Thus, Bounded Refinement Type inference could be used to automatically eliminate 
+user specified ghost arguments. 
+
 
 
 \mypara{Gradual Verification}
@@ -170,7 +190,122 @@ so that run-time violations of these assertions will be transformed to
 controlled failures.
 
 
+\section{Automation on Theorem Prover}
+\label{future:theoremproving}
+
+We have used \toolname as a theorem prover 
+to prove a variety of deep specifications, 
+ranging from typeclass laws to correctness of parallel computations. 
+%
+Our experience is that that even though we can prove arbitrary complicated 
+program properties, the treating (Liquid) Haskell as a theorem prover 
+is a new technique that identifies
+important avenues for research.
+
+First, to reason about higher order properties 
+\toolname is currently using an incomplete technique 
+that allows the user to manually instantiate the 
+axioms of $\alpha$- and $\beta$-equivalence.
+%
+As a future work we would like to develop a 
+sound, automatic, and complete theory that reasons about 
+higher order logics. 
+We conjecture this is feasible,
+due to the fact that our refinement terms
+are from the simply typed lambda calculus (STLC).
+%
+Thus, it would be interesting to use the
+normalization of STLC to develop a sound
+and complete SMT axiomatization, thereby
+automating proofs predictably.
+
+Second, 
+currently, \toolname 
+is checking each proofs step 
+in a global environment, 
+containing all the (proof irrelevant) information 
+from the previous proof steps. 
+%
+As an optimization, Dafny's calculation environment~\cite{LeinoPolikarpova16}
+is checking each proof step creating a separate SMT environment. 
+%
+Such an optimization would highly speed up proof check times in \toolname.
+
+
+Third and most importantly, 
+while proofs are \emph{possible}, 
+due to lack of automation, they are
+\emph{cumbersome} and \emph{verbose}.
+%
+For example, to prove program equivalence in the parallelized version 
+of the string matcher we were required to write 7 times 
+as much proof code and annotations as the code to be proven equivalent. 
+%
+What is worse is that \emph{most} of our proofs are trivial and only consist of 
+function unfolding and application of the inductive hypothesis.
+There are many ways to automate this proof generation process. Here 
+we outline four potential directions. 
+\begin{itemize}
+\item A first alternative is to follow Dafny's~\cite{dafny} approach
+that assigns a fuel parameter to each recursive function and, 
+in the logic, uses SMT to automatically unfold each recursive function up to fuel times. 
+%
+The disadvantage of this approach, as is, is that when 
+a recursive function needs to be unfold more than threshold times, 
+the users need to themselves provide appropriate SMT instantiations, 
+Thus the user needs to exactly understand and be able to talk to the solver, 
+a language different than the target languages (here Haskell).
+
+\item As another alternative, we can use Synquid~\cite{polikarpova16}
+to synthesize functions (\ie proof terms) that satisfy their specifications 
+(\ie theorems). 
+%
+Synquid is using plain Haskell types to synthesize
+data driven programs (\eg AVL and Binary Search trees)
+whose correctness is checked via SMT based refinement type checking. 
+%
+Since all our proof terms are unit values 
+we conjecture that proof synthesis via Synquid 
+will turn out to be brute force theorem instantiation searching, 
+thus inefficient. 
+\item 
+TiP~\cite{tip} and its prodecessor HipSpec~\cite{hipspec}
+use SMTs to automatically prove and generate inductive program properties. 
+%
+To use this existing automation, \toolname can invoke TiP
+as an external oracle to automatically decide validity of user specified theorems. 
+%
+A weakness of this approach, and in general the usage of an external proof oracle 
+is that the Haskell user looses control of the proof generation terms: 
+proofs are now Tip certificates instead of Haskell code, 
+whose modifications and understanding would require knowledge of the external oracle.  
+
+\item
+A final and most promising alternative is to create extensible proof scripts (Coq-like tacktics)
+using Template Haskell, GHC's compile time metalanguage. 
+%
+Proof generation scripts 
+that describe proof (\ie by construction) or searching 
+(\ie an A$*$ algorithm to find the shortest path from the left to the right hand site on an equality) 
+can be provided and invoked at compile time to automate proof writing, 
+%
+The benefits of this approach are that 
+1. the proofs will be auto generated Haskell code that can be checked and modified, 
+2. users can easily create their own proof scripts, and 
+3. proof scripts will resemble the well studied Coq tactics. 
+\end{itemize}
+% 
+Though all these techniques can potentially automate the vast majority of 
+our proofs, choosing which one best fits at the setting of \toolname and 
+at the taste of the Haskell community is the real future work challenge.
+
+
+
+
 \section{Usability}
+We conclude with a vision on how to convert \toolname 
+a usable program verifier that would be interactively 
+use to aid rather than hinter code generation.
 
 \mypara{Program Synthesis}
 To begin with, since program specifications constitute an abstraction 
@@ -214,102 +349,6 @@ within safe bounds, then no runtime in bounds checks are necessary.
 Or, when verification has statically proven that a @Maybe Int@ value cannot be nothing, 
 then the compiler should only store the space requires for the @Int@ (and not the @Maybe Int@)
 value at runtime. 
-
-
-\mypara{Inference of Abstract and Bounded Refinement Types}
-\label{future:ghost}
-We saw how Abstract and Bounded Refinement Types can be used to express 
-modular higher order specification. 
-%
-Currently the user has to manually specify all such abstractions. 
-From our current examples we observe that these abstractions mostly encode 
-the weakest preconditions that should be satisfied and could be syntactically 
-inferred using ideas from the Dijkstra Monad~\ref{dijkstramonad}. 
-%
-Moreover, as discussed in \S~\ref{sec:discussion}
-bounded refinement types lead to a relatively complete 
-specification type system that require no need for ghost variables. 
-Thus, Bounded Refinement Type inference could be used to automatically eliminate 
-user specified ghost arguments. 
-
-\section{Automation on Theorem Prover}
-\label{future:theoremproving}
-
-We have used \toolname as a theorem prover 
-to prove a variety of deep specifications, 
-ranging from typeclass laws to correctness of parallel computations. 
-%
-Our experience is that that even though we can prove arbitrary complicated 
-program properties, the treating (Liquid) Haskell as a theorem prover 
-is a new technique that identifies
-important avenues for research.
-
-First, to reason about higher order properties 
-\toolname is currently using an incomplete technique 
-that allows the user to manually instantiate the 
-axioms of $\alpha$- and $\beta$-equivalence.
-%
-As a future work we would like to develop a 
-sound, automatic, and complete theory that reasons about 
-higher order logics. 
-We conjecture this is feasible,
-due to the fact that our refinement terms
-are from the simply typed lambda calculus (STLC).
-%
-Thus, it would be interesting to use the
-normalization of STLC to develop a sound
-and complete SMT axiomatization, thereby
-automating proofs predictably.
-
-
-Second and most importantly, 
-while proofs are \emph{possible}, 
-due to lack of automation, they are
-\emph{cumbersome} and \emph{verbose}.
-%
-For example, to prove program equivalence in the parallelized version 
-of the string matcher we were required to write 7 times 
-as much proof code and annotations as the code to be proven equivalent. 
-%
-What is worse is that \emph{most} of our proofs consist of 
-function unfolding and application of the inductive hypothesis.
-There are many ways to automate this proof generation process. Here 
-we outline four potential directions. 
-\begin{itemize}
-\item A first alternative is to follow Dafny's~\cite{dafny} approach
-that assigns a fuel parameter to each recursive function and, 
-in the logic, uses SMT to automatically unfold each recursive function up to fuel times. 
-%
-
-
- 
-and, in the logic, use SMT instantiation to unfold each function 
-
- let SMT to unfold each   style fuel SMT axiomatization.
-\item Nadia style code synthesis 
-\item HiP for SMT automated inductive proofs
-\item Template Haskell extensible proof scripts
-\end{itemize}
-
-% 
-Though all these techniques can potentially automate the vast majority of 
-our proofs, choosing which one best fits at the setting of \toolname and 
-at the taste of the Haskell community is the real future work challenge.
-
-But the investigation of which is 
-the  
-%
-Thus, it would be valuable to use recent
-advances in refinement-based synthesis~\cite{polikarpova16}
-to automate proof construction.
-
-
-Automatic generation of proof terms via sophisticated 
-techniques for inductive proofs (like TiP)
-or Termplate Haskell generated proof scripts. 
-
-
-%
 
 
 
