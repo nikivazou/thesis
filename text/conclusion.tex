@@ -235,26 +235,24 @@ user specified ghost arguments.
 \section{Automation on Theorem Prover}
 \label{future:theoremproving}
 
-% \label{future:proofautomation}
-Our evaluation shows that refinement reflection
-lets us prove deep specifications of a variety
-of implementations, and identifies
+We have used \toolname as a theorem prover 
+to prove a variety of deep specifications, 
+ranging from typeclass laws to correctness of parallel computations. 
+%
+Our experience is that that even though we can prove arbitrary complicated 
+program properties, the treating (Liquid) Haskell as a theorem prover 
+is a new technique that identifies
 important avenues for research.
+
+First, to reason about higher order properties 
+\toolname is currently using an incomplete technique 
+that allows the user to manually instantiate the 
+axioms of $\alpha$- and $\beta$-equivalence.
 %
-First, while proofs are \emph{possible}, they can
-sometimes be \emph{cumbersome}. For example, in
-the proof of associativity of the monadic bind
-operator for the @Reader@ monad three of eight
-(extensional) equalities required explanations,
-some nested under multiple $\lambda$-abstractions.
-%
-Thus, it would be valuable to use recent
-advances in refinement-based synthesis~\cite{polikarpova16}
-to automate proof construction.
-%
-Second, while our approach to $\alpha$- and
-$\beta$-equivalence is sound, we do not know
-if it is \emph{complete}. We conjecture it is,
+As a future work we would like to develop a 
+sound, automatic, and complete theory that reasons about 
+higher order logics. 
+We conjecture this is feasible,
 due to the fact that our refinement terms
 are from the simply typed lambda calculus (STLC).
 %
@@ -263,9 +261,55 @@ normalization of STLC to develop a sound
 and complete SMT axiomatization, thereby
 automating proofs predictably.
 
+
+Second and most importantly, 
+while proofs are \emph{possible}, 
+due to lack of automation, they are
+\emph{cumbersome} and \emph{verbose}.
+%
+For example, to prove program equivalence in the parallelized version 
+of the string matcher we were required to write 7 times 
+as much proof code and annotations as the code to be proven equivalent. 
+%
+What is worse is that \emph{most} of our proofs consist of 
+function unfolding and application of the inductive hypothesis.
+There are many ways to automate this proof generation process. Here 
+we outline four potential directions. 
+\begin{itemize}
+\item A first alternative is to follow Dafny's~\cite{dafny} approach
+that assigns a fuel parameter to each recursive function and, 
+in the logic, uses SMT to automatically unfold each recursive function up to fuel times. 
+%
+
+
+ 
+and, in the logic, use SMT instantiation to unfold each function 
+
+ let SMT to unfold each   style fuel SMT axiomatization.
+\item Nadia style code synthesis 
+\item HiP for SMT automated inductive proofs
+\item Template Haskell extensible proof scripts
+\end{itemize}
+
+% 
+Though all these techniques can potentially automate the vast majority of 
+our proofs, choosing which one best fits at the setting of \toolname and 
+at the taste of the Haskell community is the real future work challenge.
+
+But the investigation of which is 
+the  
+%
+Thus, it would be valuable to use recent
+advances in refinement-based synthesis~\cite{polikarpova16}
+to automate proof construction.
+
+
 Automatic generation of proof terms via sophisticated 
 techniques for inductive proofs (like TiP)
 or Termplate Haskell generated proof scripts. 
+
+
+%
 
 
 
