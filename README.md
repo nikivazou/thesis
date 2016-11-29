@@ -1,6 +1,5 @@
 # Liquid Haskell: Haskell as a Theorem Prover
-## Thesis by Niki Vazou 
-### (UC San Diego, December, 2016)
+## Thesis by Niki Vazou (UC San Diego, December, 2016)
 
 
 
