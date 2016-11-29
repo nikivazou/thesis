@@ -221,7 +221,7 @@ of a vector at a given index:
 %
 \begin{code}
   get :: forall <d :: Int -> Bool, r :: Int -> a -> Bool>
-            i:Int<d> -> Vec<d, r> a -> a<r i>
+         i:Int<d> -> Vec<d, r> a -> a<r i>
   get i (V f) = f i
 \end{code}
 %

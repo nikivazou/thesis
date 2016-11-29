@@ -44,7 +44,7 @@
 @inproceedings{monad-par,
  author = {Marlow, Simon and Newton, Ryan and Peyton Jones, Simon},
  title = {A Monad for Deterministic Parallelism},
- series = {Haskell},
+ booktitle = {Haskell},
  year = {2011}
 }
 
@@ -60,7 +60,7 @@
 @inproceedings{concurrent-revisions-oopsla,
  author = {Burckhardt, Sebastian and Baldassin, Alexandro and Leijen, Daan},
  title = {Concurrent Programming with Revisions and Isolation Types},
- series = {OOPSLA},
+ booktitle = {OOPSLA},
  year = {2010}
 }
 
@@ -75,7 +75,7 @@
 @inproceedings{ghc-generics,
  author = {Magalh\~{a}es, Jos{\'e} Pedro and Dijkstra, Atze and Jeuring, Johan and L\"{o}h, Andres},
  title = {A Generic Deriving Mechanism for Haskell},
- series = {Haskell},
+ booktitle = {Haskell},
  year = {2010}
 }
 
@@ -131,7 +131,7 @@
 @inproceedings{DPJ,
  author = {Bocchino,Jr., Robert L. and Adve, Vikram S. and Adve, Sarita V. and Snir, Marc},
  title = {Parallel Programming Must Be Deterministic by Default},
- series = {HotPar},
+ booktitle = {HotPar},
  year = {2009}
 }
 
@@ -146,14 +146,14 @@
 @inproceedings{Farmer15,
   author = {Andrew Farmer and Neil Sculthorpe and Andy Gill},
   title = {Reasoning with the {HERMIT}: {T}ool Support for Equational Reasoning on {GHC} {C}ore Programs},
-  series = {Haskell},
-  year = {2015},
+  booktitle = {Haskell},
+  year = {2015}
 }
 
 @inproceedings{Tesler-1968,
  author = {Tesler, L. G. and Enea, H. J.},
  title = {A language design for concurrent processes},
- series = {AFIPS},
+ booktitle = {AFIPS},
  year = {1968}
 }
 
@@ -194,7 +194,7 @@ programming},
  year = {2012}
 }
 
-@Inbook{habanero-java-permissions,
+@inproceedings{habanero-java-permissions,
  author="Westbrook, Edwin
  and Zhao, Jisheng
  and Budimli{\'{c}}, Zoran
@@ -207,7 +207,7 @@ programming},
 @inproceedings{manticore,
  author = {Fluet, Matthew and Rainey, Mike and Reppy, John and Shaw, Adam and Xiao, Yingqi},
  title = {Manticore: a heterogeneous parallel language},
- series = {DAMP},
+ booktitle = {DAMP},
  year = {2007}
 }
 
@@ -318,8 +318,10 @@ programming},
   year		= "1977"
 }
 
-@Unpublished{liquidhaskellgithub,
-  author = {UCSD Programming Systems},
+
+
+@Misc{liquidhaskellgithub,
+  author = {The Liquid Haskell Team},
   note		= "\url{github.com/ucsd-progsys/liquidhaskell/tree/master/benchmarks/icfp15}"
 }
 
@@ -802,7 +804,7 @@ programming},
 @article{z3,
   author    = {L. de Moura and N. Bj{\o}rner},
   title     = {Z3: An Efficient {SMT} Solver},
-  booktitle = {TACAS},
+  journal = {TACAS},
   year      = {2008},
   ee        = {http://dx.doi.org/10.1007/978-3-540-78800-3_24}
 }
@@ -822,13 +824,15 @@ programming},
   publisher	= {Prentice Hall}
 }
 
+
+
 @Book{		  blelloch,
   title		= {Synthesis of {P}arallel {A}lgorithms},
   author	= {Guy E. Blelloch},
-  editor	= { J. H. Reif},
   publisher	= {Morgan Kaufmann Pub},
   year		= {1993}
 }
+
 
 @InProceedings{	  bspwhy,
   author	= {J Fortin and F. Gava},
@@ -842,7 +846,7 @@ programming},
   author	= {Murray Cole},
   title		= {Parallel Programming, List Homomorphisms and the Maximum
 		  Segment Sum Problem},
-  institution	= {Parco},
+  booktitle	= {Parco},
   year		= {1993}
 }
 
@@ -854,7 +858,7 @@ programming},
 }
 
 
-@incollection{Hoare71,
+@InProceedings{Hoare71,
   author    = {C. A. R. Hoare},
   title     = {Procedures and parameters: An axiomatic approach},
   booktitle = {Symposium on Semantics of Algorithmic Languages},
@@ -915,9 +919,10 @@ programming},
 }
 
 @Book{PLC,
-author = {S. R. Della Rocca and L. Paolini},
-title = {The Parametric Lambda Calculus, A Metamodel for Computation},
-year = {2004}
+	author = {S. R. Della Rocca and L. Paolini},
+	title = {The Parametric Lambda Calculus, A Metamodel for Computation},
+	publisher = {Springer Science and Business Media},
+	year = {2004}
 }
 
 @inproceedings{SulzmannCJD07,
@@ -1001,11 +1006,11 @@ year = {2004}
 
 
 
-@InProceedings{	  dafny,
-  author	= {Leino, K. Rustan M.},
+@InProceedings{dafny,
+  author	    = {Leino, K. Rustan M.},
   title		= {Dafny: An Automatic Program Verifier for Functional
 		  Correctness},
-  series	= {LPAR},
+  booktitle	= {LPAR},
   year		= {2010}
 }
 
@@ -1077,7 +1082,7 @@ year = {2004}
   year		= {1993}
 }
 
-@InProceedings{	  implementation,
+@misc{	  implementation,
   author	= {Niki Vazou and Jeff Polakow},
   title		= {Code for Verified String Indexing},
   note		= {\url{https://github.com/nikivazou/verified_string_matching}},
@@ -1094,6 +1099,7 @@ year = {2004}
 @Book{		  jaja,
   author	= {Joseph J\'aJ\'a},
   title		= {Introduction to {P}arallel {A}lgorithms},
+  publisher = {Addison-Wesley Publishing Company},
   year		= {1992},
   institution	= {University of Maryland}
 }
@@ -1189,7 +1195,7 @@ year = {2004}
   year		= {2016}
 }
 
-@InProceedings{	  reflection,
+@misc{	  reflection,
   author	= {Niki Vazou and Ranjit Jhala},
   title		= {Refinement {Reflection}},
   series	= {arXiv:1610.04641},
@@ -1218,10 +1224,9 @@ year = {2004}
   year		= {2015}
 }
 
-@InProceedings{	  smtlib2,
+@Misc{smtlib2,
   author	= {C. Barrett and A. Stump and C. Tinelli},
   title		= {The {SMT-LIB} {S}tandard: {V}ersion 2.0},
-  institution	= {},
   year		= {2010}
 }
 
@@ -1265,14 +1270,14 @@ year = {2004}
 @unpublished{superaccumulation,
   TITLE = {{Full-Speed Deterministic Bit-Accurate Parallel Floating-Point Summation on Multi- and Many-Core Architectures}},
   AUTHOR = {Collange, Sylvain and Defour, David and Graillat, Stef and Iakymchuk, Roman},
-  URL = {https://hal.archives-ouvertes.fr/hal-00949355},
+  note = "\url{https://hal.archives-ouvertes.fr/hal-00949355}",
   YEAR = {2014}
 }
 
 @inproceedings{repa-icfp10,
  author = {Keller, Gabriele and Chakravarty, Manuel M.T. and Leshchinskiy, Roman and Peyton Jones, Simon and Lippmeier, Ben},
  title = {Regular, Shape-polymorphic, Parallel Arrays in Haskell},
- series = {ICFP},
+ booktitle = {ICFP},
  year = {2010}
 }
 
@@ -1286,7 +1291,7 @@ year = {2004}
   year		= {2014}
 }
 
-@InProceedings{	  vazou14techrep,
+@misc{	  vazou14techrep,
   author	= {N. Vazou and E. L. Seidel and R. Jhala and D. Vytiniotis
 		  and S. Peyton-Jones},
   title		= {Technical Report: {R}efinement {T}ypes for {H}askell},
@@ -1294,7 +1299,7 @@ year = {2004}
   year		= {2014}
 }
 
-@InProceedings{	  vazou16techrep,
+@misc{	  vazou16techrep,
   author	= {N. Vazou and V. Choudhury and R. G. Scott and R. Jhala and R. R. Newton},
   title		= {Technical Report: {R}efinement {R}eflection: PArallel Legacy Languages as Theorem Provers},
   note	= "\url{https://github.com/nikivazou/thesis/blob/master/techreps/pldi16.pdf}",
@@ -1302,7 +1307,7 @@ year = {2004}
 }
 
 
-@InProceedings{	  vazou15techrep,
+@misc{	  vazou15techrep,
   author	= {N. Vazou and A. Bakst and R. Jhala},
   title		= {Technical Report: {B}ounded {R}efinement {T}ypes},
   note	= "\url{https://github.com/nikivazou/thesis/blob/master/techreps/icfp15.pdf}",
@@ -1322,7 +1327,7 @@ year = {2004}
 @InProceedings{	  wouter10,
   author	= { Wouter Swierstra},
   title		= {More dependent types for distributed arrays},
-  journal	= {Higher-Order and Symbolic Computation},
+  booktitle	= {Higher-Order and Symbolic Computation},
   year		= {2010}
 }
 

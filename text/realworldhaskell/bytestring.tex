@@ -95,7 +95,7 @@ and source buffers for @memcpy@ are large enough.
 \end{code}
 
 
-The actual output for @copy@ is created and filled in using the 
+The actual output for @copy@ is created using the 
 internal function @unsafeCreate@ which is a wrapper around. 
 % -- | Create ByteString of size @l@ and use
 % --   action @f@ to fill it's contents.
@@ -184,7 +184,7 @@ infers that
 %
 (1)~@len@ is less than the sizes of @src@ and @dest@,
 (2)~@f@ (here, @mapAccumEFL@) always returns a @JustS@, so
-(3)~source and destination offsets satisfy $\mathtt{0 \leq s, d < {len}}$,
+(3)~both the source and the destination offsets satisfy $\mathtt{0 \leq s, d < {len}}$,
 (4)~the generated @IO@ action returns a triple @(acc :*: 0 :*: len)@,
 %
 thereby proving the safety of the accesses in @loop@ \emph{and}

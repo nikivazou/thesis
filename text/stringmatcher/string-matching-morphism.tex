@@ -22,7 +22,7 @@ target~\footnote{\texttt{toSM} assumes the target is clear from the
 \end{code}
 %
 The input field of the result is the input string;
-the indices field is computed by calling @makeIndices@
+the indices field is computed by calling the function @makeIndices@
 within the range of the @input@, that is from
 @0@ to @lenStr input - 1@.
 %
@@ -96,7 +96,7 @@ we get exactly the indices in the range from @lo@ to @hi@.
 This property is formalized in the type of the lemma.
 \begin{code}
   mergeIndices
-   :: x:RString -> tg:RString
+    :: x:RString -> tg:RString
     -> lo:Nat -> mid:{Int | lo <= mid} -> hi:{Int | mid <= hi}
     -> {   makeIndices x tg lo hi
        =  makeIndices x tg lo mid

@@ -488,8 +488,7 @@ theorem to prove that @fib@
 increases monotonically:
 %
 \begin{code}
-  fibMono :: n:Nat -> m:{n<m} ->
-             {fib n <= fib m}
+  fibMono :: n:Nat -> m:{n<m} -> {fib n <= fib m}
   fibMono = fMono fib fibUp
 \end{code}
 
@@ -584,7 +583,7 @@ parallelism a liability.  But we can remove the risk with verification.
 
 \mypara{Verified typeclasses}
 %
-Our solution involves simply changing the @Ord@ constraint above to
+Our solution is simply to change the @Ord@ constraint above to
 @VerifiedOrd@.
 \begin{mcode}
   insert :: VerifiedOrd a => a -> Set s a -> Par s ()
@@ -699,8 +698,7 @@ lets us safely @reflect@ it into the logic.
 Next, we prove that @leq@ is total on @Peano@ numbers
 %
 \begin{mcode}
-  totalPeano :: n:Peano -> m:Peano -> {leq n m || leq m n}
-             /  [toInt n + toInt m]
+  totalPeano :: n:Peano -> m:Peano -> {leq n m || leq m n} / [toInt n + toInt m]
   totalPeano Z m = leq Z m ** QED
   totalPeano n Z = leq Z n ** QED
   totalPeano (S n) (S m)
@@ -787,8 +785,7 @@ For example, we prove totality of comparison on @b@s
 using the @VerifiedOrd@ totality on @a@s
 
 \begin{mcode}
-  isoTotal :: (VerifiedOrd a, Iso a b)
-           => x:b -> y:b -> {x <= y || y <= x}
+  isoTotal :: (VerifiedOrd a, Iso a b) => x:b -> y:b -> {x <= y || y <= x}
   isoTotal x y
    =  x <= y || y <= x
    =. (from x) <= (from y) || (from y) <= (from x)
@@ -798,8 +795,7 @@ using the @VerifiedOrd@ totality on @a@s
 %
 We use @isoTotal@ to create a verified instance on @b@s.
 \begin{mcode}
-  instance (VerifiedOrd a, Iso a b) 
-         => VerifiedOrd b where
+  instance (VerifiedOrd a, Iso a b) => VerifiedOrd b where
     total   = isoTotal
 \end{mcode}
 %
@@ -844,8 +840,7 @@ we conclude that each instance defined via the lexicographic
 ordering is indeed a verified instance.
 %
 \begin{mcode}
-  instance (VerifiedOrd a, VerifiedOrd b) 
-         => VerifiedOrd (a, b) where
+  instance (VerifiedOrd a, VerifiedOrd b) => VerifiedOrd (a, b) where
     total   = prodTotal
 \end{mcode}
 %

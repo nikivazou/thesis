@@ -269,8 +269,7 @@ specifications. Consider
 To reason about the output of @choose@ we must type it as:
 %
 \begin{code}
- choose :: Bool -> x:Int -> y:Int 
-        -> {v|(v > x && Val x)||(v > y && Val y)}  
+ choose :: Bool -> x:Int -> y:Int -> {v|(v > x && Val x)||(v > y && Val y)}  
 \end{code}
 %
 Thus, the value predicates will pervasively clutter all 

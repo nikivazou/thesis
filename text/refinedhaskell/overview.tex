@@ -236,9 +236,9 @@ rendering the VC meaningless.
 
 
 \mypara{The Problem is Laziness} Readers familar 
-with fully dependently typed languages like 
+with fully dependently typed languages, for instance 
 Cayenne~\cite{cayenne}, Agda~\cite{norell07}, 
-Coq~\cite{coq-book}, or Idris~\cite{Brady13}, may be
+Coq~\cite{coq-book}, and Idris~\cite{Brady13}, may be
 tempted to attribute the unsoundness to the presence 
 of arbitrary recursion and hence non-termination 
 (\eg @diverge@).
@@ -620,7 +620,9 @@ Consider @ex1@ which uses the result of @collatz@ as a divisor.
 \end{code}
 %
 The jury is still out on \emph{whether} the @collatz@ 
-function terminates~\cite{collatzWiki}, but it is easy
+function terminates\footnote{
+Collatz Conjecture: \url{http://en.wikipedia.org/wiki/Collatz\_conjecture}}, 
+but it is easy
 to verify that its output is a \Div @Int@ equal to @1@.
 %
 At the call to @div@ the parameter @x@ has the output type 

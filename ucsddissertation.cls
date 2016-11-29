@@ -5,7 +5,7 @@
 \DeclareOption*{\PassOptionsToClass{\CurrentOption}{book}}
 \ProcessOptions\relax 
 \LoadClass{book}
-\RequirePackage{fixltx2e}
+% \RequirePackage{fixltx2e}
 \RequirePackage{calc}
 \RequirePackage[layout=letterpaper,
 	headsep=.5truein-\headheight,

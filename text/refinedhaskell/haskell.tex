@@ -132,8 +132,7 @@ We generalize the explicit metric specification to
 expression into a new $\tnat$-valued \emph{ghost parameter} 
 whose value is always equal to @hi-lo@, that is:
 \begin{code}
-  range :: lo:Nat -> {hi:Nat | hi >= lo} -> [Nat] 
-         / [hi-lo]
+  range :: lo:Nat -> {hi:Nat | hi >= lo} -> [Nat] / [hi-lo]
   range lo hi 
     | lo < hi = lo : range (lo + 1) hi
     | _       = [] 
@@ -150,8 +149,7 @@ whose value is always equal to @hi-lo@, that is:
 \begin{code}
   range lo hi = go (hi-lo) lo hi
     where 
-      go :: d:Nat -> lo:Nat 
-         -> {hi:Nat | d = hi - lo} -> [Nat]
+      go :: d:Nat -> lo:Nat -> {hi:Nat | d = hi - lo} -> [Nat]
       go d lo hi
        | lo < hi = l : go (hi-(lo+1)) (lo+1) hi 
        | _       = []

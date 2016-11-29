@@ -112,10 +112,10 @@
 %% \providecommand{\embed}[1]{\ensuremath{(\!|#1|\!)}}
 \providecommand\isvalid[3]{\ensuremath{{#1 \vdash #2 \Rightarrow #3}}\xspace}
 
-\renewcommand\corelan{\ensuremath{\lambda^{R}}\xspace}
+\renewcommand\corelan{\ensuremath{\texorpdfstring{\lambda^{R}}{lamR}}\xspace}
 \providecommand\undeclang{\ensuremath{\lambda^{U}}\xspace}
-% \providecommand\smtlan{\ensuremath{\lambda^{\mathit{SMT}}}\xspace}
-\providecommand\smtlan{\ensuremath{\lambda^{\mathit{S}}}\xspace}
+% \providecommand\smtlan{\ensuremath{\texorpdfstring{\lambda^{\mathit{SMT}}}{lamSMT}}\xspace}
+\newcommand\smtlan{\ensuremath{\texorpdfstring{\lambda^{\mathit{S}}}{lamS}}\xspace}
 
 \providecommand\length[1]{\ensuremath{\texttt{length}\ {#1}}\xspace}
 \providecommand\eisNull[1]{\ensuremath{\texttt{emp } {#1}}\xspace}

@@ -47,7 +47,7 @@ it to type the write and freeze operations.
 \end{code}
 
 \spara{Reasoning about Unicode}
-The function @writeChar@ (abbreviating \texttt{unsafeWrite} from \texttt{UnsafeChar})
+The function @writeChar@ (abbreviating the function \texttt{unsafeWrite} from \texttt{UnsafeChar})
 writes a @Char@ into an @MArray@.
 \libtext uses UTF-16 to represent characters internally,
 meaning that every @Char@ will be encoded using two or 

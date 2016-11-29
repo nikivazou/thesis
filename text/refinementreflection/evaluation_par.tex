@@ -60,7 +60,7 @@ as described in~\cite{kuper2014freeze}.
   \label{fig:set}
 \end{figure}
 
-\subsection{Monad-par: $n$-body simulation}
+\subsection{Monad-par: \texorpdfstring{$n$-body}{n-body} simulation}
 \label{sec:nbody}
 Next, we verify deterministic behavior of an
 $n$-body simulation program that leverages @monad-par@, a Haskell library which
@@ -158,8 +158,8 @@ For example:
 %% private static commutative synchronized
 %%  void updateSum(int n) writes AccumRgn { sum += n; }
 \begin{code}
-commutative void updateSum(int n) writes R
-  { sum += n; }
+  commutative void updateSum(int n) writes R
+    { sum += n; }
 \end{code}
 But, DPJ provides no means to formally prove commutativity and thus
 determinism of parallel reduction.
@@ -167,8 +167,8 @@ In Liquid Haskell, we specified commutativity as an extra proof method
 that extends the @VerifiedMonoid@ class.
 %
 \begin{mcode}
- class VerifiedMonoid a => VerifiedComMonoid a where
-  commutes :: x:a -> y:a -> { x <> y = y <> x }
+  class VerifiedMonoid a => VerifiedComMonoid a where
+    commutes :: x:a -> y:a -> { x <> y = y <> x }
 \end{mcode}
 %
 Provably commutative appends can be used to deterministically
@@ -184,8 +184,7 @@ as @RVar s a@.
 We specify that safe (\ie deterministic)
 parallel updates require provably commutative appending.
 \begin{mcode}
-  updateRVar :: VerifiedComMonoid a
-             => a -> RVar s a -> Par s ()
+  updateRVar :: VerifiedComMonoid a => a -> RVar s a -> Par s ()
 \end{mcode}
 %
 Following the DPJ program, we used @updateRVar@'s provably deterministic interface

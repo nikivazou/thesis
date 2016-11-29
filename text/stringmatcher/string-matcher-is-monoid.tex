@@ -350,9 +350,8 @@ We prove identity of casts by induction on @is@ and
 identity of casting on a single index.
 \item No new indices are created.
 \begin{code}
-  newIsNullLeft 
-    :: s:RString -> t:RString
-    -> {makeNewIndices s stringMempty t = listMempty}
+  newIsNullLeft :: s:RString -> t:RString
+                -> {makeNewIndices s stringMempty t = listMempty}
 \end{code}
 The proof proceeds by case splitting
 on the relative length of @s@ and @t@.

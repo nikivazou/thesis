@@ -278,8 +278,8 @@ and @stp@, as illustrated below.
 Let us define the usual composition operator:
 %
 \begin{code}
-reflect . :: (b -> c) -> (a -> b) -> a -> c
-f . g     = \x -> f (g x)
+  reflect . :: (b -> c) -> (a -> b) -> a -> c
+  f . g     = \x -> f (g x)
 \end{code}
 %
 We can prove the following @foldr_fusion@ theorem
@@ -302,12 +302,12 @@ by applying @foldr_univ@ to explicit @bas@ and @stp@ proofs:
 \end{code}
 %
 where @fuse_base@ and @fuse_step@ prove the
-base and inductive cases, and for example
-@fuse_base@ is a function with type
+base and inductive cases. For example
+the type of @fuse_base@ is the following theorem
 %
 \begin{code}
-fuse_base :: h:(b->c) -> f:(a->b->b) -> e:b
-          -> {(h . foldr f e) [] = h e}
+  fuse_base :: h:(b->c) -> f:(a->b->b) -> e:b
+            -> {(h . foldr f e) [] = h e}
 \end{code}
 
 \subsection{Typeclass Laws}\label{subsec:list}
@@ -385,19 +385,18 @@ corresponds to case-splitting and recurring
 on the first argument:
 %
 \begin{mcode}
-assoc :: xs:[a] -> ys:[a] -> zs:[a] ->
-       {(xs ++ ys) ++ zs = xs ++ (ys ++ zs)}
+  assoc :: xs:[a] -> ys:[a] -> zs:[a] -> {(xs ++ ys) ++ zs = xs ++ (ys ++ zs)}
 
-assoc [] ys zs     = ([] #++# ys) ++ zs
-                   =. [] #++# (ys ++ zs)
-                   ** QED
-assoc (x:xs) ys zs = ((x:  xs)#++# ys) ++ zs
-                   =. (x: (xs ++ ys))#++# zs
-                   =.  x:((xs ++ ys) ++ zs)
-                   =.  x: (xs ++ (ys ++ zs))
-                       $\because$ assoc xs ys zs
-                   =. (x:xs)  #++# (ys ++ zs)
-                   ** QED
+  assoc [] ys zs     = ([] #++# ys) ++ zs
+                     =. [] #++# (ys ++ zs)
+                     ** QED
+  assoc (x:xs) ys zs = ((x:  xs)#++# ys) ++ zs
+                     =. (x: (xs ++ ys))#++# zs
+                     =.  x:((xs ++ ys) ++ zs)
+                     =.  x: (xs ++ (ys ++ zs))
+                         $\because$ assoc xs ys zs
+                     =. (x:xs)  #++# (ys ++ zs)
+                     ** QED
 \end{mcode}
 
 
@@ -426,9 +425,8 @@ and then specify fusion and verify it by an inductive proof:
 % by induction (recursion) on the list argument:
 %
 \begin{mcode}
-  map_fusion
-    :: f:(b -> c) -> g:(a -> b) -> xs:[a]
-    -> {map (f . g) xs = (map f . map g) xs}
+  map_fusion :: f:(b -> c) -> g:(a -> b) -> xs:[a]
+             -> {map (f . g) xs = (map f . map g) xs}
 \end{mcode}
 
 %%\begin{mcode}
@@ -482,39 +480,36 @@ First, we reflect the bind operator:
 Next, we define an abbreviation for the associativity property:
 %
 \begin{code}
-type AssocLaw m f g =
-  {m >>= f >>= g = m >>= (\x -> f x >>= g)}
+  type AssocLaw m f g = {m >>= f >>= g = m >>= (\x -> f x >>= g)}
 \end{code}
 %
 Finally, we can prove that the list-bind is associative:
 %
 \begin{mcode}
-assoc :: m:[a] -> f:(a ->[b]) -> g:(b ->[c])
-      -> AssocLaw m f g
-assoc [] f g
-  =  [] #>>=# f >>= g
-  =. [] #>>=# g
-  =. []
-  =. [] #>>=# (\x -> f x >>= g) ** QED
-assoc (x:xs) f g
-  =  (x:xs) #>>=# f  >>= g
-  =. (f x ++ xs >>= f) >>= g
-  =. (f x >>= g) ++ (xs >>= f >>= g)
-     $\because$ bind_append (f x) (xs >>= f) g
-  =. (f x >>= g) ++ (xs >>= \y -> f y >>= g)
-     $\because$ assoc xs f g
-  =. (\y -> f y >>= g) x ++
-     (xs >>= \y -> f y >>= g)
-     $\because$ $\beta$eq f g x
-  =. (x:xs) #>>=# (\y -> f y >>= g) ** QED
+  assoc :: m:[a] -> f:(a ->[b]) -> g:(b ->[c]) -> AssocLaw m f g
+  assoc [] f g
+    =  [] #>>=# f >>= g
+    =. [] #>>=# g
+    =. []
+    =. [] #>>=# (\x -> f x >>= g) ** QED
+
+  assoc (x:xs) f g
+    =  (x:xs) #>>=# f  >>= g
+    =. (f x ++ xs >>= f) >>= g
+    =. (f x >>= g) ++ (xs >>= f >>= g)
+       $\because$ bind_append (f x) (xs >>= f) g
+    =. (f x >>= g) ++ (xs >>= \y -> f y >>= g)
+       $\because$ assoc xs f g
+    =. (\y -> f y >>= g) x ++ (xs >>= \y -> f y >>= g)
+       $\because$ $\beta$eq f g x
+    =. (x:xs) #>>=# (\y -> f y >>= g) ** QED
 \end{mcode}
 %
 Where the bind-append fusion lemma states that:
 %
 \begin{code}
-bind_append ::
-  xs:[a] -> ys:[a] -> f:(a -> [b]) ->
-  {(xs++ys) >>= f = (xs >>= f)++(ys >>= f)}
+  bind_append :: xs:[a] -> ys:[a] -> f:(a -> [b])
+              -> {(xs++ys) >>= f = (xs >>= f)++(ys >>= f)}
 \end{code}
 %
 Notice that the last step requires
@@ -524,8 +519,7 @@ inserting the redex in the logic,
 via the following lemma with @trivial@ proof
 %
 \begin{mcode}
-  $\beta$eq :: f:_ -> g:_ -> x:_ ->
-     {bind (f x) g = (\y -> bind (f y) g) x}
+  $\beta$eq :: f:_ -> g:_ -> x:_ -> {bind (f x) g = (\y -> bind (f y) g) x}
   $\beta$eq _ _ _ = trivial
 \end{mcode}
 %
@@ -604,8 +598,8 @@ and returns an assignment that
 \emph{satisfies} @f@ if one exists.
 %
 \begin{code}
-solve :: f:Formula -> Maybe {a:Asgn|sat a f}
-solve f = find (`sat` f) (assignments f)
+  solve :: f:Formula -> Maybe {a:Asgn|sat a f}
+  solve f = find (`sat` f) (assignments f)
 \end{code}
 %
 Function @assignments f@ returns all possible
@@ -625,8 +619,7 @@ that @find@ only returns values on which
 its input predicate yields @True@ from chapter~\ref{boundedrefinements}.
 %
 \begin{code}
-  find :: p:(a -> Bool) -> [a]
-       -> Maybe {v:a | p v}
+  find :: p:(a -> Bool) -> [a] -> Maybe {v:a | p v}
 \end{code}
 
 
@@ -650,8 +643,7 @@ Now, we can define a Haskell function
 that makes the terms equal:
 %
 \begin{code}
-  unify :: s:Term -> t:Term
-        -> Maybe {su| eq_sub su s t}
+  unify :: s:Term -> t:Term -> Maybe {su| eq_sub su s t}
 \end{code}
 %
 For the specification and verification

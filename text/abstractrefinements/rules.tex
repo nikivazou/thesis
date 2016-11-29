@@ -3,21 +3,19 @@
 \captionsetup{justification=centering}
 \judgementHead{Well-Formedness}{\isWellFormed{\Gamma}{\sigma}}
 
-$$\begin{array}{ccc}
+$$
 \inference
   {}
   {\isWellFormed{\Gamma}{\true(\vref)}}
   [\wtTrue]
-&
 \quad
-&
 \inference
     {\isWellFormed{\Gamma}{\areft(\vref)} && 
      \hastype{\Gamma}{\rvapp{\rvar}{e} \ \vref}{\tbbool}
     }
     {\isWellFormed{\Gamma}{(\areft \wedge \rvapp{\rvar}{e})(\vref)}}
     [\wtRVApp]
-\end{array}$$
+$$
 %
 $$\inference
     {\hastype{\Gamma, \vref:b}{\reft}{\tbbool} \quad 
@@ -40,19 +38,17 @@ $$
     [\wtFun]
 $$
 %
-$$\begin{array}{ccc}
+$$
 \inference
   {\isWellFormed{\Gamma, \rvar:\tau}{\sigma}}
   {\isWellFormed{\Gamma}{\tpabs{\rvar}{\tau}{\sigma}}}
   [\wtPred]
-&
 \quad
-&
 \inference
     {\isWellFormed{\Gamma, \alpha}{\sigma}}
     {\isWellFormed{\Gamma}{\ttabs{\alpha}{\sigma}}}
     [\wtPoly]
-\end{array}$$
+$$
 
 \medskip \judgementHead{Subtyping}{\isSubType{\Gamma}{\sigma_1}{\sigma_2}}
 
@@ -77,19 +73,15 @@ $$
 $$
 %
 $$
-\begin{array}{ccc}
 \inference
    {\isSubType{\Gamma, \rvar:\tau}{\sigma_1}{\sigma_2}}
    {\isSubType{\Gamma}{\tpabs{\rvar}{\tau}{\sigma_1}}{\tpabs{\rvar}{\tau}{\sigma_2}}}
    [\tsubPred]
-&
 \quad
-&
 \inference
    {\isSubType{\Gamma}{\sigma_1}{\sigma_2}}
    {\isSubType{\Gamma}{\ttabs{\alpha}{\sigma_1}}{\ttabs{\alpha}{\sigma_2}}}
    [\tsubPoly]
-\end{array}
 $$
 
 \medskip \judgementHead{Type Checking}{$\hastype{\Gamma}{e}{\sigma}$}

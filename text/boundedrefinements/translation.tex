@@ -1,4 +1,4 @@
-\begin{figure}[p]
+\begin{figure}[t!]
 \centering
 \captionsetup{justification=centering}
 $$
@@ -27,7 +27,7 @@ $$
 	\txexpr{\cenv}{\benv}{c}{c}
 }[\txCon]
 $$
-
+%
 $$
 \inference{
 	\cenv' = \EXT{\cenv}{x}{\toshape{\rtyp}} && \txexpr{\cenv'}{\benv}{e}{e'} 
@@ -35,7 +35,7 @@ $$
 	\txexpr{\cenv}{\benv}{\efunt{x}{\rtyp}{e}}{\efunt{x}{\rtyp}{\closure{\cenv'}{\benv}{e'}{x\colon\rtyp}}}
 }[\txFun]
 $$
- 
+% 
 $$
 \inference{
 	\txexpr{\cenv}{\benv}{e_x}{e_x'} && \cenv' = \EXT{\cenv}{x}{\toshape{\rtyp}} &&
@@ -45,7 +45,7 @@ $$
 	{\elet{x}{e_x'}{\closure{\cenv'}{\benv}{e'}}{\tau}{x\colon\rtyp}}
 }[\txLet]
 $$
-
+%
 $$
 \inference{
 	\txexpr{\cenv}{\benv}{e_1}{e_1'} &&
@@ -54,30 +54,28 @@ $$
 	\txexpr{\cenv}{\benv}{\eapp{e_1}{e_2}}{\eapp{e_1'}{e_2'}}
 }[\txApp]
 $$
-
+%
 $$
 \inference{
 	\txexpr{\cenv}{\benv}{e}{e'}
 }{
 	\txexpr{\cenv}{\benv}{\etabs{\alpha}{e}}{\etabs{\alpha}{e'}}
 }[\txTAbs]
-\
+\quad
 \inference{
 	\txexpr{\cenv}{\benv}{e}{e'}
 }{
 	\txexpr{\cenv}{\benv}{\etapp{e}{\rtyp}}{\etapp{e'}{\rtyp}}
 }[\txTApp]
 $$
-
+%
 $$
 \inference{
 	\txexpr{\cenv}{\benv}{e}{e'}
 }{
 	\txexpr{\cenv}{\benv}{\epabs{\rvar}{\rtyp}{e}}{\epabs{\rvar}{\rtyp}{e'}}
 }[\txPAbs]
-$$
- 
-$$
+\quad
 \inference{
 	\txexpr{\cenv}{\benv}{e_1}{e_2'} &&
 	\txexpr{\cenv}{\benv}{e_1}{e_2'}
@@ -85,7 +83,7 @@ $$
 	\txexpr{\cenv}{\benv}{\epapp{e_1}{e_2}}{\epapp{e_1'}{e_2'}}
 }[\txPApp]
 $$
- 
+% 
 $$
 \inference{
 	\text{fresh}\ f &&
@@ -93,9 +91,7 @@ $$
 }{
 	\txexpr{\cenv}{\benv}{\econstraint{\constraint}{e} }{\efunt{f}{\txbound{\constraint}}{e'}}
 }[\txCAbs]
-$$
-
-$$
+\quad
 \inference{
 	\txexpr{\cenv}{\benv}{e}{e'}
 }{
@@ -110,7 +106,7 @@ $$
 %%\nv{then bounds could appear in the types inside expressions}
 %%\nv{so, our translation would have to translate types too}
 %%\nv{ie, e [t] translates to e' [t']}
-\caption{Translation Rules from \boundedcorelan to  \corelan.}
+\caption{Translation Rules from $\boundedcorelan$ to  $\corelan$.}
 \label{fig:translation}
 \end{figure}
 
