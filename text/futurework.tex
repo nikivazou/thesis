@@ -1,0 +1,354 @@
+\chapter{Conclusion \& Future Work}\label{chapter:conclusion}
+\label{future:fp}
+\label{future:intersection}
+\label{future:proofautomation}
+\label{future:continuations}
+\label{future:gradual}
+\label{future:errorreporting}
+\label{future:ghost}
+
+We presented \toolname, an automatic, sound, and expressive verifier for Haskell code. 
+%
+We started (Chapter~\ref{chapter:tool}) by porting standard refinement types 
+to Haskell to verify more than 10K lines of popular Haskell libraries. 
+%
+Then~(Chapter~\ref{chapter:refinedhaskell}), we observed that Haskell's 
+lazy semantics render standard refinement type checking unsound
+and restored soundness via a refinement type based termination checker.
+%
+Next, we presented Abstract~(Chapter~\ref{chapter:abstractrefinements}) 
+and Bounded~(Chapter~\ref{boundedrefinements}) Refinement Types, 
+that use uninterpreted functions to 
+\textit{abstract} and \textit{bound} over the refinements of the types. 
+We used both these techniques to encode higher order, modular specifications
+while preserving SMT based decidable and predictable type checking. 
+%
+Finally, we presented Refinement Reflection (Chapter~\ref{refinementrflection})
+a technique that reflects terminating, user defined, 
+Haskell functions into the logic, 
+turning (Liquid) Haskell into an arbitrarily expressive 
+theorem prover. 
+%
+We used \toolname to prove correctness of 
+of sophisticated properties ranging from 
+safe memory indexing to code equivalence over parallelization~(Chapter~\ref{stringmatcher})
+
+In short, we described how to turn Haskell into a theorem prover
+that enjoys both 
+the SMT-based automatic and predictable type checking
+of refinement types
+and 
+the optimized libraries and parallel runtimes of 
+the mature, general purpose language Haskell.
+
+Though \toolname is already a usable prototype verifier, 
+as we saw, there are many directions for future work
+to further enhance the verification process.
+
+\section{Additional Features}
+We start by enumerating a list of desirable features 
+that, would ease and extend the standard usage of \toolname
+as an shallow verified for Haskell code. 
+
+\mypara{Intersection Types}
+%\label{future:intersection}
+% Why we need it
+Currently, \toolname assigns each function to have exactly one refinement type. 
+Allowing a function to have many different types would allow us to specify 
+that under different preconditions, the function ensures different postconditions. 
+%
+As an example, 
+when verifying XMonad (\S~\ref{sec:structures})
+we would like to ensure that appending lists with unique and disjoint elements, 
+would give lists with disjoint elements
+while being able to reuse the same append list operator to append non unique lists. 
+%
+As a different example, we would like to provide types 
+with different labels 
+to primitive operators (\S~\ref{sec:typing})
+illustrating that addition preserves termination while 
+allowing the same addition operator to add potential diverging values. 
+%
+
+% The problem
+While highly usable, it is unclear how to allow intersection types 
+and preserve the one pass decidable type checking of \toolname.
+% 
+Concretely, the interesting question is how the type system will choose 
+at each function call the proper type of the function, that is the type 
+with weaker (pre-) conditions that the supplied arguments 
+and stronger (post-) conditions than the required result. 
+% The solution: https://www.cs.cmu.edu/~fp/talks/icfp07-abs.pdf
+In the future, we plan to adjust Pfenning's work 
+on subtyping and intersection typing~\citep{intersectiontypes,pfenning08,}
+into the liquid type framework.
+
+
+\mypara{Label Polymorphism for Strictness Analysis}
+Intersection types would allow us to describe that primitive operators
+preserve termination, for example addition of two terminating values cannot diverge. 
+%
+We can express this observation we can use label polymorphism
+to assign @(+)@ a type that describes that for any termination label @l@~(\S~\ref{sec:typing}), 
+if both arguments safisfy @l@, then so does the result.
+\begin{code}
+  (+) :: Int^label -> Int^label -> Int^label 
+\end{code}
+%
+We suspect that label polymorphism can be more generally used for 
+strictness and termination analysis of arbitrary functions.
+
+
+\mypara{{Fixed-width integer and floating-point numbers}}
+%\label{future:fp}
+Currently, \toolname encodes 
+Haskell's fixed-width integers 
+and floating-point reals as SMT unbounded integers and reals respectively.
+This encoding is unsound, as we can easily prove that an increase 
+function will always increase its argument
+\begin{code}
+  incr :: n:Int -> {v:Int | n < v}
+\end{code}
+This specification is unsound, as increasing by one 
+the maximum bounded integer in Haskell
+@incr maxBound@
+overflows and returns a negative integer, 
+\ie an integer less than @maxBound@. 
+%
+To restore soundness we can strengthen @incr@ type to reason about overflows
+\begin{code}
+  incr :: n:Int -> {v:Int | n < maxBound => n < v}
+\end{code}
+We suspect that the above type will crucially restrict precision of abstractions. 
+To prove that @incr n < n@ we need to prove that @n < maxBound@ 
+an information not always available at the call context. 
+%
+In the future we would like to 
+use SMT bitvector and floating point theories to
+establish integer and floating-point 
+soundness in \toolname without loosing precision of type checking.  
+
+\mypara{Proving Termination under Continuations}
+% \label{future:continuations}
+For soundness under lazy evaluation, 
+\toolname uses a refinement type based termination checker 
+to prove that each logical function is terminating. 
+%
+Our termination checker uses a na\"ive heuristic 
+that the size of the first sized recursive function argument should be decreasing, 
+where the size is a user specified inductive function mapping a data type to natural numbers. 
+%
+The question that arises is how to specify termination of 
+continuation data types.
+%
+As an concrete example consider the @Cnt@ data type
+%
+\begin{code}
+  data Cnt = Emp | Cnt Int (Int -> Cnt)
+\end{code}
+How do we specify that the following function @go@ terminates?
+\begin{code}
+  go :: Cnt -> Int 
+  go Emp = 0 
+  go (Cnt i f) = go (f i)
+\end{code}
+Note, that @go@ can indeed diverge if for example it is called with 
+a diverging continuation @f = \i -> C i f@.
+% 
+Though in practice many terminating functions reduce to termination of @go@, 
+for example bytestring(\S~\ref{sec:memory-safety}) and parser's manipulation. 
+%
+Yet, currently, we do not know how @go@'s termination preconditions can be encoded. 
+
+\mypara{Inference of Abstract and Bounded Refinement Types}
+\label{future:ghost}
+We saw how Abstract and Bounded Refinement Types can be used to express 
+modular higher order specification. 
+%
+Currently the user has to manually specify all such abstractions. 
+From our current examples we observe that these abstractions mostly encode 
+the weakest preconditions that should be satisfied and could be syntactically 
+inferred using ideas from the Dijkstra Monad~\ref{dijkstramonad}. 
+%
+Moreover, as discussed in \S~\ref{sec:discussion}
+bounded refinement types lead to a relatively complete 
+specification type system that require no need for ghost variables. 
+Thus, Bounded Refinement Type inference could be used to automatically eliminate 
+user specified ghost arguments. 
+
+
+
+\mypara{Gradual Verification}
+% \label{future:gradual}
+During verification process, we unsoundly use assumed 
+proper types for unverified imported functions.
+For example, as discussed in~\S~\ref{sec:discussion}
+we assumed that the library multiplication is an associative operator. 
+In future, we plan to use techniques from gradual or hybrid typing 
+to \textit{automatically} convert such assumptions to ``hybrid" run-time checks
+so that run-time violations of these assertions will be transformed to 
+controlled failures.
+
+
+\section{Automation on Theorem Prover}
+\label{future:theoremproving}
+
+We have used \toolname as a theorem prover 
+to prove a variety of deep specifications, 
+ranging from typeclass laws to correctness of parallel computations. 
+%
+Our experience is that that even though we can prove arbitrary complicated 
+program properties, the treating (Liquid) Haskell as a theorem prover 
+is a new technique that identifies
+important avenues for research.
+
+First, to reason about higher order properties 
+\toolname is currently using an incomplete technique 
+that allows the user to manually instantiate the 
+axioms of $\alpha$- and $\beta$-equivalence.
+%
+As a future work we would like to develop a 
+sound, automatic, and complete theory that reasons about 
+higher order logics. 
+We conjecture this is feasible,
+due to the fact that our refinement terms
+are from the simply typed lambda calculus (STLC).
+%
+Thus, it would be interesting to use the
+normalization of STLC to develop a sound
+and complete SMT axiomatization, thereby
+automating proofs predictably.
+
+Second, 
+currently, \toolname 
+is checking each proofs step 
+in a global environment, 
+containing all the (proof irrelevant) information 
+from the previous proof steps. 
+%
+As an optimization, Dafny's calculation environment~\cite{LeinoPolikarpova16}
+is checking each proof step creating a separate SMT environment. 
+%
+Such an optimization would highly speed up proof check times in \toolname.
+
+
+Third and most importantly, 
+while proofs are \emph{possible}, 
+due to lack of automation, they are
+\emph{cumbersome} and \emph{verbose}.
+%
+For example, to prove program equivalence in the parallelized version 
+of the string matcher we were required to write 7 times 
+as much proof code and annotations as the code to be proven equivalent. 
+%
+What is worse is that \emph{most} of our proofs are trivial and only consist of 
+function unfolding and application of the inductive hypothesis.
+There are many ways to automate this proof generation process. Here 
+we outline four potential directions. 
+\begin{itemize}
+\item A first alternative is to follow Dafny's~\cite{dafny} approach
+that assigns a fuel parameter to each recursive function and, 
+in the logic, uses SMT to automatically unfold each recursive function up to fuel times. 
+%
+The disadvantage of this approach, as is, is that when 
+a recursive function needs to be unfold more than threshold times, 
+the users need to themselves provide appropriate SMT instantiations, 
+Thus the user needs to exactly understand and be able to talk to the solver, 
+a language different than the target languages (here Haskell).
+
+\item As another alternative, we can use Synquid~\cite{polikarpova16}
+to synthesize functions (\ie proof terms) that satisfy their specifications 
+(\ie theorems). 
+%
+Synquid is using plain Haskell types to synthesize
+data driven programs (\eg AVL and Binary Search trees)
+whose correctness is checked via SMT based refinement type checking. 
+%
+Since all our proof terms are unit values 
+we conjecture that proof synthesis via Synquid 
+will turn out to be brute force theorem instantiation searching, 
+thus inefficient. 
+\item 
+TiP~\cite{tip} and its prodecessor HipSpec~\cite{hipspec}
+use SMTs to automatically prove and generate inductive program properties. 
+%
+To use this existing automation, \toolname can invoke TiP
+as an external oracle to automatically decide validity of user specified theorems. 
+%
+A weakness of this approach, and in general the usage of an external proof oracle 
+is that the Haskell user looses control of the proof generation terms: 
+proofs are now Tip certificates instead of Haskell code, 
+whose modifications and understanding would require knowledge of the external oracle.  
+
+\item
+A final and most promising alternative is to create extensible proof scripts (Coq-like tacktics)
+using Template Haskell, GHC's compile time metalanguage. 
+%
+Proof generation scripts 
+that describe proof (\ie by construction) or searching 
+(\ie an A$*$ algorithm to find the shortest path from the left to the right hand site on an equality) 
+can be provided and invoked at compile time to automate proof writing, 
+%
+The benefits of this approach are that 
+1. the proofs will be auto generated Haskell code that can be checked and modified, 
+2. users can easily create their own proof scripts, and 
+3. proof scripts will resemble the well studied Coq tactics. 
+\end{itemize}
+% 
+Though all these techniques can potentially automate the vast majority of 
+our proofs, choosing which one best fits at the setting of \toolname and 
+at the taste of the Haskell community is the real future work challenge.
+
+
+
+
+\section{Usability}
+We conclude with a vision on how to convert \toolname 
+a usable program verifier that would be interactively 
+use to aid rather than hinter code generation.
+
+\mypara{Program Synthesis}
+To begin with, since program specifications constitute an abstraction 
+of the program, 
+\textbf{program synthesis} techniques can be used to synthesize
+code from specifications and vice versa. 
+%
+An interactive interface can suggest, during development,  
+a safe and verification friendly specification for a given program, 
+or a valid implementation of a specification. 
+%
+
+\mypara{Error Reporting \& Diagnosis}
+%\label{future:errorreporting}
+When verification fails, 
+\textbf{error reporting and diagnosis} should guide the user 
+to edit either the code or the specification to repair the program. 
+%
+The challenge in error reporting is how to explain 
+the source of failure, 
+without exposing any technical details 
+of the underlying verification techniques. 
+%
+In LiquidHaskell, TARGET~\cite{TARGET} attempts to explain 
+type errors via counter examples. 
+%
+On top of counter examples, % I would like to explore whether
+Machine Learning techniques could 
+provide suggestions to new verification users
+based on the history of actions verification experts 
+took to repair their code.  
+% 
+
+\mypara{Runtime optimizations}
+Statically proven invariants can be used by compilers 
+to automatically remove various run time assertions, 
+leading to rumtime optimizations.
+For instance, if verification statically proved that indexing only occurs
+within safe bounds, then no runtime in bounds checks are necessary. 
+%
+Or, when verification has statically proven that a @Maybe Int@ value cannot be nothing, 
+then the compiler should only store the space requires for the @Int@ (and not the @Maybe Int@)
+value at runtime. 
+
+
+
