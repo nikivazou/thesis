@@ -1,4 +1,4 @@
-\documentclass[11pt]{ucsddissertation}
+\documentclass[11pt]{text/ucsddissertation}
 % mathptmx is a Times Roman look-alike (don't use the times package)
 % It isn't clear if Times is required. The OGS manual lists several
 % "standard fonts" but never says they need to be used.
@@ -13,13 +13,13 @@
 \usepackage{graphicx}
 
 
-\usepackage{liquidHaskell}
+\usepackage{text/liquidHaskell}
 \usepackage{amsmath,amssymb, latexsym}
 
 \usepackage{amsmath}
 \usepackage{amsthm}
 \usepackage{thmtools}
-\usepackage{commands}
+\usepackage{text/commands}
 
 
 \usepackage{stmaryrd}
@@ -38,7 +38,7 @@
 \newtheorem{theorem}{Theorem}
 \newtheorem{theorem*}{Theorem}
 \newtheorem{corollary}{Corollary}
-\input{haskellListings}
+\input{text/haskellListings}
 
 
 \AtBeginDocument{%
@@ -85,7 +85,7 @@
 \makesignature
 % Optional
 \begin{dedication}
-\input{dedication}
+\input{text/dedication}
 \end{dedication}
 % Optional
 \begin{epigraph}
@@ -116,7 +116,7 @@ Simplicity is the ultimate sophistication.
 
 % Stupid vita goes next
 \begin{vita}
-\input{vita}
+\input{text/vita}
 \end{vita}
 
 % Put your maximum 350 word abstract here.
@@ -149,5 +149,5 @@ Simplicity is the ultimate sophistication.
 % \end{comment}
 
 \bibliographystyle{abbrv} % Or whatever style you want like plainnat
-\bibliography{references}
+\bibliography{text/references}
 \end{document}

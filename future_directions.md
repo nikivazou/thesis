@@ -1,3 +1,0 @@
-- Use [Tip](http://tip-org.github.io/) to automate inductive proofs
-- Use labels for strictness analysis
-- Use union types to type methods
