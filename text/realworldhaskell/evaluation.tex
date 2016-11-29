@@ -145,7 +145,7 @@ parameter in the @append@ function for red-black trees
 %
 Bounded Refinement Types (Chapter~\ref{boundedrefinements})
 provide a complete, but unfortunately not elegant way to 
-eliminated ghost parameters (\S~\ref{future:ghost}).
+eliminated ghost parameters.
 
 \mypara{Fixed-width integer and floating-point numbers}
 \toolname uses the theories of linear arithmetic and
@@ -154,7 +154,7 @@ cases this causes us to lose precision, \eg when we have to
 approximate the behavior of bitwise operations. We could
 address this shortcoming by using the theory of bit-vectors
 to model fixed-width integers, but we are unsure of the
-effect this would have on \toolname's performance (\S~\ref{future:fp}).
+effect this would have on \toolname's performance.
 
 \begin{comment}
 \mypara{Higher-order functions} 
@@ -190,7 +190,7 @@ requires describing the sizes of input-output chains starting
 at a given seed input for the function. In future work, it will 
 be interesting to extend the measure mechanism to support 
 multiple parameters (\eg a stream and a seed) in order to reason
-about such structures (\S~\ref{future:continuations}). 
+about such structures. 
 
 \mypara{Lazy binders} sometimes get in the way of verification. 
 A common pattern in Haskell code is to define \emph{all} 
@@ -215,7 +215,7 @@ mathematical operators that are currently conservatively
 modeled in the refinement logic (\eg that multiplication 
 is commutative and associative). 
 These may be removed by using more advanced non-linear 
-arithmetic decision procedures (\S~\ref{future:gradual}).
+arithmetic decision procedures.
 
 \mypara{Error messages} are a crucial part of any type-checker.
 Currently, we report error locations in the provided source
@@ -224,7 +224,7 @@ file and output the failed constraint(s).
 In the future errors should be reported using an
 interactive interface with features including 
 code and type completion and counter example drive
-error explanation (\S~\ref{future:errorreporting}). 
+error explanation. 
 
 
 %% TECHREP
