@@ -656,13 +656,13 @@ In particular, given the call site instantiation
 %
 this subtyping constraint reduces to the quantifier-free VC:
 %
-\begin{align*}
+\begin{equation}
 \inter{\Gamma}
   \Rightarrow \mathtt{true}
   \Rightarrow \cc{(z == y + 1)}
    \Rightarrow \cc{(y == x + 1)}\notag
-   \Rightarrow \cc{(z == x + 2)} % \label{vc:bounded:ex2}
-\end{align*}
+   \Rightarrow \cc{(z == x + 2)}  \label{vc:bounded:ex2}
+\end{equation}
 %
 %
 where $\Gamma$ contains assumptions about the various binders in
