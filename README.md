@@ -1,14 +1,4 @@
-# Liquid Haskell: How to turn Haskell into a Theorem Prover
-
-
-# TODO
-
-- refinement types for Haskell
-- abstract refinement types
-- bounded refinement types
-- refinement reflection 
-- conclustion & future work
-- intro 
-- acks 
-
+# Liquid Haskell: Haskell as a Theorem Prover
+# Thesis by Niki Vazou
+# December, 2016
 
