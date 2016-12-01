@@ -16,6 +16,7 @@ getting an automated and expressive verifier for Haskell programs (\S~\ref{relat
 
 \section{Refinement Types}\label{related:refinementtypes}
 
+
 \mypara{Standard Refinement Types}
 Refinement Types were introduced by Freeman and
 Pfenning~\cite{FreemanPfenning91}, with refinements limited to
@@ -100,104 +101,87 @@ but requiring the user to manually provide cumbersome proof terms.
 
 
 
-\section{SMT-based verification}\label{related:smtbased}
+\section{SMT-Based Verification}\label{related:smtbased}
 
-Knowles and Flanagan~\cite{Knowles10} allow refinement predicates to
-be arbitrary terms of the language being typechecked and present a
-technique for deciding some typing obligations statically and
-deferring others to runtime.
-%; Gronksi \etal~\cite{Gronski06} present animplementation of such a system.
-
-The \fstar system enables full dependent typing via
-SMT solvers via a higher-order universally quantified
-logic that permit specifications similar to ours
-(\eg @compose@, @filter@ and @foldr@).
-%% https://github.com/FStarLang/FStar/
+Even though refinement type systems use SMT solvers to 
+achieve decidable program verification by highly constraining the 
+expressiveness of specifications,
 %
-While this approach is at least as expressive
-as bounded refinements it has two drawbacks.
+SMT-based verification has been extensively used for program verification 
+without the decidability constraint. 
 %
-First, due to the quantifiers, the generated VCs
-fall outside the SMT decidable theories.
-This renders the type system undecidable (in theory),
-forcing a dependency on the solver's unpredictable
-quantifier instantiation heuristics (in practice).
+In such verifiers the SMT solvers are used to decide validity of 
+arbitrary (\ie non strictly decidable) logics leading to expressive specifications
+but undecidable and unpredictable verification. 
+Unpredictable verification is described~\cite{Leino16}
+as \textit{the butterfly effect} as ``a minor modification in one
+part of the program source causes changes in the outcome of the verification in other,
+unchanged and unrelated parts of the program.''
 %
-Second, more importantly, % perhaps more importantly,
-the higher order
-predicates must be \emph{explicitly} instantiated,
-placing a heavy annotation burden on the programmer.
-%
-In contrast, bounds permit decidable
-checking, and are automatically instantiated
-via Liquid Types.
+Here we present three SMT-based verifiers that have highly influence 
+the design decisions in \toolname 
+and discuss the ways each one of the used to limit control unpredictable verification. 
 
 
-\paragraph{SMT-Based Verification}
+
+\mypara{Sage}~\cite{Knowles10} is a hybrid type checker. 
+The specifications are expressed in the form of refinement types 
+that allow predicates to
+be arbitrary terms of the language being typechecked. 
+It uses the SMT solver Simplify~\cite{simplifyj} to statically discharge 
+as many proof obligations as possible and defer the rest to runtime casts. 
 %
-SMT solvers have been extensively used to automate
-reasoning on verification languages like
-Dafny~\cite{dafny}, Fstar~\cite{fstar} and Why3~\cite{why3}.
+\toolname is a subset of Sage, that provably requires no runtime casts
+since predicates are carefully constrained to decidable logics. 
 %
-These languages are designed for verification,
-thus have limited support for commonly used language
-features like parallelism and optimized libraries
-that we use in our verified implementation.
+We used Knowles and Flanagan's formalism on denotational typing 
+and correctness of Sage to formalize soundness and semantics of \toolname.  
+ 
+
+\mypara{\fstar}~\cite{fstar} is a refinement type checker 
+that allows predicates to be arbitrary terms 
+and aims to discharge all proof obligations via the SMT solver, 
+leading to unpredictable verification. 
 %
+\fstar allows the user to control the SMT decision procedures 
+by exposing to the user SMT tactics that can be used to direct
+verification in case of failure. 
+% 
+Moreover, \fstar allows effectful computations 
+(\eg state, exceptions, divergence and IO)
+and combines refinement types with a sophisticated effect type system 
+to reason about totality of programs. 
+%
+In (Liquid) Haskell all programs are pure, thus reasoning about effectful
+computations has already been taken care of by Haskell's basic (\ie unrefined) 
+type system that requires effectful computations to be wrapped inside monads. 
+% 
+The only effects allowed in Haskell are exceptions and divergence 
+that can be optionally tracked by \toolname's totality and termination checker respectively. 
 
 
-% We compare refinement reflection to the most closely related
-% lines of work in the vast literature on program verification.
-
-\mypara{SMT-Based Verification}
+\mypara{Dafny}~\cite{dafny} is a prototype SMT-based verifier 
+for imperative programs that allows arbitrary expressive specifications 
+in the form of pre- and post-conditions. 
 %
-SMT-solvers have been extensively used to automate
-program verification via Floyd-Hoare logics~\cite{Nelson81}.
+Acknowledging the disadvantages of unpredictable verification, 
+Dafny aims to give to the user control over the underlying SMT 
+decision procedures 
+via sophisticated trigger and fuel techniques. 
 %
-Our work is inspired by Dafny's Verified
-Calculations~\citep{LeinoPolikarpova16},
-a framework for proving theorems in
-Dafny~\citep{dafny}, but differs in
+Dafny
+that verifies effectful, imperative code via pre- and post-conditions
+greatly differs from \toolname
+that verifies the pure and functional Haskell via refinement types. 
 %
-(1)~our use of reflection instead of axiomatization and
-(2)~our use of refinements to compose proofs.
-%
-Dafny, and the related \fstar~\citep{fstar}
-which like \toolname, uses types to compose
-proofs, offer more automation by translating
-recursive functions to SMT axioms.
-However, unlike reflection, this axiomatic
-approach renders typechecking and verification
-undecidable (in theory) and leads to
-unpredictability and divergence
-(in practice)~\citep{Leino16}.
-%\NV{CHECL Relational-F*, Barthe et al, from POPL 2014, and EasyCrypt}
+Yet, the work of Leino and the rest of Dafny developers 
+has been a great inspiration for existing and future work 
+on challenges shared by both verifiers, 
+including termination checking, 
+coinduction~\cite{LeinoM14}, 
+local calculations~\cite{LeinoPolikarpova16}, 
+and error reporting~\cite{GouesLM11}. 
 
-%% In a work more closely related to
-%% ours, \fstar uses refinement types
-%% for program verification supporting
-%% expressiveness of fully dependent types.
-%% %
-%% As in Dafny, \fstar directly translates
-%% recursive functions to axioms in the logic
-%% thus suffers from the ``butterfly effect''
-%% and allows the user to explicitly write SMT tactics to control it.
-
-%% Leino \etal~\citep{Leino16}
-%% name this problem as the ``butterfly
-%% effect'', in which minor modifications
-%% to the program source cause significant
-%% instabilities in verification and propose
-%% trigger selection strategies to address it.
-%% %
-%% We avoid the ``butterfly effect'' by not
-%% directly axiomatizing functions into logic.
-%% Instead the information about the function's
-%% body is exactly captured in function's result
-%% type and user needs to explicitly invoke the function to push
-%% the function's definition information into the logic.
-
-\begin{comment}
 
 \section{Dependent Type Systems}\label{related:dependenttypes}
 
@@ -205,221 +189,172 @@ unpredictability and divergence
 %%%%%%%%%%%%%%% Fully dependent typing %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\mypara{Dependent types}
+Dependent Types Systems like Coq~\cite{coq-book}, 
+Agda~\cite{norell07}, Idris~\cite{Brady13} and Isabelle/HOL~\cite{isabelle}
+express sophisticated theorems as types since they 
+allow arbitrary terms to appear in the types.
 %
-Our work is also inspired by dependently typed
-systems like Coq~\citep{coq-book} and
-Agda~\citep{agda}.
-%
-Reflection shows how deep specification
-and verification in the style of Coq and Agda
-can be \emph{retrofitted} into existing languages
-via refinement typing.
-%
-Furthermore, we can use SMT to significantly
-automate reasoning over important theories like
-arithmetic, equality and functions.
-%
-It would be interesting to investigate how
-the tactics and sophisticated proof search
-of Coq \etc can be adapted to the refinement setting.
+Constructive proofs of such theorems are just programs
+that are either manually written by the users or automatically generated via 
+proof tactics and heuristics.
+However programs are not just proofs, 
+thus, unlike \toolname, these verification oriented, dependent type systems
+fail to provide an environment for mainstream code development. 
 
-% which allow for arbitrary expressiveness of the type system
-% in the cost of automatic verification.
+\mypara{Expressiveness: Deep vs. Shallow Specifications}
+Dependently typed languages permit
+\textit{deep} specification and verification. 
 %
-%% The syntax of \libname's operators is inspired by
-%% Equational Reasoning in Agda~\citep{agda}.
-%% Here we extended these equational operators
-%% to support linear arithmetic and, for example, prove
-%% properties of Ackermann function.
-%% %
-%% Unlike Adga, proof term are explicit in \libname,
-%% we do not use heuristics to infer proofs.
-\mypara{Higher order Logics and Dependent Type Systems}
+To express and prove theorems, these systems
+represent and manipulate the exact
+descriptions of user-defined functions. 
 %
-including
-NuPRL~\citep{Constable86},
-Coq~\citep{coq-book}, Agda~\citep{norell07},
-and even to some extent, \haskell~\citep{JonesVWW06, McBride02},
-occupy the maximal extreme of the expressiveness spectrum.
-However, in these settings, checking requires explicit
-proof terms which can add considerable programmer overhead.
+For example, we can represent
+the specification that the list @append@ function is associative and
+we can manipulate (unfold) its definition 
+to write a small program that by reduction
+constructs a proof of the specification.
 %
-Our goal is to eliminate the programmer overhead of
-proof construction by restricting specifications to
-decidable, first order logics and to see how far
-we can go without giving up on expressiveness.
+On the other hand, 
+standard refinement types, including \toolname without refinement reflection,  
+restrict refinements to so-called  \textit{shallow}
+specifications that correspond to abstract interpretations of
+the behavior of functions within decidable logical domains. 
+%
+For example, refinements make it easy
+to specify that the list returned by the @append@ function has size
+equal to the sum of those of its inputs
+but in the logic the exact definition of @append@ is not known. 
+%
+Refinement Reflection reflects user defined functions into the logic
+allowing deep specifications. 
+Verification still occurs using the abstract interpretations of the functions, 
+but with refinement reflection, the abstraction of the function is 
+exactly equal to its definition. 
 
-%  Higher-order logics: Coq/HTT/F*/Agda which have explicit predicates, quantification 
-A number of higher-order logics and corresponding verification tools
-have been developed for reasoning about programs.
+\mypara{Proof Strategy: Type Level Computations vs. Abstract Interpretation}
+Dependent type systems use type level computations to construct proofs by evaluation. 
 %
-Example of systems of this type include NuPRL \cite{Constable86},
-%F$_{<:}$ \cite{Cardelli91},
-Coq \cite{coq-book}, F$^\star$ \cite{SwamyCFSBY11} and Agda \cite{norell07}
-which support the development and verification of higher-order, 
-pure functional programs.
+On the other hand, in refinement type systems, 
+safety proofs rely on validity of subtyping constraints 
+that is checked externally by an SMT solver. 
 %
-While these systems are highly expressive, their expressiveness comes at the
-cost of making logical validity checking undecidable.
+That is, the type system is unable to perform any proof by evaluation, 
+as the only information it has for each function is the abstraction that is 
+described by its type.
 %
-To help automate validity checking, both built-in and user-provided
-tactics are used to attempt to discharge proof obligations; however,
+With refinement reflection, we fake type level computations: 
+the Haskell, value level, proof terms provide all the required reduction steps
+that are then retrofitted as equality assertions to the SMT solver.
+
+
+\mypara{Automation: Tactics vs. SMT solvers}
+Dependent type checking requires explicit proof terms to be provided by the users. 
+%
+To help automate proof term generation, both built-in and user-provided
+tactics and heuristics are used to attempt to discharge proof obligations; however,
 the user is ultimately responsible for manually proving any
 obligations which the tactics are unable to discharge.
+%
+On the other hand, refinement type checking 
+does not require explicit proof terms. 
+%
+Verification proceeds by checking validity of subtyping constraints 
+which reduces to implication checking that is in turn
+decided using the power of SMT solvers. 
+%
+Many times the SMT solver fails to prove 
+validity of a subtyping constraint because the environment is too weak. 
+%
+In such cases the user can strengthen the environment by instantiating 
+axioms via function calls. 
+%
+For example, the proof that @() :: {v:() | fib 1 = 1}@ 
+is valid under an environment that invokes @fib@ on @1@.
+%
+That is, to prove deep specifications we fake type level computations
+via value level proof terms, but ultimately, 
+we check validity using the power of SMTs
+which drastically simplifies proofs over key theories
+like linear arithmetic and equality.
+%
+In the future, we plan to investigate how to simplify such proof terms
+by adapting the tactics and heurestics of dependently typed systems
+into \toolname. 
 
-
-
-\spara{Dependent Types} are the basis of many verifiers, 
-or more generally, proof assistants.
+\mypara{System Features: Theorem Prover vs. Legacy Programming Languages}
+Dependent type systems are proof oriented systems, lacking 
+features required for a general purpose language, like 
+diverging and effectful programs. 
 %
-Verification of haskell code is possible with
-``full'' dependently typed systems like Coq~\cite{coq-book}, 
-Agda~\cite{norell07}, Idris~\cite{Brady13}, Omega~\cite{Sheard06}, and
- {$\lambda_\rightarrow$}~\cite{LohMS10}.
- %
- While these systems are highly expressive,
-their expressiveness comes at the cost of making logical validity checking undecidable
-thus rendering verification cumbersome.	
- %
- 
- \spara{Dependent Types} are the basis of many verifiers, 
-or more generally, proof assistants.
-%
-In this setting arbitrary terms may appear inside types,
-so to prevent logical inconsistencies, and enable
-the checking of type equivalence, all terms must
-terminate.
-%
-``Full'' dependently typed systems like Coq~\cite{coq-book}, 
-Agda~\cite{norell07}, and Idris~\cite{Brady13} typically use 
-\emph{structural} checks where recursion is allowed on 
-sub-terms of ADTs to ensure that \emph{all} terms terminate.
-%
-We differ in that, since the refinement logic is
-restricted, we do not require that all functions terminate,
-and hence, we can prove properties of possibly diverging 
-functions like @collatz@ as well as lazy functions like @repeat@.
-%
-Recent languages like Aura~\citep{AURA} and Zombie~\citep{Zombie}
-allow general recursion, but constrain the logic to a terminating 
-sublanguage, as we do, to avoid reasoning 
-about divergence in the logic.
-%
-In contrast to us, the above systems crucially assume 
-\emph{call-by-value} semantics to ensure that binders are bound
-to values, \ie cannot diverge.
-
-
-
-
-\paragraph{Dependent Types}
-Unlike Refinement Types, dependent type systems,
-like Coq~\cite{coq-book}, Adga~\cite{agda} and Isabelle/HOL~\cite{isabelle} allow for ``deep'' specifications
-which talk about program functions,
-such as the program equivalence reasoning we presented.
-%
-Compared to (Liquid) Haskell,
-these systems allow for tactics and heuristics
-that automate proof term generation
-but lack SMT automations and
-general-purpose language features,
-like non-termination, exceptions and IO.
-%
+Various systems extend theorem provers to support effectful programs, 
+for example 
 Zombie~\cite{Zombie,Sjoberg2015} and Fstar~\cite{fstar} allow dependent types to
-coexist with divergent and effectful programs,
-but still lack the optimized libraries,
-like @ByteSting@, which come
-with a general purpose language
-with long history, like Haskell.
+coexist with divergent and effectful programs. 
+%
+Still, these systems are verification oriented and lack the 
+optimized libraries that come from the mainstream developers of 
+a general purpose programming language.  
+%
+On the other hand, \toolname 
+retrofits verification in Haskell,
+a legacy programming language with 
+a long-standing developer community. 
+%
+With \toolname, 
+Haskell programmers can as use their favorite  
+language for general purpose programming, 
+and also prove specifications without the need to use an external, 
+verification specific, theorem prover. 
 
 
-
-\paragraph{Parallel Code Verification}
-
-One work  closely related to ours is
-SyDPaCC~\cite{SyDPaCC}, a Coq library that
-automatically parallelizes list homomorphisms
-by extracting parallel Ocaml versions of user provided Coq functions.
-%
-Unlike SyDPaCC, we are not automatically generating the parallel
-function version, because of engineering limitations
-(\S~\ref{sec:evaluation}).  Once these are addressed, code extraction
-can be naturally implemented by turning
-Theorem~\ref{theorem:two-level} into a Haskell type class with a
-default parallelization method.
-%
-SyDPaCC used maximum prefix sum as a case study,
-whose morphism verification is
-much simpler than our string matching case study.
-%
-Finally, our implementation consists of
-2K lines of Liquid Haskell, which we consider verbose and aim to
-use tactics to simplify.
-On the contrary, the SyDPaCC implementation
-requires three different languages:
-2K lines of Coq with tactics, 600 lines of Ocaml and 120 lines of C,
-and is considered ``very concise''.
-
-\mypara{Dependent Types for Non-Terminating Programs}
-%
-Zombie~\citep{Zombie, Sjoberg2015} integrates
-dependent types in non terminating programs
-and supports automatic reasoning for equality.
-%
-Vazou \etal have previously~\citep{Vazou14} shown
-how Liquid Types can be used to check
-non-terminating programs.
-%
-Reflection makes \toolname at least as
-expressive as Zombie, \emph{without}
-having to axiomatize the theory of
-equality within the type system.
-%
-Consequently, in contrast to Zombie,
-SMT based reflection lets \toolname
-verify higher-order specifications
-like @foldr_fusion@.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%% alternative verification in Haskell %%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Verification in Haskell}\label{related:haskell}
+\section{Haskell Verifiers}\label{related:haskell}
 
+\toolname belongs into the ongoing research of Haskell code verification
+that is exploring techniques to verify properties about Haskell programs
+that the current type system cannot specify. 
+%
+There are two main directions in this line of research. 
+%
+Some groups are building external verifiers that analyze 
+well typed Haskell programs, while others are enriching 
+the expressiveness of the Haskell's type system. 
 
-\mypara{Proving Equational Properties}
-% of Haskell Programs}
+\mypara{Domain Specific Haskell Verifiers}
+Various external Haskell analyzers have been proposed 
+to check correctness properties of Haskell code that 
+is not expressible by Haskell's type system. 
 %
-Several authors have proposed tools for proving
-(equational) properties of (functional) programs.
-%
-%
+Catch~\cite{catch} is
+a fully automated tool that tracks incomplete patterns,
+like our totality analyzer. 
+AProVE~\cite{Giesl11} implements a powerful, fully-automatic
+termination analysis for Haskell based on term-rewriting,
+like our termination analyzer. 
 HERMIT~\citep{Farmer15} proves equalities by rewriting
-the GHC core language, guided by user specified scripts.
+the GHC core language, guided by user specified scripts, 
+like our equality reasoning performed via Refinement Reflection.
 %
-In contrast, our proofs are simply Haskell programs,
-we can use SMT solvers to automate reasoning, and,
-most importantly, we can connect the validity of
-proofs with the semantics of the programs.
-
-
-\spara{Static Contract Checkers} 
-like ESCJava~\cite{ESCJava} are a classical way of verifying 
-correctness through assertions and pre- and post-conditions. 
+All the above verifiers allow for a domain specific analysis, 
+precluding \toolname's generalized functional 
+correctness specifications, encoded via refinement typing. 
 %
-\cite{XuPOPL09} describes a static contract checker for 
-Haskell that uses symbolic execution to unroll procedures
-upto some fixed depth, yielding weaker ``bounded'' soundness
-guarantees.
-% 
 
+\mypara{Static Contract Checking}
+A generalized correctness anazysis in Haskell is feasible 
+via Haskell's static contract checking~\cite{XuPOPL09} 
+that encodes arbitrary contracts in the form of refinement types and
+checks them using symbolic execution to unroll procedures
+upto some fixed depth.
+%
 Similarly, Zeno~\cite{ZENO} is an automatic Haskell 
 prover that combines unrolling with heuristics for rewriting
 and proof-search. 
-%%Based on rewriting, it is sound but 
-%%``Zeno might loop forever'' when faced with 
-%%non-termination.
 %
 Finally, the Halo~\cite{halo} contract checker encodes 
 Haskell programs into first-order logic by directly 
@@ -427,103 +362,27 @@ modeling the code's denotational semantics,
 again, requiring heuristics for instantiating axioms 
 describing functions' behavior.
 %
-   Haskell itself can be used to \emph{fake} ``lightweight'' dependent 
-   types~\citep{ChakravartyKJ05,JonesVWW06,Weirich12}.
-   In this style, the invariants are expressed in 
-   a restricted~\citep{Jia10} total 
-   index language and relationships (\eg $x<y$ and $y<z$) 
-   are combined (\eg $x<z$) by explicitly constructing
-   a term denoting the consequent from terms 
-   denoting the antecedents.
-   %
-   On the plus side this ``constructive'' approach
-   ensures soundness. 
-   It is impossible to witness inconsistencies, 
-   as doing so triggers diverging computations.
-   %
-   However, it is not easy to use restricted indices
-   with explicitly constructed relations to verify 
-   complex properties~\citep{LindleyM13}.
+All the above general purpose verifiers 
+allow specification of arbitrarily expressive contracts
+rendering verification undecidable and thus impractical. 
 
 
-\spara{Totality Checking}
-is feasible by GHC itself, via an option flag that warns of any incomplete patterns.
-%
-Regrettably, GHC's warnings are local, \ie
-GHC will raise a warning for @head@'s partial definition, 
-but not for its caller, as the programmer would desire.
-%%(2)~ and preservative:
-%%a warning will be raised for any incomplete pattern
-%%without an attempt to reason if it is reachable or not.
-%
-Catch~\cite{catch}, 
-a fully automated tool that tracks incomplete patterns,
-addresses the above issue
-%
-by computing functions' pre- and post-conditions.
-Moreover, catch statically analyses the code 
-to track reachable incomplete patterns.
-%
-\toolname allows more precise analysis than catch, 
-thus, by assigning the appropriate
-types to $\star$Error functions (\S~\ref{sec:totality}) 
-it tracks reachable incomplete patters 
-%we get catch analysis
-as a side-effect of verification.
- 
- 
- \spara{Termination Analysis}
-is crucial for \toolname's soundness 
-and is implemented in a technique inspired by~\cite{XiTerminationLICS01}, 
-%
-Various other authors have proposed techniques to verify termination of
-recursive functions, either using the ``size-change
-principle''~\cite{JonesB04,Sereni05}, or by annotating types with size indices
-and verifying that the arguments of recursive calls have smaller
-indices~\cite{HughesParetoSabry96,BartheTermination}.
-%
-To our knowledge, none of the above analyses have been empirically
-evaluated on large and complex real-world libraries.
-
-AProVE~\cite{Giesl11} implements a powerful, fully-automatic
-termination analysis for Haskell based on term-rewriting.
-%
-Compared to AProVE,
-encoding the termination proof via 
-refinements provides advantages that are crucial in 
-large, real-world code bases. 
-Specifically, refinements
-let us
-%
-(1) prove termination over a subset 
-    (not all) of inputs; many functions (\eg @fac@) 
-    terminate only on @Nat@ inputs and not all @Int@s,
-%
-(2) encode pre-conditions, 
-    post-conditions, and auxiliary invariants that 
-    are essential for proving termination, (\eg @qsort@),
-%
-(3) easily specify non-standard 
-    decreasing metrics and prove termination, (\eg @range@).
-%
-In each case, the code could be (significantly) 
-\emph{rewritten} to be amenable to AProVE but this defeats
-the purpose of an automatic checker.
  
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%% dependent types in Haskell %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
  
  
- \mypara{Dependent Types in Haskell}
+\mypara{Dependent Types in Haskell}
+Haskell itself is a dependently-typed language~\cite{Eisenberg16},
+as type level computation is allowed via 
+Type Families~\cite{McBride02},
+Singleton Types\cite{Weirich12}, 
+Generalized Algebraic  Datatypes (GADTs)~\cite{JonesVWW06, SchrijversJSV09}, 
+type-level functions~\cite{ChakravartyKJ05}, 
+and explicit type applications~\cite{EisenbergWA16}. 
 %
-Integration of dependent types into Haskell
-has been a long standing goal that dates back
-to Cayenne~\citep{cayenne}, a Haskell-like,
-fully dependent type language with undecidable
-type checking.
-%
-In a recent line of work~\citep{EisenbergS14}
+In this line of work~\citep{EisenbergS14}
 Eisenberg \etal aim to allow fully dependent
 programming within Haskell, by making
 ``type-level programming ... at least as
@@ -531,42 +390,47 @@ programming within Haskell, by making
 %
 Our approach differs in two significant ways.
 %
-First, reflection allows SMT-aided verification,
-which drastically simplifies proofs over key theories
-like linear arithmetic and equality.
+First, while enriching expressiveness of the types
+allows Haskell's type system to accept more programs, 
+we aim not to alter semantics of Haskell programs, 
+but by refining the checks performed by the type system 
+to reject more programs as ill typed. 
 %
-Second, refinements are completely erased at run-time.
-That is, while both systems automatically lift Haskell
-code to either uninterpreted logical functions
-or type families, with refinements, the logical
-functions are not accessible at run-time and
-promotion cannot affect the semantics of
-the program.
+As a consequence, refinements are completely erased at run-time.
 %
 As an advantage (resp. disadvantage), refinements
 cannot degrade (resp. optimize)
 the performance of programs.
+%
+Second, dependent Haskell follows the classic dependent type 
+verification by type level evaluation approach
+that turns our to be quite painful~\cite{LindleyM13}.
+On the other hand, \toolname 
+enjoys SMT-aided verification,
+which drastically simplifies proofs over key theories
+like linear arithmetic and equality.
+%
+Despite these differences, these two approaches target 
+the same problem of lifting value level terms into Haskell's type system. 
+%
+In the future, we hope to unify these two techniques and 
+allow a uniform interface for lifting values inside the type specifications
+to create a dependent Haskell
+that enjoys 
+both SMT-based automation of verification and  
+type driven runtime optimizations. 
 
- \mypara{Our Relational Algebra Library} builds on a long
-line of work on type safe database access.
-%
-The HaskellDB~\citep{haskellDB}
-showed how phantom types could be used to eliminate
-certain classes of errors.
-%
-Haskell's HList library~\citep{heterogeneous}
-extends this work with type-level computation
-features to encode heterogeneous lists, which
-can be used to encode database schema, and
-(unlike HaskellDB) statically reject accesses
-of ``missing'' fields.
-%
-The HList implementation is non-trivial,
-requiring new type-classes for new operations
-(\eg @append@ing lists); \citep{thepipower}
-shows how a dependently typed language greatly
-simplifies the implementation.
-%
+
+
+
+
+
+
+
+
+
+\begin{comment}
+
 Much of this simplicity can be recovered in
 Haskell using the @singleton@ library~\citep{Weirich12}.
 %
@@ -582,29 +446,6 @@ verify safety; if we erase the types we still
 get a valid Haskell program operating over
 homogeneous lists.
 We do not extende Haskell's expressivity 
- 
- Haskell itself can be considered a dependently-typed language,
- as type level computation is allowed via 
- Type Families~\cite{McBride02},
- Singleton Types\cite{Weirich12}, 
- Generalized Algebraic  Datatypes (GADTs)~\cite{JonesVWW06, SchrijversJSV09}, 
- and type-level functions~\cite{ChakravartyKJ05}.
- %
-Again, 
-verification in haskell itself turns out to be quite painful~\cite{LindleyM13}.
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 \spara{Tracking Divergent Computations}
@@ -711,10 +552,7 @@ which makes the tool predictable and the overall workflow
 scale to the verification of large, real-world
 code bases.
 
-\end{comment}
 
-
-\begin{comment}
 \paragraph{Parallel Code Verification}
 Dependent type theorem provers have been used before to
 verify parallel code.
@@ -793,5 +631,54 @@ encoding to verify contracts.
 Both the above are automatic, but unpredictable and not
 programmer-extensible, hence, have been limited to
 far simpler properties than the ones checked here.
+
+
+
+
+\paragraph{Parallel Code Verification}
+
+One work  closely related to ours is
+SyDPaCC~\cite{SyDPaCC}, a Coq library that
+automatically parallelizes list homomorphisms
+by extracting parallel Ocaml versions of user provided Coq functions.
+%
+Unlike SyDPaCC, we are not automatically generating the parallel
+function version, because of engineering limitations
+(\S~\ref{sec:evaluation}).  Once these are addressed, code extraction
+can be naturally implemented by turning
+Theorem~\ref{theorem:two-level} into a Haskell type class with a
+default parallelization method.
+%
+SyDPaCC used maximum prefix sum as a case study,
+whose morphism verification is
+much simpler than our string matching case study.
+%
+Finally, our implementation consists of
+2K lines of Liquid Haskell, which we consider verbose and aim to
+use tactics to simplify.
+On the contrary, the SyDPaCC implementation
+requires three different languages:
+2K lines of Coq with tactics, 600 lines of Ocaml and 120 lines of C,
+and is considered ``very concise''.
+
+\mypara{Dependent Types for Non-Terminating Programs}
+%
+Zombie~\citep{Zombie, Sjoberg2015} integrates
+dependent types in non terminating programs
+and supports automatic reasoning for equality.
+%
+Vazou \etal have previously~\citep{Vazou14} shown
+how Liquid Types can be used to check
+non-terminating programs.
+%
+Reflection makes \toolname at least as
+expressive as Zombie, \emph{without}
+having to axiomatize the theory of
+equality within the type system.
+%
+Consequently, in contrast to Zombie,
+SMT based reflection lets \toolname
+verify higher-order specifications
+like @foldr_fusion@.
 
 \end{comment}
