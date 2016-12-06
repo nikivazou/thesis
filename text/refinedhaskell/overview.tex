@@ -54,7 +54,7 @@ $$
   \multicolumn{2}{r}{\embed{\ttbind{\x_1}{\typ_1},\ldots,\ttbind{\x_\n}{\typ_\n}}} & \defeq & \embed{\ttbind{\x_1}{\typ_1}} \wedge \ldots \wedge \embed{\ttbind{\x_\n}{\typ_\n}} \\
 \end{array}
 $$
-\caption[Summary of Informal Notation.]{Informal Notation: Types, Subtyping, and VCs}
+\caption[Summary of Informal Notation.]{Informal Notation: Types, Subtyping, and VCs.}
 \label{fig:overview:syntax}
 \end{figure}
 
@@ -88,9 +88,9 @@ the actual parameter @y@ is a \emph{subtype} of the type of
 @div@'s second input, via a subtyping query:
 %
 $$
- \ttbind{x}{\tref{x}{Int}{}{x \geq 0}}, 
+ \ttbind{x}{\tref{x}{Int}{}{x \geq 0}},\ 
  \ttbind{y}{\tref{y}{Int}{}{y \geq 0}}
- \vdash
+ \ \vdash\
  \subt{\tttref{y}{Int}{}{y \geq 0}}{\tttref{v}{Int}{}{v > 0}}$$
 %
 We use the Abbreviations of Figure~\ref{fig:overview:syntax} to simplify the 
@@ -140,9 +140,9 @@ Thus, we can conclude that the divisor @z@ is a positive number.
 The subtyping query for the argument to @div@ is
 %
 \begin{align*}
-\ttbind{x}{\ttref{x \geq 0}},
-\ttbind{y}{\ttref{y \geq 0}}, 
-\ttbind{z}{\ttref{z = y + 1}} 
+\ttbind{x}{\ttref{x \geq 0}},\
+\ttbind{y}{\ttref{y \geq 0}},\ 
+\ttbind{z}{\ttref{z = y + 1}}\ 
 \vdash\ & \subtref{v = y + 1}{v > 0}
 %\label{sub:good}
 \intertext{which reduces to the \emph{valid} VC}
@@ -797,7 +797,7 @@ Since we want to discharge VC using SMT solvers that currently do not support
 three valued reasoning, we exclude diverging refinements from types.
 %
 To do so, we restrict $\mathtt{=}$ to finite integers
-$$ \mathtt{=} :: {\tint^{\finite}}\rightarrow{\tint^\finite}\rightarrow{\tbool^\finite}$$
+$$ (\mathtt{=}) :: {\tint^{\finite}}\rightarrow{\tint^\finite}\rightarrow{\tbool^\finite}$$
 and we say that \ttreft{\vv}{\Base}{\refi} 
 is well-formed \emph{iff} \refi has a $\tbool^\finite$ type (Corollary~\ref{cor:stratification}).
 %
