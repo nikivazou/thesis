@@ -97,10 +97,10 @@ where @listElts@ is a recursively defined measure that
 returns the Set of elements of the input list, 
 that is build in \toolname.
 \begin{code}
-measure listElts :: [a] -> (Set a) 
- listElts([])   = {v | (Set_emp v) }
- listElts(x:xs) = {v | v = 
-   (Set_cup (Set_sng x) (listElts xs))} 
+measure listElts  :: [a] -> (Set a) 
+   listElts([])   = {v | (Set_emp v) }
+   listElts(x:xs) = {v | v = 
+     (Set_cup (Set_sng x) (listElts xs))} 
 \end{code}
 
 Note that the above definitions crucially depend on set theoretic properties.

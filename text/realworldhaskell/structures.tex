@@ -51,17 +51,17 @@ To specify the color invariant, we define a \emph{black-rooted tree} as:
 %
 \begin{code}
   measure isB           :: Tree a -> Prop 
-  color (Node c x l r)  = c == B
-  color (Leaf)          = True
+    isB (Node c x l r)  = c == B
+    isB (Leaf)          = True
 \end{code}
 %
 and then we can describe the color invariant simply as:
 %
 \begin{code}
-  measure isRB        :: Tree a -> Prop
-  isRB (Leaf)         = True
-  isRB (Node c x l r) = isRB l && isRB r &&
-                        c = R => (isB l && isB r)
+  measure isRB          :: Tree a -> Prop
+    isRB (Leaf)         = True
+    isRB (Node c x l r) = isRB l && isRB r &&
+                          c = R => (isB l && isB r)
 \end{code}
 %
 The insertion and deletion procedures create intermediate \emph{almost} 
@@ -70,27 +70,27 @@ Rather than create new data constructors we define almost red-black
 trees with a measure that just drops the invariant at the root:
 %
 \begin{code}
-  measure almostRB        :: Tree a -> Prop
-  almostRB (Leaf)         = True
-  almostRB (Node c x l r) = isRB l && isRB r
+  measure almostRB          :: Tree a -> Prop
+    almostRB (Leaf)         = True
+    almostRB (Node c x l r) = isRB l && isRB r
 \end{code}
 
 \mypara{Height Invariant}
 To specify the height invariant, we define a black-height measure:
 %
 \begin{code}
-  measure bh        :: Tree a -> Int
-  bh (Leaf)         = 0
-  bh (Node c x l r) = bh l + if c = R then 0 else 1
+  measure bh          :: Tree a -> Int
+    bh (Leaf)         = 0
+    bh (Node c x l r) = bh l + if c = R then 0 else 1
 \end{code}
 %
 and we can now specify black-height balance as:
 %
 \begin{code}
-  measure isBal        :: Tree a -> Prop
-  isBal (Leaf)         = true
-  isBal (Node c x l r) = bh l = bh r 
-                       && isBH l && isBH r 
+  measure isBal          :: Tree a -> Prop
+    isBal (Leaf)         = true
+    isBal (Node c x l r) = bh l = bh r 
+                         && isBH l && isBH r 
 \end{code}
 %
 Note that @bh@ only considers the left sub-tree, 
@@ -191,17 +191,17 @@ in a list is unique, \ie there are no duplicates in the list we first define
 a measure denoting the set using Z3's~\citep{z3} built-in theory of sets:
 %
 \begin{code}
-  measure elts :: [a] -> Set a 
-  elts ([])   = emp  
-  elts (x:xs) = cup (sng x) (elts xs) 
+  measure elts  :: [a] -> Set a 
+    elts ([])   = emp  
+    elts (x:xs) = cup (sng x) (elts xs) 
 \end{code}
 %
 Now, we can use the above to define uniqueness:
 %
 \begin{code}
-  measure isUniq :: [a] -> Prop 
-  isUniq ([])   =  true 
-  isUniq (x:xs) =  notIn x xs && isUniq xs
+  measure isUniq  :: [a] -> Prop 
+    isUniq ([])   =  true 
+    isUniq (x:xs) =  notIn x xs && isUniq xs
 \end{code}
 %
 where @notIn@ is an abbreviation: 

@@ -123,8 +123,7 @@ that respectively capture suitable pre- and post-conditions.
 For example,
 %
 \begin{code}
-  range :: lo:Int -> hi:{Int | lo <= hi} 
-        -> [(Rng lo hi)]
+  range :: lo:Int -> hi:{Int | lo <= hi} -> [(Rng lo hi)]
 \end{code}
 %
 states that @range@ is a function that takes two @Int@s 
@@ -403,8 +402,8 @@ we require the definition of the @sz@ instance for lists:
 %
 \begin{code}
   instance measure sz :: [a] -> Nat
-  sz []     = 0
-  sz (x:xs) = 1 + (sz xs)
+    sz []     = 0
+    sz (x:xs) = 1 + (sz xs)
 \end{code}
 %
 Class measures work just like regular measures in that the above 

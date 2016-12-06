@@ -140,8 +140,8 @@ user could a special measure:
 %
 \begin{code}
   measure nonEmp  :: [a] -> Prop
-  nonEmp (x:xs)   = True
-  nonEmp []       = False
+    nonEmp (x:xs)   = True
+    nonEmp []       = False
 
   predicate NonEmp X = nonEmp X
 \end{code}

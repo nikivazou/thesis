@@ -20,7 +20,7 @@ For example, the contract for @div@
 \end{code}
 %
 states that @div@ \emph{requires} a non-negative dividend @n@ and a positive
-divisor @d@, and \emph{ensures} that the result is less than the dividend.
+divisor @d@ and \emph{ensures} that the result is less than the dividend.
 %
 If a program (refinement) type checks, we can be sure that @div@ will never 
 throw a divide-by-zero exception.
@@ -62,7 +62,7 @@ of its features.
 \item Second, we present a qualitative discussion of the kinds of properties
 that can be checked -- ranging from generic application independent 
 criteria like totality (\S~\ref{sec:totality}), 
-\ie that a function is defined for all inputs (of a given type),  
+\ie that a function is defined for all inputs (of a given type)
 and termination, 
 (\S~\ref{sec:termination}) 
 \ie that a recursive function cannot diverge,

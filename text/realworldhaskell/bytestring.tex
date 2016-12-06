@@ -206,8 +206,8 @@ whose total length equals that of another string:
 
 \begin{code}
   measure bLens :: [ByteString] -> Int 
-  bLens ([])     = 0
-  bLens (x:xs)   = bLen x + bLens xs
+    bLens ([])     = 0
+    bLens (x:xs)   = bLen x + bLens xs
   
   type ByteStringNE    = {v:ByteString | bLen v > 0}
   type ByteStringsEq B = {v:[ByteStringNE] | bLens v = bLen b}
