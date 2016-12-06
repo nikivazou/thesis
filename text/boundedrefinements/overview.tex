@@ -450,9 +450,9 @@ function used to represent the number of elements of
 the list in the refinement logic~\ref{sec:measures}:
 %
 \begin{code}
-  measure len :: List a -> Nat
-  len []      = 0
-  len (x:xs)  = 1 + len xs
+  measure len   :: List a -> Nat
+    len []      = 0
+    len (x:xs)  = 1 + len xs
 \end{code}
 
 \mypara{We specify induction as a bound.} Let
