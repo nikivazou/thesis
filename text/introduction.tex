@@ -4,7 +4,7 @@ In safety-critical systems, like aircrafts or medical equipment,
 even a single bug can lead to catastrophic impacts
 such as injuries or death.
 %
-Even in less critical code development, 
+Even in less critical code, 
 programs use various runtime assertions to establish correctness properties. 
 %
 Formal verification can be used to statically 
@@ -65,11 +65,11 @@ The specification language is simple
 as most programmers are familiar with both
 its ingredients, \ie Haskell types and logical formulas.
 
-\mypara{Real World applications} have been verified using 
+\mypara{Real World Applications} have been verified using 
 \toolname. 
 %
 We proved critical safety and functional correctness of 
-more that 10,000 lines of popular Haskell libraries (Chapter~\ref{chapter:tool})
+more that 10K lines of popular Haskell libraries (Chapter~\ref{chapter:tool})
 with minimal amount of annotations.
 %
 We verified correctness of \textit{array-based sorting algorithm} ($\texttt{Vector-Algorithms}$),
@@ -89,7 +89,7 @@ lazy semantics rendered standard refinement typing unsound.
 % The state: refinement types have been used for eager
 % Eager: binders to terminating values
 % Partial correctness: 
-\textbf{Soundness under Lazy Evaluation}~\ref{chapter:refinedhaskell} describes
+\textbf{Soundness Under Lazy Evaluation} (Chapter~\ref{chapter:refinedhaskell}) describes
 how we adjusted refinement typing to soundly 
 verify Haskell's lazy programs. 
 % 
@@ -101,7 +101,7 @@ implicitly assume that all the free variables in the expression are
 bound to values. 
 %
 This property is trivially guaranteed by eager evaluation, but 
-not in a lazy setting.
+does not hold in a lazy setting.
 % 
 Thus, to be sound and precise,
 a refinement type system for Haskell 
@@ -109,9 +109,8 @@ must take into account which subset of binders
 actually reduces to values. 
 %
 To track potentially diverging binders, 
-we used refinement types to build a termination checker 
+we built a termination checker 
 whose correctness is recursively checked by refinement types.
-%
 
 
 %% 
@@ -121,9 +120,8 @@ Program verification checks that the source code satisfies
 a set of specifications. 
 %
 A trivial example is to \textit{specify} that the second argument of a division operator 
-is different than zero.
-%
-In \toolname terms one would write this specification as:
+is different than zero, 
+by writing the following specification:
 @div :: Int -> NonZero -> Int@.
 To \textit{check} whether an expression with type 
 @{v:Int | 0 < v}@
@@ -131,22 +129,16 @@ is a safe argument to the division operator, the system checks
 whether $ 0 < v $ implies $0 \neq v$. 
 %
 By constraining all predicates to be drawn from decidable logics, 
-such implications can be \textit{automatically} checked via an SMT solver.
+such implications can be \textit{automatically} checked via an % SMT
+Satisfiability Modulo Theories (SMT) 
+solver.
 %
 \textit{Liquid Types}~\cite{LiquidPLDI09} are a subset of refinement types 
 that achieve automation and type inference by 
 constraining the language of the logical predicates to quantifier-free \textit{decidable} logics, including 
 logical formulas, linear arithmetic and uninterpreted functions.
 %
-%% \NV maybe add how type inference is precious!
 
-
-%%
-%%%- use maximum example to show unmodular
-%%%     write Pos, NonNeg
-%%%- use an abstract refinement to solve the problem 
-%%%- use a bound like upclosed to show bounded qualification
-%% expressiveness: Set up the problem
 \textbf{Expressiveness} of the specifications is critically hindered 
 by our choice to constrain the language of predicates to decidable logics.
 %
@@ -250,7 +242,7 @@ for automatic verification, arbitrary, Haskell functions are not allowed to
 appear in the refinements.
 
 \textbf{Refinement Reflection}~(Chapter~\ref{refinementrflection})
-allows arbitrary terminating Haskell functions to 
+allows arbitrary, terminating, Haskell functions to 
 appear into the specifications 
 as uninterpreted functions thus preserving automatic and decidable 
 type checking. 
@@ -266,18 +258,19 @@ in a precise and predictable manner.
 With Refinement Reflection, 
 the user can write arbitrarily expressive (fully dependent type)
 specifications expressing theorems about the code, 
-but to prove such theorems the user needs to appropriately 
+but to prove such theorems the user needs to manually provide 
+appropriate proof terms. 
 %
-We show how to use reflection to verify
+We used reflection to verify
 that many widely used instances of the Monoid,
-Applicative, Functor and Monad typeclasses
-actually satisfy key algebraic laws needed to
+Applicative, Functor and Monad typeclasses 
+satisfy key algebraic laws needed to
 making the code using the typeclasses safe.
 %
 Finally, transforming a mature language---with
 highly tuned parallel runtime---into a theorem
 prover  enables us to build the parallel applications, 
-like an efficient String Matcher~\ref{stringmatcher}, 
+like an efficient String Matcher (Chapter~\ref{stringmatcher}), 
 and prove it equivalent with its na\"ive, sequential version.
 
 In short, \toolname is a usable verifier for real world Haskell applications 
