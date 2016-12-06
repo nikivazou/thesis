@@ -40,10 +40,9 @@ that is, a \textit{unary} function whose (1) domain is the data type and
 \begin{code}
   type Nat = {v:Int | 0 <= v}
 
-  measure length
-  length         :: L a -> Nat
-  length N        = 0
-  length (C x xs) = 1 + length xs
+  measure length    :: L a -> Nat
+    length N        = 0
+    length (C x xs) = 1 + length xs
 \end{code}
 
 Finally, we teach \toolname how to encode functions on Lists
