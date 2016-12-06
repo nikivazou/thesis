@@ -229,19 +229,19 @@ Fortunately, refinements suffice to encode such properties.
 First, we define measures
 %
 \begin{code}
-  measure isJust     :: Maybe a -> Bool 
-  isJust (Just x)    = true
-  isJust (Nothing)   = false
+  measure isJust       :: Maybe a -> Bool 
+    isJust (Just x)    = true
+    isJust (Nothing)   = false
 
-  measure fromJust   :: Maybe a -> a 
-  fromJustS (Just x) = x 
+  measure fromJust     :: Maybe a -> a 
+    fromJustS (Just x) = x 
 
-  measure isBin       :: Tree k v -> Bool
-  isBin (Bin _ _ _ _) = true
-  isBin (Tip)         = false
+  measure isBin         :: Tree k v -> Bool
+    isBin (Bin _ _ _ _) = true
+    isBin (Tip)         = false
 
   measure key :: Tree k v -> k 
-  key (Bin k _ _ _)   = k 
+    key (Bin k _ _ _)   = k 
 \end{code}
 %
 which respectively embed the @Maybe@ and @Tree@ root value into the
