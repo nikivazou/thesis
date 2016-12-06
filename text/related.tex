@@ -1,12 +1,12 @@
 \chapter{Related Work}\label{chapter:related}
 
-\toolname combines ideas from four main lines of research fields. 
+\toolname combines ideas from four main lines of research areas. 
 %
 It is a 
 refinement type checker (\S~\ref{related:refinementtypes})
 that enjoys SMT-based (\S~\ref{related:smtbased}) automated type checking. 
 Via Refinement Reflection we touch the expressiveness 
-of fully dependently types systems (\S~\ref{related:dependenttypes}), 
+of fully dependently typed systems (\S~\ref{related:dependenttypes}), 
 getting an automated and expressive verifier for Haskell programs (\S~\ref{related:haskell}).  
 %
 
@@ -113,14 +113,14 @@ without the decidability constraint.
 In such verifiers the SMT solvers are used to decide validity of 
 arbitrary (\ie non strictly decidable) logics leading to expressive specifications
 but undecidable and unpredictable verification. 
-Unpredictable verification is described~\cite{Leino16}
-as \textit{the butterfly effect} as ``a minor modification in one
+Unpredictable verification, as described in~\cite{Leino16}, suffers from  
+\textit{the butterfly effect} as ``a minor modification in one
 part of the program source causes changes in the outcome of the verification in other,
-unchanged and unrelated parts of the program.''
+unchanged and unrelated parts of the program''.
 %
-Here we present three SMT-based verifiers that have highly influence 
+Here we present three SMT-based verifiers that have highly influenced 
 the design decisions in \toolname 
-and discuss the ways each one of the used to limit control unpredictable verification. 
+and discuss the ways each one of them uses to control the unpredictability of verification. 
 
 
 
@@ -129,9 +129,9 @@ The specifications are expressed in the form of refinement types
 that allow predicates to
 be arbitrary terms of the language being typechecked. 
 It uses the SMT solver Simplify~\cite{simplifyj} to statically discharge 
-as many proof obligations as possible and defer the rest to runtime casts. 
+as many proof obligations as possible and defers the rest to runtime casts. 
 %
-\toolname is a subset of Sage, that provably requires no runtime casts
+\toolname is a subset of Sage that provably requires no runtime casts
 since predicates are carefully constrained to decidable logics. 
 %
 We used Knowles and Flanagan's formalism on denotational typing 
@@ -161,7 +161,7 @@ that can be optionally tracked by \toolname's totality and termination checker r
 
 
 \mypara{Dafny}~\cite{dafny} is a prototype SMT-based verifier 
-for imperative programs that allows arbitrary expressive specifications 
+for imperative programs that allows arbitrarily expressive specifications 
 in the form of pre- and post-conditions. 
 %
 Acknowledging the disadvantages of unpredictable verification, 
@@ -171,7 +171,7 @@ via sophisticated trigger and fuel techniques.
 %
 Dafny
 that verifies effectful, imperative code via pre- and post-conditions
-greatly differs from \toolname
+is quite different from \toolname
 that verifies the pure and functional Haskell via refinement types. 
 %
 Yet, the work of Leino and the rest of Dafny developers 
@@ -279,7 +279,7 @@ which drastically simplifies proofs over key theories
 like linear arithmetic and equality.
 %
 In the future, we plan to investigate how to simplify such proof terms
-by adapting the tactics and heurestics of dependently typed systems
+by adapting the tactics and heuristics of dependently typed systems
 into \toolname. 
 
 \mypara{System Features: Theorem Prover vs. Legacy Programming Languages}
@@ -289,7 +289,7 @@ diverging and effectful programs.
 %
 Various systems extend theorem provers to support effectful programs, 
 for example 
-Zombie~\cite{Zombie,Sjoberg2015} and Fstar~\cite{fstar} allow dependent types to
+Zombie~\cite{Zombie,Sjoberg2015} and \fstar~\cite{fstar} allow dependent types to
 coexist with divergent and effectful programs. 
 %
 Still, these systems are verification oriented and lack the 
@@ -346,7 +346,7 @@ correctness specifications, encoded via refinement typing.
 %
 
 \mypara{Static Contract Checking}
-A generalized correctness anazysis in Haskell is feasible 
+A generalized correctness analysis in Haskell is feasible 
 via Haskell's static contract checking~\cite{XuPOPL09} 
 that encodes arbitrary contracts in the form of refinement types and
 checks them using symbolic execution to unroll procedures
@@ -404,7 +404,7 @@ the performance of programs.
 %
 Second, dependent Haskell follows the classic dependent type 
 verification by type level evaluation approach
-that turns our to be quite painful~\cite{LindleyM13}.
+that turns out to be quite painful~\cite{LindleyM13}.
 On the other hand, \toolname 
 enjoys SMT-aided verification,
 which drastically simplifies proofs over key theories

@@ -45,9 +45,6 @@ aforementioned criteria of a usable verifier.
 \mypara{Natural Integration} of correctness specifications 
 comes by our choice of the functional programming language Haskell as a target language.
 %
-% Functios are first class objects
-% No mutation or side effects
-% Rich type system natural to express specifications
 Haskell's first class functions lead to modular specifications. 
 The lack of mutations and side-effects allows a direct correspondence between 
 source code and logic. 
@@ -269,7 +266,7 @@ making the code using the typeclasses safe.
 %
 Finally, transforming a mature language---with
 highly tuned parallel runtime---into a theorem
-prover  enables us to build the parallel applications, 
+prover  enables us to build parallel applications, 
 like an efficient String Matcher (Chapter~\ref{stringmatcher}), 
 and prove it equivalent with its na\"ive, sequential version.
 
