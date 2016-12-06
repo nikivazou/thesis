@@ -88,7 +88,7 @@ second from the type of @cmp@ obtained from the output of @leq@,
 the third from the \emph{actual} input passed to @assert@,
 and the goal comes from the input type \emph{required} by @assert@.
 %
-An SMT solver \cite{NelsonOppen} readily establishes the validity
+An SMT solver \cite{Nelson81} readily establishes the validity
 of the above VC, thereby verifying @checkGE@.
 
 \begin{comment}
@@ -136,7 +136,7 @@ maximum :: forall<p::Int->Bool>. List Int<p> -> Int<p>
 %
 where informally, @Int<p>@ stands for @{v:Int | p v}@,
 and @p@ is an \emph{uninterpreted function} in the refinement
-logic~\cite{NelsonOppen}.
+logic~\cite{Nelson81}.
 %
 The signature states that for any refinement @p@ on @Int@,
 the input is a list of elements satisfying @p@
@@ -159,7 +159,7 @@ congruence, namely:
 \end{code}
 %
 As the quantifier free theory of uninterpreted functions
-is decidable \cite{NelsonOppen}, abstract refinement type
+is decidable~\cite{Nelson81}, abstract refinement type
 checking remains decidable \cite{vazou13}.
 
 \paragraph{Abstract Refinements are Automatically Instantiated} at call-sites,
